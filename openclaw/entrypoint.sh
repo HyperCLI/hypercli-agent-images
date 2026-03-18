@@ -21,6 +21,7 @@ chmod 700 "${OPENCLAW_STATE_DIR}" "${OPENCLAW_STATE_DIR}/agents" "${OPENCLAW_STA
 if [[ ! -f "${OPENCLAW_CONFIG_PATH}" ]]; then
   cp "${OPENCLAW_CONFIG_TEMPLATE}" "${OPENCLAW_CONFIG_PATH}"
 fi
+
 chmod 600 "${OPENCLAW_CONFIG_PATH}" 2>/dev/null || true
 for skill in hypercli stt voice; do
   if [[ -d "${OPENCLAW_SKILLS_TEMPLATE_DIR}/${skill}" ]]; then
@@ -47,7 +48,7 @@ start_novnc() {
 }
 
 start_gateway() {
-  openclaw gateway --port "${OPENCLAW_PORT:-18789}" --bind "${OPENCLAW_GATEWAY_BIND:-lan}" >> /tmp/openclaw-gw.log 2>&1 &
+  openclaw gateway run --port "${OPENCLAW_PORT:-18789}" --bind "${OPENCLAW_GATEWAY_BIND:-lan}" >> /tmp/openclaw-gw.log 2>&1 &
   GATEWAY_PID=$!
   echo "[openclaw] gateway started"
 }
