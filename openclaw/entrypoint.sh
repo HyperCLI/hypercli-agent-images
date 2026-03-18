@@ -3,17 +3,15 @@ set -euo pipefail
 
 export HOME=/home/ubuntu
 export DISPLAY="${DISPLAY:-:99}"
-export HYPER_AGENTS_API_KEY="${HYPER_AGENTS_API_KEY:-${HYPERCLAW_API_KEY:-}}"
-export HYPERCLAW_API_BASE="${HYPERCLAW_API_BASE:-https://api.agents.hypercli.com}"
+export HYPER_API_KEY="${HYPER_API_KEY:-}"
+export HYPER_API_BASE="${HYPER_API_BASE:-https://api.agents.hypercli.com}"
 export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}"
 export OPENCLAW_CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
 export OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${OPENCLAW_STATE_DIR}/openclaw.json}"
-export OPENCLAW_SKILLS_TEMPLATE_DIR="${OPENCLAW_SKILLS_TEMPLATE_DIR:-/opt/hypercli-openclaw/skills}"
 
 mkdir -p \
   "${OPENCLAW_STATE_DIR}" \
   "${OPENCLAW_STATE_DIR}/workspace" \
-  "${OPENCLAW_STATE_DIR}/workspace/skills" \
   "${OPENCLAW_STATE_DIR}/agents/default/sessions" \
   /tmp
 chmod 700 "${OPENCLAW_STATE_DIR}" "${OPENCLAW_STATE_DIR}/agents" "${OPENCLAW_STATE_DIR}/agents/default" "${OPENCLAW_STATE_DIR}/agents/default/sessions" 2>/dev/null || true
@@ -23,11 +21,6 @@ if [[ ! -f "${OPENCLAW_CONFIG_PATH}" ]]; then
 fi
 
 chmod 600 "${OPENCLAW_CONFIG_PATH}" 2>/dev/null || true
-for skill in hypercli stt voice; do
-  if [[ -d "${OPENCLAW_SKILLS_TEMPLATE_DIR}/${skill}" ]]; then
-    cp -rn "${OPENCLAW_SKILLS_TEMPLATE_DIR}/${skill}" "${OPENCLAW_STATE_DIR}/workspace/skills/" 2>/dev/null || true
-  fi
-done
 
 HOME="${HOME}" openclaw config validate >/dev/null
 echo "[openclaw] config verified"
@@ -47,9 +40,18 @@ start_novnc() {
   NOVNC_PID=$!
 }
 
+find_gateway_pid() {
+  pgrep -u "$(id -u)" -f '(^|/)openclaw-gateway([[:space:]]|$)' | head -n 1 || true
+}
+
 start_gateway() {
   openclaw gateway run --port "${OPENCLAW_PORT:-18789}" --bind "${OPENCLAW_GATEWAY_BIND:-lan}" >> /tmp/openclaw-gw.log 2>&1 &
-  GATEWAY_PID=$!
+  GATEWAY_LAUNCH_PID=$!
+  sleep 1
+  GATEWAY_PID="$(find_gateway_pid)"
+  if [[ -z "${GATEWAY_PID}" ]]; then
+    GATEWAY_PID="${GATEWAY_LAUNCH_PID}"
+  fi
   echo "[openclaw] gateway started"
 }
 
@@ -57,7 +59,8 @@ start_novnc
 start_gateway
 
 cleanup() {
-  kill "${GATEWAY_PID:-}" "${NOVNC_PID:-}" "${X11VNC_PID:-}" "${OPENBOX_PID:-}" "${XVFB_PID:-}" 2>/dev/null || true
+  kill "${GATEWAY_LAUNCH_PID:-}" "${GATEWAY_PID:-}" "${NOVNC_PID:-}" "${X11VNC_PID:-}" "${OPENBOX_PID:-}" "${XVFB_PID:-}" 2>/dev/null || true
+  pkill -u "$(id -u)" -f '(^|/)openclaw-gateway([[:space:]]|$)' 2>/dev/null || true
   wait || true
 }
 
@@ -76,7 +79,10 @@ while true; do
     start_novnc
   fi
   if ! kill -0 "${GATEWAY_PID}" 2>/dev/null; then
-    sleep 2
-    start_gateway
+    GATEWAY_PID="$(find_gateway_pid)"
+    if [[ -z "${GATEWAY_PID}" ]]; then
+      sleep 2
+      start_gateway
+    fi
   fi
 done

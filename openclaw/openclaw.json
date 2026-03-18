@@ -3,8 +3,8 @@
     "mode": "merge",
     "providers": {
       "hyperclaw": {
-        "baseUrl": "${HYPERCLAW_API_BASE}",
-        "apiKey": "${HYPER_AGENTS_API_KEY}",
+        "baseUrl": "${HYPER_API_BASE}",
+        "apiKey": "${HYPER_API_KEY}",
         "api": "anthropic-messages",
         "models": [
           {
@@ -17,8 +17,8 @@
         ]
       },
       "kimi-coding": {
-        "baseUrl": "${HYPERCLAW_API_BASE}",
-        "apiKey": "${HYPER_AGENTS_API_KEY}",
+        "baseUrl": "${HYPER_API_BASE}",
+        "apiKey": "${HYPER_API_KEY}",
         "api": "anthropic-messages",
         "headers": {
           "User-Agent": "claude-code/0.1.0"
@@ -69,8 +69,8 @@
         "provider": "openai",
         "model": "qwen3-embedding-4b",
         "remote": {
-          "baseUrl": "${HYPERCLAW_API_BASE}/v1",
-          "apiKey": "${HYPER_AGENTS_API_KEY}"
+          "baseUrl": "${HYPER_API_BASE}/v1",
+          "apiKey": "${HYPER_API_KEY}"
         }
       }
     },
