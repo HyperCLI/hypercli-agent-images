@@ -5,6 +5,7 @@ export HOME=/home/ubuntu
 export DISPLAY="${DISPLAY:-:99}"
 export HYPER_API_KEY="${HYPER_API_KEY:-}"
 export HYPER_API_BASE="${HYPER_API_BASE:-https://api.agents.hypercli.com}"
+export OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN="${OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN:-}"
 export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}"
 export OPENCLAW_CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
 export OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${OPENCLAW_STATE_DIR}/openclaw.json}"
