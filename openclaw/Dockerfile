@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7
 FROM node:24-bookworm
 
-ARG OPENCLAW_NPM_TAG=latest
+ARG OPENCLAW_REF=main
+ARG OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
@@ -38,7 +39,13 @@ RUN git clone --depth 1 --branch "${HYPERCLI_REF}" "${HYPERCLI_REPO}" /opt/hyper
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
-RUN npm install -g "openclaw@${OPENCLAW_NPM_TAG}" && \
+RUN git clone "${OPENCLAW_REPO}" /opt/openclaw-src && \
+    cd /opt/openclaw-src && \
+    git checkout "${OPENCLAW_REF}" && \
+    corepack enable && \
+    pnpm install --frozen-lockfile && \
+    pnpm build && \
+    npm install -g . && \
     find /opt/npm-global/lib/node_modules/openclaw -type f -path '*/skills/*' -name '*.sh' -exec chmod 755 {} + && \
     cp -a /opt/npm-global/lib/node_modules/openclaw/. /opt/openclaw/ && \
     ln -sf /opt/npm-global/bin/openclaw /usr/local/bin/openclaw && \
