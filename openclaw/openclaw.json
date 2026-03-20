@@ -4,8 +4,9 @@
     "providers": {
       "hyperclaw": {
         "baseUrl": "${HYPER_API_BASE}",
-        "apiKey": "${HYPER_API_KEY}",
+        "apiKey": "${HYPER_AGENTS_API_KEY}",
         "api": "anthropic-messages",
+        "authHeader": true,
         "models": [
           {
             "id": "glm-5",
@@ -18,8 +19,9 @@
       },
       "kimi-coding": {
         "baseUrl": "${HYPER_API_BASE}",
-        "apiKey": "${HYPER_API_KEY}",
+        "apiKey": "${HYPER_AGENTS_API_KEY}",
         "api": "anthropic-messages",
+        "authHeader": true,
         "headers": {
           "User-Agent": "claude-code/0.1.0"
         },
@@ -70,7 +72,7 @@
         "model": "qwen3-embedding-4b",
         "remote": {
           "baseUrl": "${HYPER_API_BASE}/v1",
-          "apiKey": "${HYPER_API_KEY}"
+          "apiKey": "${HYPER_AGENTS_API_KEY}"
         }
       }
     },
