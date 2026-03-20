@@ -14,10 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     ffmpeg \
+    poppler-utils \
     python3 \
     python3-dev \
     python3-pip \
     build-essential \
+    zip \
+    unzip \
     xvfb \
     x11vnc \
     openbox \
@@ -53,7 +56,7 @@ ENV OPENCLAW_GATEWAY_BIND=lan
 ENV OPENCLAW_STATE_DIR=/home/ubuntu/.openclaw
 ENV OPENCLAW_CONFIG_PATH=/home/ubuntu/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
-ENV HYPER_API_BASE=https://api.agents.hypercli.com
+ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 
 WORKDIR /home/ubuntu
 USER ubuntu

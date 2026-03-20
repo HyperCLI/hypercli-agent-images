@@ -4,7 +4,7 @@ set -euo pipefail
 export HOME=/home/ubuntu
 export DISPLAY="${DISPLAY:-:99}"
 export HYPER_AGENTS_API_KEY="${HYPER_AGENTS_API_KEY:-}"
-export HYPER_API_BASE="${HYPER_API_BASE:-https://api.agents.hypercli.com}"
+export HYPER_AGENTS_API_BASE="${HYPER_AGENTS_API_BASE:-https://api.agents.hypercli.com}"
 export OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN="${OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN:-}"
 export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}"
 export OPENCLAW_CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
