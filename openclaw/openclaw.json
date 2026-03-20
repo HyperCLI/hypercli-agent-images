@@ -14,18 +14,7 @@
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 202752
-          }
-        ]
-      },
-      "kimi-coding": {
-        "baseUrl": "${HYPER_AGENTS_API_BASE}",
-        "apiKey": "${HYPER_AGENTS_API_KEY}",
-        "api": "anthropic-messages",
-        "authHeader": true,
-        "headers": {
-          "User-Agent": "claude-code/0.1.0"
-        },
-        "models": [
+          },
           {
             "id": "kimi-k2.5",
             "name": "Kimi K2.5",
@@ -57,13 +46,13 @@
     "defaults": {
       "workspace": "~/.openclaw/workspace",
       "model": {
-        "primary": "kimi-coding/kimi-k2.5"
+        "primary": "hyperclaw/kimi-k2.5"
       },
       "models": {
         "hyperclaw/glm-5": {
           "alias": "glm"
         },
-        "kimi-coding/kimi-k2.5": {
+        "hyperclaw/kimi-k2.5": {
           "alias": "kimi"
         }
       },

@@ -16,10 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ffmpeg \
     poppler-utils \
+    lsof \
     python3 \
     python3-dev \
     python3-pip \
     build-essential \
+    sudo \
+    vim \
+    nano \
     zip \
     unzip \
     xvfb \
@@ -33,7 +37,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN usermod -l ubuntu -d /home/ubuntu -m node && \
     groupmod -n ubuntu node && \
     mkdir -p /opt/hypercli-openclaw /opt/hypercli /opt/openclaw /opt/npm-global /home/ubuntu/.openclaw && \
-    chown -R ubuntu:ubuntu /home/ubuntu /opt/hypercli-openclaw /opt/npm-global
+    chown -R ubuntu:ubuntu /home/ubuntu /opt/hypercli-openclaw /opt/npm-global && \
+    echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu && \
+    chmod 0440 /etc/sudoers.d/ubuntu
 
 RUN git clone --depth 1 --branch "${HYPERCLI_REF}" "${HYPERCLI_REPO}" /opt/hypercli && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
@@ -48,13 +54,16 @@ RUN git clone "${OPENCLAW_REPO}" /opt/openclaw-src && \
     npm install -g . && \
     find /opt/npm-global/lib/node_modules/openclaw -type f -path '*/skills/*' -name '*.sh' -exec chmod 755 {} + && \
     cp -a /opt/npm-global/lib/node_modules/openclaw/. /opt/openclaw/ && \
-    ln -sf /opt/npm-global/bin/openclaw /usr/local/bin/openclaw && \
+    ln -sf /opt/npm-global/bin/openclaw /usr/local/bin/openclaw-real && \
     npm cache clean --force && \
-    openclaw --version
+    /usr/local/bin/openclaw-real --version
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
+COPY openclaw-wrapper.sh /opt/hypercli-openclaw/openclaw-wrapper.sh
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh
+RUN chmod +x /opt/hypercli-openclaw/openclaw-wrapper.sh && \
+    ln -sf /opt/hypercli-openclaw/openclaw-wrapper.sh /usr/local/bin/openclaw
 
 ENV HOME=/home/ubuntu
 ENV DISPLAY=:99
