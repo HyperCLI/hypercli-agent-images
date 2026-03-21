@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1.7
 FROM node:24-bookworm
 
-ARG OPENCLAW_REF=main
-ARG OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
+ARG OPENCLAW_NPM_TAG=2026.3.13
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
@@ -26,12 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     zip \
     unzip \
-    xvfb \
-    x11vnc \
-    openbox \
-    novnc \
-    websockify \
-    xauth \
     && rm -rf /var/lib/apt/lists/*
 
 RUN usermod -l ubuntu -d /home/ubuntu -m node && \
@@ -45,13 +38,7 @@ RUN git clone --depth 1 --branch "${HYPERCLI_REF}" "${HYPERCLI_REPO}" /opt/hyper
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
-RUN git clone "${OPENCLAW_REPO}" /opt/openclaw-src && \
-    cd /opt/openclaw-src && \
-    git checkout "${OPENCLAW_REF}" && \
-    corepack enable && \
-    pnpm install --frozen-lockfile && \
-    pnpm build && \
-    npm install -g . && \
+RUN npm install -g "openclaw@${OPENCLAW_NPM_TAG}" && \
     find /opt/npm-global/lib/node_modules/openclaw -type f -path '*/skills/*' -name '*.sh' -exec chmod 755 {} + && \
     cp -a /opt/npm-global/lib/node_modules/openclaw/. /opt/openclaw/ && \
     ln -sf /opt/npm-global/bin/openclaw /usr/local/bin/openclaw-real && \
@@ -60,13 +47,10 @@ RUN git clone "${OPENCLAW_REPO}" /opt/openclaw-src && \
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
-COPY openclaw-wrapper.sh /opt/hypercli-openclaw/openclaw-wrapper.sh
-RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh
-RUN chmod +x /opt/hypercli-openclaw/openclaw-wrapper.sh && \
-    ln -sf /opt/hypercli-openclaw/openclaw-wrapper.sh /usr/local/bin/openclaw
+RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
+    ln -sf /opt/npm-global/bin/openclaw /usr/local/bin/openclaw
 
 ENV HOME=/home/ubuntu
-ENV DISPLAY=:99
 ENV OPENCLAW_PORT=18789
 ENV OPENCLAW_GATEWAY_BIND=lan
 ENV OPENCLAW_STATE_DIR=/home/ubuntu/.openclaw
@@ -77,5 +61,5 @@ ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 WORKDIR /home/ubuntu
 USER ubuntu
 
-EXPOSE 3000 18789
+EXPOSE 18789
 ENTRYPOINT ["/opt/hypercli-openclaw/entrypoint.sh"]
