@@ -9,13 +9,6 @@
         "authHeader": true,
         "models": [
           {
-            "id": "glm-5-anthropic",
-            "name": "GLM-5",
-            "reasoning": true,
-            "input": ["text", "image"],
-            "contextWindow": 202752
-          },
-          {
             "id": "kimi-k2.5-anthropic",
             "name": "Kimi K2.5",
             "reasoning": true,
@@ -49,9 +42,6 @@
         "primary": "hyperclaw/kimi-k2.5-anthropic"
       },
       "models": {
-        "hyperclaw/glm-5-anthropic": {
-          "alias": "glm"
-        },
         "hyperclaw/kimi-k2.5-anthropic": {
           "alias": "kimi"
         }
