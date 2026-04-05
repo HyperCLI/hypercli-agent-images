@@ -34,7 +34,9 @@ RUN usermod -l ubuntu -d /home/ubuntu -m node && \
     echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu && \
     chmod 0440 /etc/sudoers.d/ubuntu
 
-RUN git clone --depth 1 --branch "${HYPERCLI_REF}" "${HYPERCLI_REPO}" /opt/hypercli && \
+RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
+    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
+    git -C /opt/hypercli checkout FETCH_HEAD && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
