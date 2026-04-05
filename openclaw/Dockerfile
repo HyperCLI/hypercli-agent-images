@@ -5,6 +5,8 @@ ARG OPENCLAW_NPM_TAG=2026.3.23
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
+LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NPM_CONFIG_PREFIX=/opt/npm-global
 ENV PATH=/opt/npm-global/bin:${PATH}
@@ -37,6 +39,7 @@ RUN usermod -l ubuntu -d /home/ubuntu -m node && \
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
+    git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
