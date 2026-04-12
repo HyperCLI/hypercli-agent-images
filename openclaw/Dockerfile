@@ -28,9 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /app/.openclaw && \
-    ln -sfn /app /opt/openclaw && \
-    chown -R node:node /app /opt/hypercli-openclaw
+RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /opt/openclaw-runtime /app/.openclaw && \
+    cp -a /app/. /opt/openclaw-runtime/ && \
+    rm -f /usr/local/bin/openclaw && \
+    ln -sfn /opt/openclaw-runtime/openclaw.mjs /usr/local/bin/openclaw && \
+    ln -sfn /opt/openclaw-runtime /opt/openclaw && \
+    chown -R node:node /app /opt/hypercli-openclaw /opt/openclaw-runtime
 
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
