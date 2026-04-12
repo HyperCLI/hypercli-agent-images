@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 FROM ghcr.io/openclaw/openclaw:2026.4.11
 
 ARG HYPERCLI_REF=main
