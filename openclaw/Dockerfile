@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 FROM node:24-bookworm
 
-ARG OPENCLAW_NPM_TAG=2026.4.9
+ARG OPENCLAW_NPM_TAG=2026.4.11
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
