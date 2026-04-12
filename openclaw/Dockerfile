@@ -28,12 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /opt/openclaw-runtime /app/.openclaw && \
-    cp -a /app/. /opt/openclaw-runtime/ && \
-    rm -f /usr/local/bin/openclaw && \
-    ln -sfn /opt/openclaw-runtime/openclaw.mjs /usr/local/bin/openclaw && \
-    ln -sfn /opt/openclaw-runtime /opt/openclaw && \
-    chown -R node:node /app /opt/hypercli-openclaw /opt/openclaw-runtime
+RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /home/node/.openclaw && \
+    chown -R node:node /home/node /opt/hypercli-openclaw
 
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
@@ -48,11 +44,10 @@ RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version
 
-ENV HOME=/app
 ENV OPENCLAW_PORT=18789
 ENV OPENCLAW_GATEWAY_BIND=lan
-ENV OPENCLAW_STATE_DIR=/app/.openclaw
-ENV OPENCLAW_CONFIG_PATH=/app/.openclaw/openclaw.json
+ENV OPENCLAW_STATE_DIR=/home/node/.openclaw
+ENV OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 
