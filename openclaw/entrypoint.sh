@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USER_HOME="${HOME:-/home/ubuntu}"
+USER_HOME="${HOME:-/app}"
 STATE_DIR="${OPENCLAW_STATE_DIR:-${USER_HOME}/.openclaw}"
 CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${STATE_DIR}/openclaw.json}"
