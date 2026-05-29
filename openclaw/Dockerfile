@@ -1,10 +1,15 @@
-FROM ghcr.io/openclaw/openclaw:2026.4.15
-
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
+ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.5.27
+
+FROM ${OPENCLAW_BASE_IMAGE}
+
+ARG HYPERCLI_REF
+ARG HYPERCLI_REPO
+ARG OPENCLAW_BASE_IMAGE
 
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
-LABEL org.opencontainers.image.base.name="ghcr.io/openclaw/openclaw:2026.4.15"
+LABEL org.opencontainers.image.base.name="${OPENCLAW_BASE_IMAGE}"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
