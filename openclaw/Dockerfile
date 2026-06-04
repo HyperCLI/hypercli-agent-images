@@ -43,8 +43,9 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     hyper --help >/dev/null
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
+COPY configure-openclaw-web-search.mjs /opt/hypercli-openclaw/configure-openclaw-web-search.mjs
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
-RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
+RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/configure-openclaw-web-search.mjs && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version
 
@@ -54,6 +55,8 @@ ENV OPENCLAW_STATE_DIR=/home/node/.openclaw
 ENV OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
+ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/brave
+ENV OPENCLAW_BRAVE_PLUGIN_PACKAGE=@openclaw/brave-plugin
 
 WORKDIR /app
 USER node
