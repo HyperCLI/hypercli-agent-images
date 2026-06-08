@@ -30,8 +30,8 @@ brave.enabled = true;
 
 const braveConfig = ensureRecord(brave, "config");
 const webSearch = ensureRecord(braveConfig, "webSearch");
-webSearch.baseUrl = "${HYPER_AGENTS_WEB_SEARCH_BASE}";
-webSearch.apiKey = "${HYPER_AGENTS_API_KEY}";
+webSearch.baseUrl = process.env.HYPER_AGENTS_WEB_SEARCH_BASE || "${HYPER_AGENTS_WEB_SEARCH_BASE}";
+webSearch.apiKey = process.env.HYPER_AGENTS_API_KEY || "${HYPER_AGENTS_API_KEY}";
 
 const next = `${JSON.stringify(config, null, 2)}\n`;
 if (next !== raw) {
