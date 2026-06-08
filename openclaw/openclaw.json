@@ -71,5 +71,26 @@
   },
   "cron": {
     "enabled": false
+  },
+  "plugins": {
+    "entries": {
+      "brave": {
+        "enabled": true,
+        "config": {
+          "webSearch": {
+            "baseUrl": "${HYPER_AGENTS_WEB_SEARCH_BASE}",
+            "apiKey": "${HYPER_AGENTS_API_KEY}"
+          }
+        }
+      }
+    }
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave"
+      }
+    }
   }
 }

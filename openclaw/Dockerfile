@@ -1,6 +1,6 @@
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
-ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.5.27
+ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.6.1
 
 FROM ${OPENCLAW_BASE_IMAGE}
 
@@ -43,9 +43,8 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     hyper --help >/dev/null
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
-COPY configure-openclaw-web-search.mjs /opt/hypercli-openclaw/configure-openclaw-web-search.mjs
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
-RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/configure-openclaw-web-search.mjs && \
+RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version
 

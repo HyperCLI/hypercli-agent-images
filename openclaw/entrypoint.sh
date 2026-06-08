@@ -40,8 +40,6 @@ if [[ "${INSTALL_BRAVE_PLUGIN}" == "1" ]]; then
 fi
 rm -f "${PLUGIN_INDEX_CHECK}"
 
-node /opt/hypercli-openclaw/configure-openclaw-web-search.mjs "${CONFIG_PATH}"
-
 /usr/local/bin/openclaw config validate
 echo "[openclaw] config verified"
 echo "[openclaw] starting gateway on ${OPENCLAW_GATEWAY_BIND:-lan}:${OPENCLAW_PORT:-18789}"
