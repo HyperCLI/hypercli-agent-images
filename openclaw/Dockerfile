@@ -54,7 +54,7 @@ ENV OPENCLAW_STATE_DIR=/home/node/.openclaw
 ENV OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
-ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/brave
+ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
 ENV OPENCLAW_BRAVE_PLUGIN_PACKAGE=@openclaw/brave-plugin
 
 WORKDIR /app
