@@ -36,7 +36,7 @@ fi
 
 if [[ "${INSTALL_BRAVE_PLUGIN}" == "1" ]]; then
   echo "[openclaw] installing Brave web search plugin (${BRAVE_PLUGIN_PACKAGE})"
-  /usr/local/bin/openclaw plugins install "${BRAVE_PLUGIN_PACKAGE}"
+  /usr/local/bin/openclaw plugins install --force "${BRAVE_PLUGIN_PACKAGE}"
 fi
 rm -f "${PLUGIN_INDEX_CHECK}"
 
