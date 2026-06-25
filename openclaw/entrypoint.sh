@@ -9,6 +9,10 @@ WORKSPACE_DIR="${STATE_DIR}/workspace"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
 BRAVE_PLUGIN_PACKAGE="${OPENCLAW_BRAVE_PLUGIN_PACKAGE:-@openclaw/brave-plugin}"
 BRAVE_PLUGIN_DIR="${STATE_DIR}/npm/node_modules/@openclaw/brave-plugin"
+DESKTOP_ENABLED="${OPENCLAW_DESKTOP_ENABLED:-0}"
+DESKTOP_PORT="${OPENCLAW_DESKTOP_PORT:-3000}"
+DISPLAY="${DISPLAY:-:99}"
+LOCAL_VNC_PORT=5900
 
 mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
 
@@ -42,6 +46,43 @@ rm -f "${PLUGIN_INDEX_CHECK}"
 
 /usr/local/bin/openclaw config validate
 echo "[openclaw] config verified"
+
+desktop_enabled() {
+  case "$(printf '%s' "${DESKTOP_ENABLED}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on|enabled) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+cleanup_desktop() {
+  local pid
+  for pid in "${NOVNC_PID:-}" "${X11VNC_PID:-}" "${OPENBOX_PID:-}" "${XVFB_PID:-}"; do
+    if [[ -n "${pid}" ]]; then
+      kill "${pid}" 2>/dev/null || true
+    fi
+  done
+}
+
+if desktop_enabled; then
+  if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1; then
+    echo "[openclaw] desktop requested but desktop runtime packages are not installed" >&2
+    exit 1
+  fi
+  export DISPLAY
+  mkdir -p "${STATE_DIR}/desktop" "${STATE_DIR}/browser/openclaw/user-data"
+  echo "[openclaw] starting desktop on ${DISPLAY}, noVNC port ${DESKTOP_PORT}"
+  Xvfb "${DISPLAY}" -screen 0 1920x1080x24 -ac +extension RANDR &
+  XVFB_PID="$!"
+  sleep 1
+  openbox >/tmp/openbox.log 2>&1 &
+  OPENBOX_PID="$!"
+  x11vnc -display "${DISPLAY}" -rfbport "${LOCAL_VNC_PORT}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
+  X11VNC_PID="$!"
+  websockify --web /usr/share/novnc/ "${DESKTOP_PORT}" "localhost:${LOCAL_VNC_PORT}" >/tmp/novnc.log 2>&1 &
+  NOVNC_PID="$!"
+  trap cleanup_desktop EXIT INT TERM
+fi
+
 echo "[openclaw] starting gateway on ${OPENCLAW_GATEWAY_BIND:-lan}:${OPENCLAW_PORT:-18789}"
 
 exec /usr/local/bin/openclaw gateway run --port "${OPENCLAW_PORT:-18789}" --bind "${OPENCLAW_GATEWAY_BIND:-lan}"

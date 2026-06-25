@@ -56,6 +56,9 @@ ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
 ENV OPENCLAW_BRAVE_PLUGIN_PACKAGE=@openclaw/brave-plugin
+ENV OPENCLAW_DESKTOP_ENABLED=0
+ENV OPENCLAW_DESKTOP_PORT=3000
+ENV DISPLAY=:99
 
 WORKDIR /app
 USER node
