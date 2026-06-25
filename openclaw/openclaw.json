@@ -2,7 +2,7 @@
   "models": {
     "mode": "merge",
     "providers": {
-      "hyperclaw": {
+      "hypercli": {
         "baseUrl": "${HYPER_AGENTS_API_BASE}",
         "apiKey": "${HYPER_AGENTS_API_KEY}",
         "api": "anthropic-messages",
@@ -48,13 +48,13 @@
     "defaults": {
       "workspace": "~/.openclaw/workspace",
       "model": {
-        "primary": "hyperclaw/kimi-k2.6-anthropic"
+        "primary": "hypercli/kimi-k2.6-anthropic"
       },
       "models": {
-        "hyperclaw/kimi-k2.6-anthropic": {
+        "hypercli/kimi-k2.6-anthropic": {
           "alias": "kimi"
         },
-        "hyperclaw/glm-5-anthropic": {
+        "hypercli/glm-5-anthropic": {
           "alias": "glm"
         }
       },
