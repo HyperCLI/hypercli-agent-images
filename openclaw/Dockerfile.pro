@@ -47,6 +47,8 @@ ENV OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES=
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json.pro
 
 COPY --chown=node:node openclaw.json.pro /opt/hypercli-openclaw/openclaw.json.pro
+COPY --chown=node:node entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
+RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh
 
 EXPOSE 18789 3000
 USER node

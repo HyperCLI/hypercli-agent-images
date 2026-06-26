@@ -52,10 +52,10 @@
     "executablePath": "/usr/bin/google-chrome-stable",
     "profiles": {
       "openclaw": {
+        "cdpPort": 18800,
+        "color": "#FF4500",
         "headless": false,
-        "noSandbox": true,
-        "executablePath": "/usr/bin/google-chrome-stable",
-        "userDataDir": "~/.openclaw/browser/openclaw/user-data"
+        "executablePath": "/usr/bin/google-chrome-stable"
       }
     }
   },
