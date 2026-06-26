@@ -20,6 +20,68 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
   cp "${CONFIG_TEMPLATE}" "${CONFIG_PATH}"
 fi
 
+CONFIG_PATH="${CONFIG_PATH}" node <<'NODE'
+const fs = require("fs");
+
+const configPath = process.env.CONFIG_PATH;
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+const env = process.env;
+
+function parseBoolean(name) {
+  const raw = env[name];
+  if (raw === undefined || raw === "") return undefined;
+  switch (raw.trim().toLowerCase()) {
+    case "1":
+    case "true":
+    case "yes":
+    case "on":
+    case "enabled":
+      return true;
+    case "0":
+    case "false":
+    case "no":
+    case "off":
+    case "disabled":
+      return false;
+    default:
+      throw new Error(`${name} must be a boolean-like value`);
+  }
+}
+
+function parseNonNegativeInteger(name) {
+  const raw = env[name];
+  if (raw === undefined || raw === "") return undefined;
+  if (!/^\d+$/.test(raw.trim())) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return Number.parseInt(raw.trim(), 10);
+}
+
+const defaults = (((config.agents ||= {}).defaults ||= {}));
+const memorySearch = ((defaults.memorySearch ||= {}));
+const sync = ((memorySearch.sync ||= {}));
+
+const enabled = parseBoolean("OPENCLAW_MEMORY_SEARCH_ENABLED");
+if (enabled !== undefined) memorySearch.enabled = enabled;
+
+const onSessionStart = parseBoolean("OPENCLAW_MEMORY_SEARCH_SYNC_ON_SESSION_START");
+if (onSessionStart !== undefined) sync.onSessionStart = onSessionStart;
+
+const onSearch = parseBoolean("OPENCLAW_MEMORY_SEARCH_SYNC_ON_SEARCH");
+if (onSearch !== undefined) sync.onSearch = onSearch;
+
+const watch = parseBoolean("OPENCLAW_MEMORY_SEARCH_SYNC_WATCH");
+if (watch !== undefined) sync.watch = watch;
+
+const watchDebounceMs = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_WATCH_DEBOUNCE_MS");
+if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs;
+
+const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES");
+if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes;
+
+fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+NODE
+
 OPENCLAW_VERSION="$(node -e 'try { console.log(require("/app/package.json").version || "") } catch { process.exit(1) }' 2>/dev/null || true)"
 if [[ "${BRAVE_PLUGIN_PACKAGE}" == "@openclaw/brave-plugin" && -n "${OPENCLAW_VERSION}" ]]; then
   BRAVE_PLUGIN_PACKAGE="@openclaw/brave-plugin@${OPENCLAW_VERSION}"
