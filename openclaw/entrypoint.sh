@@ -79,6 +79,41 @@ if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs;
 const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES");
 if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes;
 
+const desktopEnabled = parseBoolean("OPENCLAW_DESKTOP_ENABLED");
+if (desktopEnabled === true) {
+  const chromePath = env.CHROME_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable";
+  const browser = ((config.browser ||= {}));
+  browser.enabled = true;
+  browser.headless = false;
+  browser.noSandbox = true;
+  browser.executablePath = chromePath;
+  if (typeof browser.defaultProfile !== "string" || !browser.defaultProfile) {
+    browser.defaultProfile = "openclaw";
+  }
+  const profiles = ((browser.profiles ||= {}));
+  const profile = ((profiles[browser.defaultProfile] ||= {}));
+  if (profile.cdpPort === undefined) profile.cdpPort = 18800;
+  if (profile.color === undefined) profile.color = "#FF4500";
+  profile.headless = false;
+  profile.executablePath = chromePath;
+  const entries = (((config.plugins ||= {}).entries ||= {}));
+  ((entries.browser ||= {})).enabled = true;
+  const tools = ((config.tools ||= {}));
+  if (!Array.isArray(tools.alsoAllow)) tools.alsoAllow = [];
+  if (!tools.alsoAllow.includes("browser")) tools.alsoAllow.push("browser");
+} else if (desktopEnabled === false) {
+  if (config.browser && typeof config.browser === "object") {
+    config.browser.enabled = false;
+  }
+  const entries = config.plugins && config.plugins.entries;
+  if (entries && entries.browser && typeof entries.browser === "object") {
+    entries.browser.enabled = false;
+  }
+  if (config.tools && Array.isArray(config.tools.alsoAllow)) {
+    config.tools.alsoAllow = config.tools.alsoAllow.filter((tool) => tool !== "browser");
+  }
+}
+
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 NODE
 
