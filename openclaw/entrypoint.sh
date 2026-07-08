@@ -187,14 +187,12 @@ fi
 
 case "$(printf '%s' "${HYPER_WORKSPACES_BOOT_SYNC:-}" | tr '[:upper:]' '[:lower:]')" in
   1|true|yes|on|enabled)
-    if [[ -z "${AGENT_ID:-}" ]]; then
-      echo "[openclaw] Workspaces boot sync requested but AGENT_ID is unset; continuing" >&2
-    elif ! command -v hyper >/dev/null 2>&1; then
+    if ! command -v hyper >/dev/null 2>&1; then
       echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH; continuing" >&2
     else
       mkdir -p "${HYPER_WORKSPACES_DIR}"
       echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
-      if hyper workspaces sync --all --output-dir "${HYPER_WORKSPACES_DIR}" --agent-id "${AGENT_ID}" --ready-only; then
+      if hyper workspaces sync --all --output-dir "${HYPER_WORKSPACES_DIR}" --ready-only; then
         echo "[openclaw] Workspaces boot sync complete"
       else
         echo "[openclaw] Workspaces boot sync failed; continuing" >&2
