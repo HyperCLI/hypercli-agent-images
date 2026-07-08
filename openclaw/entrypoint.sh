@@ -6,6 +6,7 @@ STATE_DIR="${OPENCLAW_STATE_DIR:-${USER_HOME}/.openclaw}"
 CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${STATE_DIR}/openclaw.json}"
 WORKSPACE_DIR="${STATE_DIR}/workspace"
+HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/Workspaces}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
 BRAVE_PLUGIN_PACKAGE="${OPENCLAW_BRAVE_PLUGIN_PACKAGE:-@openclaw/brave-plugin}"
 BRAVE_PLUGIN_DIR="${STATE_DIR}/npm/node_modules/@openclaw/brave-plugin"
@@ -60,6 +61,10 @@ function parseNonNegativeInteger(name) {
 const defaults = (((config.agents ||= {}).defaults ||= {}));
 const memorySearch = ((defaults.memorySearch ||= {}));
 const sync = ((memorySearch.sync ||= {}));
+const workspaceIndexPath = "~/Workspaces";
+const extraPaths = Array.isArray(memorySearch.extraPaths) ? memorySearch.extraPaths : [];
+if (!extraPaths.includes(workspaceIndexPath)) extraPaths.push(workspaceIndexPath);
+memorySearch.extraPaths = extraPaths;
 
 const enabled = parseBoolean("OPENCLAW_MEMORY_SEARCH_ENABLED");
 if (enabled !== undefined) memorySearch.enabled = enabled;
@@ -179,6 +184,24 @@ if desktop_enabled; then
   NOVNC_PID="$!"
   trap cleanup_desktop EXIT INT TERM
 fi
+
+case "$(printf '%s' "${HYPER_WORKSPACES_BOOT_SYNC:-}" | tr '[:upper:]' '[:lower:]')" in
+  1|true|yes|on|enabled)
+    if [[ -z "${AGENT_ID:-}" ]]; then
+      echo "[openclaw] Workspaces boot sync requested but AGENT_ID is unset; continuing" >&2
+    elif ! command -v hyper >/dev/null 2>&1; then
+      echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH; continuing" >&2
+    else
+      mkdir -p "${HYPER_WORKSPACES_DIR}"
+      echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
+      if hyper workspaces sync --all --output-dir "${HYPER_WORKSPACES_DIR}" --agent-id "${AGENT_ID}" --ready-only; then
+        echo "[openclaw] Workspaces boot sync complete"
+      else
+        echo "[openclaw] Workspaces boot sync failed; continuing" >&2
+      fi
+    fi
+    ;;
+esac
 
 echo "[openclaw] starting gateway on ${OPENCLAW_GATEWAY_BIND:-lan}:${OPENCLAW_PORT:-18789}"
 
