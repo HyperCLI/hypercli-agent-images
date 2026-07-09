@@ -185,14 +185,24 @@ if desktop_enabled; then
   trap cleanup_desktop EXIT INT TERM
 fi
 
-case "$(printf '%s' "${HYPER_WORKSPACES_BOOT_SYNC:-}" | tr '[:upper:]' '[:lower:]')" in
+case "$(printf '%s' "${HYPER_WORKSPACES_BOOT_SYNC:-0}" | tr '[:upper:]' '[:lower:]')" in
   1|true|yes|on|enabled)
     if ! command -v hyper >/dev/null 2>&1; then
       echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH; continuing" >&2
     else
       mkdir -p "${HYPER_WORKSPACES_DIR}"
+      WORKSPACES_SYNC_ARGS=(workspaces sync)
+      if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
+        WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
+      else
+        WORKSPACES_SYNC_ARGS+=(--all)
+      fi
+      WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
+      case "$(printf '%s' "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|on|enabled) WORKSPACES_SYNC_ARGS+=(--ready-only) ;;
+      esac
       echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
-      if hyper workspaces sync --all --output-dir "${HYPER_WORKSPACES_DIR}" --ready-only; then
+      if hyper "${WORKSPACES_SYNC_ARGS[@]}"; then
         echo "[openclaw] Workspaces boot sync complete"
       else
         echo "[openclaw] Workspaces boot sync failed; continuing" >&2
