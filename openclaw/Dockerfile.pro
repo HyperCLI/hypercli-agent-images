@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     sudo \
     websockify \
+    xxd \
     x11vnc \
     xauth \
     xdg-utils \

@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     sudo \
     vim \
+    xxd \
     nano \
     zip \
     unzip \
