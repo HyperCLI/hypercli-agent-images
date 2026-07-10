@@ -20,12 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxrandr2 \
     novnc \
-    openbox \
     sudo \
     websockify \
     x11vnc \
     xauth \
     xdg-utils \
+    xfce4-panel \
+    xfce4-terminal \
+    xfwm4 \
     xvfb \
     && curl -fsSL -o /tmp/google-chrome-stable.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y --no-install-recommends /tmp/google-chrome-stable.deb \

@@ -195,7 +195,7 @@ run_workspaces_sync() {
 
 cleanup_desktop() {
   local pid
-  for pid in "${NOVNC_PID:-}" "${X11VNC_PID:-}" "${OPENBOX_PID:-}" "${XVFB_PID:-}"; do
+  for pid in "${NOVNC_PID:-}" "${X11VNC_PID:-}" "${XFCE_PANEL_PID:-}" "${XFWM_PID:-}" "${XVFB_PID:-}" "${DBUS_SESSION_BUS_PID:-}"; do
     if [[ -n "${pid}" ]]; then
       kill "${pid}" 2>/dev/null || true
     fi
@@ -208,7 +208,7 @@ if enabled "${OPENCLAW_WORKSPACES_SYNC_ONLY:-0}"; then
 fi
 
 if desktop_enabled; then
-  if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1; then
+  if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1 || ! command -v dbus-launch >/dev/null 2>&1 || ! command -v xfwm4 >/dev/null 2>&1 || ! command -v xfce4-panel >/dev/null 2>&1 || ! command -v xfce4-terminal >/dev/null 2>&1; then
     echo "[openclaw] desktop requested but desktop runtime packages are not installed" >&2
     exit 1
   fi
@@ -218,8 +218,12 @@ if desktop_enabled; then
   Xvfb "${DISPLAY}" -screen 0 1920x1080x24 -ac +extension RANDR &
   XVFB_PID="$!"
   sleep 1
-  openbox >/tmp/openbox.log 2>&1 &
-  OPENBOX_PID="$!"
+  eval "$(dbus-launch --sh-syntax)"
+  export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+  xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
+  XFWM_PID="$!"
+  xfce4-panel >/tmp/xfce4-panel.log 2>&1 &
+  XFCE_PANEL_PID="$!"
   x11vnc -display "${DISPLAY}" -rfbport "${LOCAL_VNC_PORT}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
   X11VNC_PID="$!"
   websockify --web /usr/share/novnc/ "${DESKTOP_PORT}" "localhost:${LOCAL_VNC_PORT}" >/tmp/novnc.log 2>&1 &
