@@ -149,11 +149,48 @@ rm -f "${PLUGIN_INDEX_CHECK}"
 /usr/local/bin/openclaw config validate
 echo "[openclaw] config verified"
 
-desktop_enabled() {
-  case "$(printf '%s' "${DESKTOP_ENABLED}" | tr '[:upper:]' '[:lower:]')" in
+enabled() {
+  local value="${1:-}"
+  case "$(printf '%s' "${value}" | tr '[:upper:]' '[:lower:]')" in
     1|true|yes|on|enabled) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+desktop_enabled() {
+  enabled "${DESKTOP_ENABLED}"
+}
+
+sync_workspaces() {
+  if ! enabled "${HYPER_WORKSPACES_BOOT_SYNC:-0}"; then
+    return 0
+  fi
+  if ! command -v hyper >/dev/null 2>&1; then
+    echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH" >&2
+    return 1
+  fi
+  mkdir -p "${HYPER_WORKSPACES_DIR}"
+  WORKSPACES_SYNC_ARGS=(workspaces sync)
+  if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
+    WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
+  else
+    WORKSPACES_SYNC_ARGS+=(--all)
+  fi
+  WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
+  if enabled "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}"; then
+    WORKSPACES_SYNC_ARGS+=(--ready-only)
+  fi
+  echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
+  hyper "${WORKSPACES_SYNC_ARGS[@]}"
+}
+
+run_workspaces_sync() {
+  if sync_workspaces; then
+    echo "[openclaw] Workspaces boot sync complete"
+    return 0
+  fi
+  echo "[openclaw] Workspaces boot sync failed" >&2
+  return 1
 }
 
 cleanup_desktop() {
@@ -164,6 +201,11 @@ cleanup_desktop() {
     fi
   done
 }
+
+if enabled "${OPENCLAW_WORKSPACES_SYNC_ONLY:-0}"; then
+  run_workspaces_sync
+  exit $?
+fi
 
 if desktop_enabled; then
   if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1; then
@@ -185,31 +227,11 @@ if desktop_enabled; then
   trap cleanup_desktop EXIT INT TERM
 fi
 
-case "$(printf '%s' "${HYPER_WORKSPACES_BOOT_SYNC:-0}" | tr '[:upper:]' '[:lower:]')" in
-  1|true|yes|on|enabled)
-    if ! command -v hyper >/dev/null 2>&1; then
-      echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH; continuing" >&2
-    else
-      mkdir -p "${HYPER_WORKSPACES_DIR}"
-      WORKSPACES_SYNC_ARGS=(workspaces sync)
-      if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
-        WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
-      else
-        WORKSPACES_SYNC_ARGS+=(--all)
-      fi
-      WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
-      case "$(printf '%s' "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}" | tr '[:upper:]' '[:lower:]')" in
-        1|true|yes|on|enabled) WORKSPACES_SYNC_ARGS+=(--ready-only) ;;
-      esac
-      echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
-      if hyper "${WORKSPACES_SYNC_ARGS[@]}"; then
-        echo "[openclaw] Workspaces boot sync complete"
-      else
-        echo "[openclaw] Workspaces boot sync failed; continuing" >&2
-      fi
-    fi
-    ;;
-esac
+if enabled "${OPENCLAW_WORKSPACES_SYNC_HANDLED_BY_INIT:-0}"; then
+  echo "[openclaw] Workspaces boot sync handled by Kubernetes init"
+elif enabled "${HYPER_WORKSPACES_BOOT_SYNC:-0}"; then
+  run_workspaces_sync || true
+fi
 
 echo "[openclaw] starting gateway on ${OPENCLAW_GATEWAY_BIND:-lan}:${OPENCLAW_PORT:-18789}"
 
