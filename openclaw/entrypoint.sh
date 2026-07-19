@@ -25,6 +25,10 @@ enabled() {
 
 mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
 
+if [[ -z "${HYPER_AGENTS_API_KEY:-}" && -n "${HYPER_API_KEY:-}" ]]; then
+  export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
+fi
+
 if [[ ! -f "${CONFIG_PATH}" ]]; then
   cp "${CONFIG_TEMPLATE}" "${CONFIG_PATH}"
 fi
@@ -113,7 +117,7 @@ if (hostedSlackEnabled === true) {
     relay: {
       ...existingRelay,
       url: relayUrl,
-      authToken: { source: "env", provider: "default", id: "HYPER_API_KEY" },
+      authToken: { source: "env", provider: "default", id: "HYPER_AGENTS_API_KEY" },
       gatewayId,
     },
   };
@@ -163,16 +167,15 @@ fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 NODE
 
 if enabled "${HYPER_SLACK_APP_ENABLED:-0}"; then
-  if [[ -z "${HYPER_API_KEY:-}" ]]; then
-    echo "[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_API_KEY" >&2
+  if [[ -z "${HYPER_AGENTS_API_KEY:-}" ]]; then
+    echo "[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_AGENTS_API_KEY" >&2
     exit 1
   fi
   if [[ -z "${HYPER_SLACK_API_URL:-}" ]]; then
     echo "[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_SLACK_API_URL" >&2
     exit 1
   fi
-  export SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-${HYPER_API_KEY}}"
-  export SLACK_API_TOKEN="${SLACK_API_TOKEN:-${HYPER_API_KEY}}"
+  export SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-${HYPER_AGENTS_API_KEY}}"
   export SLACK_API_URL="${SLACK_API_URL:-${HYPER_SLACK_API_URL}}"
 fi
 
