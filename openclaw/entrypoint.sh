@@ -15,6 +15,14 @@ DESKTOP_PORT="${OPENCLAW_DESKTOP_PORT:-3000}"
 DISPLAY="${DISPLAY:-:99}"
 LOCAL_VNC_PORT=5900
 
+enabled() {
+  local value="${1:-}"
+  case "$(printf '%s' "${value}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on|enabled) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
 
 if [[ ! -f "${CONFIG_PATH}" ]]; then
@@ -84,6 +92,38 @@ if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs;
 const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES");
 if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes;
 
+const hostedSlackEnabled = parseBoolean("HYPER_SLACK_APP_ENABLED");
+if (hostedSlackEnabled === true) {
+  const relayUrl = (env.HYPER_SLACK_RELAY_URL || "").trim();
+  const gatewayId = (env.HYPER_SLACK_GATEWAY_ID || "").trim();
+  if (!relayUrl) throw new Error("HYPER_SLACK_RELAY_URL is required when HYPER_SLACK_APP_ENABLED is true");
+  if (!gatewayId) throw new Error("HYPER_SLACK_GATEWAY_ID is required when HYPER_SLACK_APP_ENABLED is true");
+  const channels = (config.channels ||= {});
+  const existingSlack = channels.slack && typeof channels.slack === "object" && !Array.isArray(channels.slack)
+    ? channels.slack
+    : {};
+  const existingRelay = existingSlack.relay && typeof existingSlack.relay === "object" && !Array.isArray(existingSlack.relay)
+    ? existingSlack.relay
+    : {};
+  channels.slack = {
+    ...existingSlack,
+    enabled: true,
+    mode: "relay",
+    botToken: { source: "env", provider: "default", id: "SLACK_BOT_TOKEN" },
+    relay: {
+      ...existingRelay,
+      url: relayUrl,
+      authToken: { source: "env", provider: "default", id: "HYPER_API_KEY" },
+      gatewayId,
+    },
+  };
+} else if (hostedSlackEnabled === false) {
+  const channels = config.channels;
+  if (channels && typeof channels === "object" && channels.slack && typeof channels.slack === "object" && channels.slack.mode === "relay") {
+    channels.slack.enabled = false;
+  }
+}
+
 const desktopEnabled = parseBoolean("OPENCLAW_DESKTOP_ENABLED");
 if (desktopEnabled === true) {
   const chromePath = env.CHROME_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable";
@@ -122,6 +162,20 @@ if (desktopEnabled === true) {
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 NODE
 
+if enabled "${HYPER_SLACK_APP_ENABLED:-0}"; then
+  if [[ -z "${HYPER_API_KEY:-}" ]]; then
+    echo "[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_API_KEY" >&2
+    exit 1
+  fi
+  if [[ -z "${HYPER_SLACK_API_URL:-}" ]]; then
+    echo "[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_SLACK_API_URL" >&2
+    exit 1
+  fi
+  export SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-${HYPER_API_KEY}}"
+  export SLACK_API_TOKEN="${SLACK_API_TOKEN:-${HYPER_API_KEY}}"
+  export SLACK_API_URL="${SLACK_API_URL:-${HYPER_SLACK_API_URL}}"
+fi
+
 OPENCLAW_VERSION="$(node -e 'try { console.log(require("/app/package.json").version || "") } catch { process.exit(1) }' 2>/dev/null || true)"
 if [[ "${BRAVE_PLUGIN_PACKAGE}" == "@openclaw/brave-plugin" && -n "${OPENCLAW_VERSION}" ]]; then
   BRAVE_PLUGIN_PACKAGE="@openclaw/brave-plugin@${OPENCLAW_VERSION}"
@@ -148,14 +202,6 @@ rm -f "${PLUGIN_INDEX_CHECK}"
 
 /usr/local/bin/openclaw config validate
 echo "[openclaw] config verified"
-
-enabled() {
-  local value="${1:-}"
-  case "$(printf '%s' "${value}" | tr '[:upper:]' '[:lower:]')" in
-    1|true|yes|on|enabled) return 0 ;;
-    *) return 1 ;;
-  esac
-}
 
 desktop_enabled() {
   enabled "${DESKTOP_ENABLED}"
