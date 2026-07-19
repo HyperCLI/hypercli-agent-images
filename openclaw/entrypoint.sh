@@ -25,7 +25,7 @@ enabled() {
 
 mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
 
-if [[ -z "${HYPER_AGENTS_API_KEY:-}" && -n "${HYPER_API_KEY:-}" ]]; then
+if [[ -n "${HYPER_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
 fi
 
