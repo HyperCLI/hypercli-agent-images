@@ -253,10 +253,16 @@ restore_managed_npm_roots() {
     fi
     echo "[openclaw] restoring managed npm root ${project_dir}"
     if [[ -f "${project_dir}/package-lock.json" || -f "${project_dir}/npm-shrinkwrap.json" ]]; then
-      (
+      if ! (
         cd "${project_dir}"
         npm ci --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
-      )
+      ); then
+        echo "[openclaw] npm ci failed for ${project_dir}; retrying with npm install to repair stale lock metadata" >&2
+        (
+          cd "${project_dir}"
+          npm install --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
+        )
+      fi
     else
       (
         cd "${project_dir}"
