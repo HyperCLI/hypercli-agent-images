@@ -10,6 +10,7 @@ HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/workspaces}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
 BRAVE_PLUGIN_PACKAGE="${OPENCLAW_BRAVE_PLUGIN_PACKAGE:-@openclaw/brave-plugin}"
 BRAVE_PLUGIN_DIR="${STATE_DIR}/npm/node_modules/@openclaw/brave-plugin"
+SLACK_PLUGIN_PACKAGE="${OPENCLAW_SLACK_PLUGIN_PACKAGE:-@openclaw/slack}"
 DESKTOP_ENABLED="${OPENCLAW_DESKTOP_ENABLED:-0}"
 DESKTOP_PORT="${OPENCLAW_DESKTOP_PORT:-3000}"
 DISPLAY="${DISPLAY:-:99}"
@@ -27,6 +28,43 @@ mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
 
 if [[ -n "${HYPER_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
+fi
+
+sync_workspaces() {
+  if ! enabled "${HYPER_WORKSPACES_BOOT_SYNC:-0}"; then
+    return 0
+  fi
+  if ! command -v hyper >/dev/null 2>&1; then
+    echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH" >&2
+    return 1
+  fi
+  mkdir -p "${HYPER_WORKSPACES_DIR}"
+  WORKSPACES_SYNC_ARGS=(workspaces sync)
+  if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
+    WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
+  else
+    WORKSPACES_SYNC_ARGS+=(--all)
+  fi
+  WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
+  if enabled "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}"; then
+    WORKSPACES_SYNC_ARGS+=(--ready-only)
+  fi
+  echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
+  hyper "${WORKSPACES_SYNC_ARGS[@]}"
+}
+
+run_workspaces_sync() {
+  if sync_workspaces; then
+    echo "[openclaw] Workspaces boot sync complete"
+    return 0
+  fi
+  echo "[openclaw] Workspaces boot sync failed" >&2
+  return 1
+}
+
+if enabled "${OPENCLAW_WORKSPACES_SYNC_ONLY:-0}"; then
+  run_workspaces_sync
+  exit $?
 fi
 
 if [[ ! -f "${CONFIG_PATH}" ]]; then
@@ -192,11 +230,54 @@ OPENCLAW_VERSION="$(node -e 'try { console.log(require("/app/package.json").vers
 if [[ "${BRAVE_PLUGIN_PACKAGE}" == "@openclaw/brave-plugin" && -n "${OPENCLAW_VERSION}" ]]; then
   BRAVE_PLUGIN_PACKAGE="@openclaw/brave-plugin@${OPENCLAW_VERSION}"
 fi
+if [[ "${SLACK_PLUGIN_PACKAGE}" == "@openclaw/slack" && -n "${OPENCLAW_VERSION}" ]]; then
+  SLACK_PLUGIN_PACKAGE="@openclaw/slack@${OPENCLAW_VERSION}"
+fi
 BRAVE_PLUGIN_EXPECTED_VERSION="${BRAVE_PLUGIN_PACKAGE##*@}"
 
 PLUGIN_INDEX_CHECK="${STATE_DIR}/.plugins-list.json"
+
+restore_managed_npm_roots() {
+  if enabled "${OPENCLAW_SKIP_NPM_RESTORE:-0}"; then
+    return 0
+  fi
+  if [[ ! -d "${STATE_DIR}/npm" ]]; then
+    return 0
+  fi
+
+  while IFS= read -r -d '' package_json; do
+    local project_dir
+    project_dir="$(dirname "${package_json}")"
+    if [[ -d "${project_dir}/node_modules" ]]; then
+      continue
+    fi
+    echo "[openclaw] restoring managed npm root ${project_dir}"
+    if [[ -f "${project_dir}/package-lock.json" || -f "${project_dir}/npm-shrinkwrap.json" ]]; then
+      (
+        cd "${project_dir}"
+        npm ci --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
+      )
+    else
+      (
+        cd "${project_dir}"
+        npm install --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
+      )
+    fi
+  done < <(find "${STATE_DIR}/npm" -path "*/node_modules/*" -prune -o -name package.json -print0)
+}
+
+plugin_missing() {
+  local plugin_id="$1"
+  if ! /usr/local/bin/openclaw plugins list --json >"${PLUGIN_INDEX_CHECK}" 2>/dev/null; then
+    return 0
+  fi
+  ! grep -q "\"id\": \"${plugin_id}\"" "${PLUGIN_INDEX_CHECK}"
+}
+
+restore_managed_npm_roots
+
 INSTALL_BRAVE_PLUGIN=0
-if ! /usr/local/bin/openclaw plugins list --json >"${PLUGIN_INDEX_CHECK}" 2>/dev/null || ! grep -q '"id": "brave"' "${PLUGIN_INDEX_CHECK}"; then
+if plugin_missing "brave"; then
   INSTALL_BRAVE_PLUGIN=1
 elif [[ -f "${BRAVE_PLUGIN_DIR}/package.json" && -n "${OPENCLAW_VERSION}" ]]; then
   BRAVE_PLUGIN_INSTALLED_VERSION="$(node -e 'try { console.log(require(process.argv[1]).version || "") } catch { process.exit(1) }' "${BRAVE_PLUGIN_DIR}/package.json" 2>/dev/null || true)"
@@ -210,6 +291,11 @@ if [[ "${INSTALL_BRAVE_PLUGIN}" == "1" ]]; then
   echo "[openclaw] installing Brave web search plugin (${BRAVE_PLUGIN_PACKAGE})"
   /usr/local/bin/openclaw plugins install --force "${BRAVE_PLUGIN_PACKAGE}"
 fi
+
+if enabled "${HYPER_SLACK_APP_ENABLED:-0}" && plugin_missing "slack"; then
+  echo "[openclaw] installing Slack plugin (${SLACK_PLUGIN_PACKAGE})"
+  /usr/local/bin/openclaw plugins install --force "${SLACK_PLUGIN_PACKAGE}"
+fi
 rm -f "${PLUGIN_INDEX_CHECK}"
 
 /usr/local/bin/openclaw config validate
@@ -217,38 +303,6 @@ echo "[openclaw] config verified"
 
 desktop_enabled() {
   enabled "${DESKTOP_ENABLED}"
-}
-
-sync_workspaces() {
-  if ! enabled "${HYPER_WORKSPACES_BOOT_SYNC:-0}"; then
-    return 0
-  fi
-  if ! command -v hyper >/dev/null 2>&1; then
-    echo "[openclaw] Workspaces boot sync requested but hyper is not on PATH" >&2
-    return 1
-  fi
-  mkdir -p "${HYPER_WORKSPACES_DIR}"
-  WORKSPACES_SYNC_ARGS=(workspaces sync)
-  if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
-    WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
-  else
-    WORKSPACES_SYNC_ARGS+=(--all)
-  fi
-  WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
-  if enabled "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}"; then
-    WORKSPACES_SYNC_ARGS+=(--ready-only)
-  fi
-  echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
-  hyper "${WORKSPACES_SYNC_ARGS[@]}"
-}
-
-run_workspaces_sync() {
-  if sync_workspaces; then
-    echo "[openclaw] Workspaces boot sync complete"
-    return 0
-  fi
-  echo "[openclaw] Workspaces boot sync failed" >&2
-  return 1
 }
 
 cleanup_desktop() {
@@ -259,11 +313,6 @@ cleanup_desktop() {
     fi
   done
 }
-
-if enabled "${OPENCLAW_WORKSPACES_SYNC_ONLY:-0}"; then
-  run_workspaces_sync
-  exit $?
-fi
 
 if desktop_enabled; then
   if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1 || ! command -v dbus-launch >/dev/null 2>&1 || ! command -v xfwm4 >/dev/null 2>&1 || ! command -v xfce4-panel >/dev/null 2>&1 || ! command -v xfce4-terminal >/dev/null 2>&1; then
