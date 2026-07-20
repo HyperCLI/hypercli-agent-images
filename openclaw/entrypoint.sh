@@ -114,6 +114,13 @@ if (hostedSlackEnabled === true) {
     ...existingSlack,
     enabled: true,
     mode: "relay",
+    replyToMode: "all",
+    replyToModeByChatType: {
+      direct: "off",
+      ...(existingSlack.replyToModeByChatType && typeof existingSlack.replyToModeByChatType === "object" && !Array.isArray(existingSlack.replyToModeByChatType)
+        ? existingSlack.replyToModeByChatType
+        : {}),
+    },
     botToken: { source: "env", provider: "default", id: "SLACK_BOT_TOKEN" },
     relay: {
       ...existingRelay,
