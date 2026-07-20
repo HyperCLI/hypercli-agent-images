@@ -103,6 +103,7 @@ if (hostedSlackEnabled === true) {
   if (!relayUrl) throw new Error("HYPER_SLACK_RELAY_URL is required when HYPER_SLACK_APP_ENABLED is true");
   if (!gatewayId) throw new Error("HYPER_SLACK_GATEWAY_ID is required when HYPER_SLACK_APP_ENABLED is true");
   const channels = (config.channels ||= {});
+  const entries = (((config.plugins ||= {}).entries ||= {}));
   const existingSlack = channels.slack && typeof channels.slack === "object" && !Array.isArray(channels.slack)
     ? channels.slack
     : {};
@@ -121,6 +122,7 @@ if (hostedSlackEnabled === true) {
       gatewayId,
     },
   };
+  ((entries.slack ||= {})).enabled = true;
 } else if (hostedSlackEnabled === false) {
   const channels = config.channels;
   if (channels && typeof channels === "object" && channels.slack && typeof channels.slack === "object" && channels.slack.mode === "relay") {
