@@ -43,6 +43,23 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
+RUN set -eux; \
+    openclaw_version="$(node -e 'console.log(require("/app/package.json").version)')"; \
+    tmp_dir="$(mktemp -d)"; \
+    cd "${tmp_dir}"; \
+    npm init -y >/dev/null; \
+    npm install --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps \
+      "@openclaw/brave-plugin@${openclaw_version}" \
+      "@openclaw/slack@${openclaw_version}" \
+      "@openclaw/whatsapp@${openclaw_version}"; \
+    rm -rf /app/extensions/brave /app/extensions/slack /app/extensions/whatsapp; \
+    mkdir -p /app/extensions; \
+    cp -a node_modules/@openclaw/brave-plugin /app/extensions/brave; \
+    cp -a node_modules/@openclaw/slack /app/extensions/slack; \
+    cp -a node_modules/@openclaw/whatsapp /app/extensions/whatsapp; \
+    chown -R node:node /app/extensions/brave /app/extensions/slack /app/extensions/whatsapp; \
+    rm -rf "${tmp_dir}"
+
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
@@ -54,9 +71,9 @@ ENV OPENCLAW_GATEWAY_BIND=lan
 ENV OPENCLAW_STATE_DIR=/home/node/.openclaw
 ENV OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
+ENV OPENCLAW_INSTALL_PLUGINS=/app/extensions/brave,/app/extensions/slack,/app/dist/extensions/telegram,/app/extensions/whatsapp
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
-ENV OPENCLAW_BRAVE_PLUGIN_PACKAGE=@openclaw/brave-plugin
 ENV OPENCLAW_DESKTOP_ENABLED=0
 ENV OPENCLAW_DESKTOP_PORT=3000
 ENV OPENCLAW_MEMORY_SEARCH_ENABLED=

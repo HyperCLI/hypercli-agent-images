@@ -8,9 +8,7 @@ CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${STATE_DIR}/openclaw.json}"
 WORKSPACE_DIR="${STATE_DIR}/workspace"
 HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/workspaces}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
-BRAVE_PLUGIN_PACKAGE="${OPENCLAW_BRAVE_PLUGIN_PACKAGE:-@openclaw/brave-plugin}"
-BRAVE_PLUGIN_DIR="${STATE_DIR}/npm/node_modules/@openclaw/brave-plugin"
-SLACK_PLUGIN_PACKAGE="${OPENCLAW_SLACK_PLUGIN_PACKAGE:-@openclaw/slack}"
+INSTALL_PLUGINS="${OPENCLAW_INSTALL_PLUGINS:-}"
 DESKTOP_ENABLED="${OPENCLAW_DESKTOP_ENABLED:-0}"
 DESKTOP_PORT="${OPENCLAW_DESKTOP_PORT:-3000}"
 DISPLAY="${DISPLAY:-:99}"
@@ -226,83 +224,22 @@ if enabled "${HYPER_SLACK_APP_ENABLED:-0}"; then
   export SLACK_API_URL="${SLACK_API_URL:-${HYPER_SLACK_API_URL}}"
 fi
 
-OPENCLAW_VERSION="$(node -e 'try { console.log(require("/app/package.json").version || "") } catch { process.exit(1) }' 2>/dev/null || true)"
-if [[ "${BRAVE_PLUGIN_PACKAGE}" == "@openclaw/brave-plugin" && -n "${OPENCLAW_VERSION}" ]]; then
-  BRAVE_PLUGIN_PACKAGE="@openclaw/brave-plugin@${OPENCLAW_VERSION}"
-fi
-if [[ "${SLACK_PLUGIN_PACKAGE}" == "@openclaw/slack" && -n "${OPENCLAW_VERSION}" ]]; then
-  SLACK_PLUGIN_PACKAGE="@openclaw/slack@${OPENCLAW_VERSION}"
-fi
-BRAVE_PLUGIN_EXPECTED_VERSION="${BRAVE_PLUGIN_PACKAGE##*@}"
+export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
+export npm_config_cache="${npm_config_cache:-${NPM_CONFIG_CACHE}}"
 
-PLUGIN_INDEX_CHECK="${STATE_DIR}/.plugins-list.json"
+echo "[openclaw] repairing restored OpenClaw state"
+/usr/local/bin/openclaw doctor --fix --non-interactive --yes
 
-restore_managed_npm_roots() {
-  if enabled "${OPENCLAW_SKIP_NPM_RESTORE:-0}"; then
-    return 0
-  fi
-  if [[ ! -d "${STATE_DIR}/npm" ]]; then
-    return 0
-  fi
-
-  while IFS= read -r -d '' package_json; do
-    local project_dir
-    project_dir="$(dirname "${package_json}")"
-    if [[ -d "${project_dir}/node_modules" ]]; then
+if [[ -n "${INSTALL_PLUGINS}" ]]; then
+  normalized_plugins="${INSTALL_PLUGINS//,/ }"
+  for plugin_spec in ${normalized_plugins}; do
+    if [[ -z "${plugin_spec}" ]]; then
       continue
     fi
-    echo "[openclaw] restoring managed npm root ${project_dir}"
-    if [[ -f "${project_dir}/package-lock.json" || -f "${project_dir}/npm-shrinkwrap.json" ]]; then
-      if ! (
-        cd "${project_dir}"
-        npm ci --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
-      ); then
-        echo "[openclaw] npm ci failed for ${project_dir}; retrying with npm install to repair stale lock metadata" >&2
-        (
-          cd "${project_dir}"
-          npm install --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
-        )
-      fi
-    else
-      (
-        cd "${project_dir}"
-        npm install --omit=dev --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error
-      )
-    fi
-  done < <(find "${STATE_DIR}/npm" -path "*/node_modules/*" -prune -o -name package.json -print0)
-}
-
-plugin_missing() {
-  local plugin_id="$1"
-  if ! /usr/local/bin/openclaw plugins list --json >"${PLUGIN_INDEX_CHECK}" 2>/dev/null; then
-    return 0
-  fi
-  ! grep -q "\"id\": \"${plugin_id}\"" "${PLUGIN_INDEX_CHECK}"
-}
-
-restore_managed_npm_roots
-
-INSTALL_BRAVE_PLUGIN=0
-if plugin_missing "brave"; then
-  INSTALL_BRAVE_PLUGIN=1
-elif [[ -f "${BRAVE_PLUGIN_DIR}/package.json" && -n "${OPENCLAW_VERSION}" ]]; then
-  BRAVE_PLUGIN_INSTALLED_VERSION="$(node -e 'try { console.log(require(process.argv[1]).version || "") } catch { process.exit(1) }' "${BRAVE_PLUGIN_DIR}/package.json" 2>/dev/null || true)"
-  if [[ "${BRAVE_PLUGIN_EXPECTED_VERSION}" == "${OPENCLAW_VERSION}" && "${BRAVE_PLUGIN_INSTALLED_VERSION}" != "${OPENCLAW_VERSION}" ]]; then
-    echo "[openclaw] Brave plugin version ${BRAVE_PLUGIN_INSTALLED_VERSION:-unknown} does not match OpenClaw ${OPENCLAW_VERSION}"
-    INSTALL_BRAVE_PLUGIN=1
-  fi
+    echo "[openclaw] installing managed plugin (${plugin_spec})"
+    /usr/local/bin/openclaw plugins install --force "${plugin_spec}"
+  done
 fi
-
-if [[ "${INSTALL_BRAVE_PLUGIN}" == "1" ]]; then
-  echo "[openclaw] installing Brave web search plugin (${BRAVE_PLUGIN_PACKAGE})"
-  /usr/local/bin/openclaw plugins install --force "${BRAVE_PLUGIN_PACKAGE}"
-fi
-
-if enabled "${HYPER_SLACK_APP_ENABLED:-0}" && plugin_missing "slack"; then
-  echo "[openclaw] installing Slack plugin (${SLACK_PLUGIN_PACKAGE})"
-  /usr/local/bin/openclaw plugins install --force "${SLACK_PLUGIN_PACKAGE}"
-fi
-rm -f "${PLUGIN_INDEX_CHECK}"
 
 /usr/local/bin/openclaw config validate
 echo "[openclaw] config verified"
