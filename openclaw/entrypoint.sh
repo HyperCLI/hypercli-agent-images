@@ -9,6 +9,7 @@ WORKSPACE_DIR="${STATE_DIR}/workspace"
 HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/workspaces}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
 INSTALL_PLUGINS="${OPENCLAW_INSTALL_PLUGINS:-}"
+FORCE_INSTALL_PLUGINS="${OPENCLAW_FORCE_INSTALL_PLUGINS:-0}"
 DESKTOP_ENABLED="${OPENCLAW_DESKTOP_ENABLED:-0}"
 DESKTOP_PORT="${OPENCLAW_DESKTOP_PORT:-3000}"
 DISPLAY="${DISPLAY:-:99}"
@@ -236,8 +237,18 @@ if [[ -n "${INSTALL_PLUGINS}" ]]; then
     if [[ -z "${plugin_spec}" ]]; then
       continue
     fi
+    plugin_id="$(basename "${plugin_spec}")"
+    if [[ "${plugin_spec}" = /* && -e "${STATE_DIR}/extensions/${plugin_id}" ]] && ! enabled "${FORCE_INSTALL_PLUGINS}"; then
+      echo "[openclaw] managed plugin already installed (${plugin_id}); skipping"
+      continue
+    fi
     echo "[openclaw] installing managed plugin (${plugin_spec})"
-    /usr/local/bin/openclaw plugins install --force "${plugin_spec}"
+    INSTALL_ARGS=(plugins install)
+    if enabled "${FORCE_INSTALL_PLUGINS}"; then
+      INSTALL_ARGS+=(--force)
+    fi
+    INSTALL_ARGS+=("${plugin_spec}")
+    /usr/local/bin/openclaw "${INSTALL_ARGS[@]}"
   done
 fi
 
