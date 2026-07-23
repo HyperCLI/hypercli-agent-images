@@ -140,6 +140,10 @@ if (hostedSlackEnabled === true) {
   if (!relayUrl) throw new Error("HYPER_SLACK_RELAY_URL is required when HYPER_SLACK_APP_ENABLED is true");
   if (!gatewayId) throw new Error("HYPER_SLACK_GATEWAY_ID is required when HYPER_SLACK_APP_ENABLED is true");
   const channels = (config.channels ||= {});
+  const messages = (config.messages ||= {});
+  const statusReactions = (messages.statusReactions && typeof messages.statusReactions === "object" && !Array.isArray(messages.statusReactions))
+    ? messages.statusReactions
+    : {};
   const entries = (((config.plugins ||= {}).entries ||= {}));
   const existingSlack = channels.slack && typeof channels.slack === "object" && !Array.isArray(channels.slack)
     ? channels.slack
@@ -165,6 +169,10 @@ if (hostedSlackEnabled === true) {
       authToken: { source: "env", provider: "default", id: "HYPER_AGENTS_API_KEY" },
       gatewayId,
     },
+  };
+  messages.statusReactions = {
+    ...statusReactions,
+    enabled: true,
   };
   ((entries.slack ||= {})).enabled = true;
 } else if (hostedSlackEnabled === false) {
