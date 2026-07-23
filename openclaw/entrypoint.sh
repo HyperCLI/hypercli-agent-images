@@ -107,6 +107,20 @@ function parseNonNegativeInteger(name) {
   return Number.parseInt(raw.trim(), 10);
 }
 
+function parseCsv(name) {
+  const raw = env[name];
+  if (raw === undefined || raw === "") return [];
+  const seen = new Set();
+  const values = [];
+  for (const value of raw.split(",")) {
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    values.push(trimmed);
+  }
+  return values;
+}
+
 const defaults = (((config.agents ||= {}).defaults ||= {}));
 const memorySearch = ((defaults.memorySearch ||= {}));
 const sync = ((memorySearch.sync ||= {}));
@@ -151,10 +165,16 @@ if (hostedSlackEnabled === true) {
   const existingRelay = existingSlack.relay && typeof existingSlack.relay === "object" && !Array.isArray(existingSlack.relay)
     ? existingSlack.relay
     : {};
+  const slackAllowFrom = parseCsv("HYPER_SLACK_ALLOW_FROM");
+  const existingAllowFrom = Array.isArray(existingSlack.allowFrom)
+    ? existingSlack.allowFrom.filter((entry) => typeof entry === "string" && entry.trim()).map((entry) => entry.trim())
+    : [];
+  const mergedAllowFrom = Array.from(new Set([...existingAllowFrom, ...slackAllowFrom]));
   channels.slack = {
     ...existingSlack,
     enabled: true,
     mode: "relay",
+    ...(mergedAllowFrom.length > 0 ? { dmPolicy: "allowlist", allowFrom: mergedAllowFrom } : {}),
     replyToMode: "all",
     replyToModeByChatType: {
       direct: "off",
