@@ -256,6 +256,16 @@ fi
 export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
 export npm_config_cache="${npm_config_cache:-${NPM_CONFIG_CACHE}}"
 
+find "${STATE_DIR}/extensions" -maxdepth 1 -type d \
+  \( -name '.openclaw-install-stage-*' -o -name '.openclaw-install-backups' \) \
+  -exec rm -rf {} + 2>/dev/null || true
+
+if [[ -n "${OPENCLAW_BUNDLED_PLUGINS_DIR:-}" ]]; then
+  for bundled_plugin_id in brave slack whatsapp; do
+    rm -rf "${STATE_DIR}/extensions/${bundled_plugin_id}" 2>/dev/null || true
+  done
+fi
+
 echo "[openclaw] repairing restored OpenClaw state"
 /usr/local/bin/openclaw doctor --fix --non-interactive --yes
 
