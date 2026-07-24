@@ -52,12 +52,12 @@ RUN set -eux; \
       "@openclaw/brave-plugin@${openclaw_version}" \
       "@openclaw/slack@${openclaw_version}" \
       "@openclaw/whatsapp@${openclaw_version}"; \
-    rm -rf /app/dist-runtime/extensions/hypercli; \
-    mkdir -p /app/dist-runtime/extensions/hypercli; \
-    cp -a node_modules/@openclaw/brave-plugin /app/dist-runtime/extensions/hypercli/brave; \
-    cp -a node_modules/@openclaw/slack /app/dist-runtime/extensions/hypercli/slack; \
-    cp -a node_modules/@openclaw/whatsapp /app/dist-runtime/extensions/hypercli/whatsapp; \
-    chown -R node:node /app/dist-runtime/extensions/hypercli; \
+    rm -rf /app/dist-runtime/extensions/brave /app/dist-runtime/extensions/slack /app/dist-runtime/extensions/whatsapp; \
+    mkdir -p /app/dist-runtime/extensions; \
+    cp -a node_modules/@openclaw/brave-plugin /app/dist-runtime/extensions/brave; \
+    cp -a node_modules/@openclaw/slack /app/dist-runtime/extensions/slack; \
+    cp -a node_modules/@openclaw/whatsapp /app/dist-runtime/extensions/whatsapp; \
+    chown -R node:node /app/dist-runtime/extensions/brave /app/dist-runtime/extensions/slack /app/dist-runtime/extensions/whatsapp; \
     rm -rf "${tmp_dir}"
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
@@ -71,7 +71,7 @@ ENV OPENCLAW_GATEWAY_BIND=lan
 ENV OPENCLAW_STATE_DIR=/home/node/.openclaw
 ENV OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
 ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json
-ENV OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions/hypercli
+ENV OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
 ENV OPENCLAW_INSTALL_PLUGINS=
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
