@@ -33,10 +33,12 @@ assert_auth_methods(
     expected={"opencode-login"},
 )
 
-login_help = run(image, ["opencode", "auth", "login", "--help"]).stdout
+login_result = run(image, ["opencode", "auth", "login", "--help"])
+login_help = login_result.stdout + login_result.stderr
 assert "--provider" in login_help
 assert "--method" in login_help
-assert "0 credentials" in run(image, ["opencode", "auth", "list"]).stdout
+list_result = run(image, ["opencode", "auth", "list"])
+assert "0 credentials" in list_result.stdout + list_result.stderr
 assert_models(
     image,
     agent_command="/usr/local/bin/opencode",
