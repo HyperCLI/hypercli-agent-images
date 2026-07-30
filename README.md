@@ -33,6 +33,8 @@ Build one of the immutable runtime targets:
 docker build --target opencode -t hypercli-opencode coding-agents
 docker build --target codex -t hypercli-codex coding-agents
 docker build --target claude-code -t hypercli-claude-code coding-agents
+docker build --target goose -t hypercli-goose coding-agents
+docker build --target kimi-code -t hypercli-kimi-code coding-agents
 ```
 
 For CI jobs that build the targets separately, publish the shared carrier once:
@@ -72,6 +74,8 @@ The baked ACP child commands are:
 | `opencode` | `opencode acp` |
 | `codex` | `codex-acp` |
 | `claude-code` | `claude-agent-acp` |
+| `goose` | `goose acp` |
+| `kimi-code` | `kimi acp` |
 
 All targets build the Sprig multicall binary from the full commit in
 `BUZZ_COMMIT`. `buzz-acp`, `buzz-dev-mcp`, and `buzz` are links to that exact
@@ -110,6 +114,10 @@ After building an image, check its installed contract with:
 ```bash
 coding-agents/base-sanity-check.sh hypercli-coding-base
 coding-agents/sanity-check.sh hypercli-opencode opencode
+coding-agents/sanity-check.sh hypercli-codex codex
+coding-agents/sanity-check.sh hypercli-claude-code claude-code
+coding-agents/sanity-check.sh hypercli-goose goose
+coding-agents/sanity-check.sh hypercli-kimi-code kimi-code
 ```
 
 The shared-base gate owns UID 1000, `/home/node`, passwordless sudo, `tini`,
@@ -117,3 +125,8 @@ HyperCLI, Sprig, and common tooling. Thin-runtime gates test only the package
 and ACP behavior they add. Each runtime gate also verifies its advertised ACP
 auth method IDs and its pinned CLI's native unauthenticated login/status
 surface without starting or persisting a real account login.
+
+OpenCode and Goose seed their HyperCLI Anthropic-provider configuration into
+the persistent home only when the user has not already supplied one. Kimi Code
+keeps its upstream Moonshot login/configuration path. Codex and Claude Code
+retain their native vendor authentication paths.
