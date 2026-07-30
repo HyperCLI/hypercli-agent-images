@@ -23,9 +23,9 @@ multicall binary, `tini`, passwordless sudo for `node`, and the `/home/node`
 runtime/persistence contract. OpenClaw is lineage, not a second runtime inside
 the coding images.
 
-The default home and working directory are both `/home/node`, so terminal
-sessions open at the persistent sync root. Shared workspaces remain projected
-under `/home/node/workspaces`.
+The generic images keep both home and working directory at `/home/node`, so
+terminal sessions open at the persistent sync root. Shared workspaces remain
+projected under `/home/node/workspaces`.
 
 Build one of the immutable runtime targets:
 
@@ -36,6 +36,48 @@ docker build --target claude-code -t hypercli-claude-code coding-agents
 docker build --target goose -t hypercli-goose coding-agents
 docker build --target kimi-code -t hypercli-kimi-code coding-agents
 ```
+
+Those five targets remain generic coding-runtime images. Buzz-hosted launches
+use the corresponding specialized targets:
+
+```bash
+docker build --target buzz-opencode -t hypercli-buzz-opencode coding-agents
+docker build --target buzz-codex -t hypercli-buzz-codex coding-agents
+docker build --target buzz-claude-code -t hypercli-buzz-claude coding-agents
+docker build --target buzz-goose -t hypercli-buzz-goose coding-agents
+docker build --target buzz-kimi-code -t hypercli-buzz-kimi-code coding-agents
+```
+
+Each specialized target is a thin layer on its generic counterpart. It retains
+`HOME=/home/node`, native runtime authentication/configuration, and the
+`/home/node/workspaces` HyperCLI projection. Its wrapper creates the stock Buzz
+nest at `/home/node/.buzz`, enters that directory, and then invokes the generic
+runtime entrypoint. As a result, `buzz-acp` passes `/home/node/.buzz` as the ACP
+session working directory without treating the projected HyperCLI workspaces as
+the Buzz nest.
+
+The nest is restored with the rest of `/home/node` and contains:
+
+```text
+/home/node/.buzz/
+├── AGENTS.md
+├── GUIDES/
+├── RESEARCH/
+├── PLANS/
+├── WORK_LOGS/
+├── OUTBOX/
+├── REPOS/
+├── .scratch/
+└── .agents/skills/buzz-cli/SKILL.md
+```
+
+`AGENTS.md` and the Buzz CLI skill come directly from the Buzz source pinned by
+`BUZZ_COMMIT`; the image does not carry a separately duplicated base prompt.
+The wrapper only seeds missing files and links. It preserves user-managed files,
+rejects a symlinked nest root, applies owner-only nest permissions, and creates
+the stock project-local Goose, Claude, and Codex skill links. The Claude
+specialized image additionally creates `CLAUDE.md -> AGENTS.md` unless a real
+user file or another link already occupies that path.
 
 For CI jobs that build the targets separately, publish the shared carrier once:
 
@@ -81,13 +123,16 @@ All targets build the Sprig multicall binary from the full commit in
 `BUZZ_COMMIT`. `buzz-acp`, `buzz-dev-mcp`, and `buzz` are links to that exact
 binary, so tests and production use the same Buzz ACP client.
 
-The image uses `tini` as PID 1 and defaults to `sleep infinity`, making it
+Every image uses `tini` as PID 1 and defaults to `sleep infinity`, making it
 directly usable through authenticated shell/exec. Lagoon's workspace init
 container invokes `hyper workspaces sync` directly; it does not route init work
-through the main image entrypoint.
+through either the generic or Buzz entrypoint. Keeping the Docker `WORKDIR` at
+`/home/node` is therefore intentional: a newly mounted persistent home does not
+contain `.buzz` until the main Buzz wrapper initializes it.
 
-Buzz relay attachment is selected by the launch control plane. It replaces the
-default container arguments with `/usr/local/bin/buzz-acp` and injects:
+Buzz relay attachment must be selected by the launch control plane using a
+`buzz-*` image. The launch replaces the default container arguments with
+`/usr/local/bin/buzz-acp` and injects:
 
 ```text
 BUZZ_PRIVATE_KEY=<unique agent nsec or hex secret>
@@ -118,6 +163,11 @@ coding-agents/sanity-check.sh hypercli-codex codex
 coding-agents/sanity-check.sh hypercli-claude-code claude-code
 coding-agents/sanity-check.sh hypercli-goose goose
 coding-agents/sanity-check.sh hypercli-kimi-code kimi-code
+coding-agents/buzz-sanity-check.sh hypercli-buzz-opencode opencode
+coding-agents/buzz-sanity-check.sh hypercli-buzz-codex codex
+coding-agents/buzz-sanity-check.sh hypercli-buzz-claude claude-code
+coding-agents/buzz-sanity-check.sh hypercli-buzz-goose goose
+coding-agents/buzz-sanity-check.sh hypercli-buzz-kimi-code kimi-code
 ```
 
 The shared-base gate owns UID 1000, `/home/node`, passwordless sudo, `tini`,
@@ -129,9 +179,11 @@ surface without starting or persisting a real account login.
 OpenCode and Goose seed their HyperCLI Anthropic-provider configuration into
 the persistent home only when the user has not already supplied one. Kimi Code
 keeps its upstream Moonshot login/configuration path. Codex and Claude Code
-retain their native vendor authentication paths.
+retain their native vendor authentication paths. These runtime-owned files stay
+under `/home/node`; the Buzz wrapper does not relocate them into the nest.
 
-CI launches all five images through HyperClaw and Lagoon, validates their
+Existing CI launches all five generic images through HyperClaw and Lagoon,
+validates their
 runtime/auth discovery, and promotes the tested content to public GHCR
 full-commit and `latest` tags. OpenCode and Goose additionally run a real
 HyperCLI Anthropic-native tool-use inference. The separate provider gate is
@@ -139,6 +191,12 @@ configured to use the public full-commit OpenCode tag and validate provider
 create/retry plus the deployed environment. The job must pass before it is
 release evidence. It does not send a prompt through a Buzz relay or exercise an
 official Desktop client.
+
+Before publishing the `buzz-*` variants, CI must run
+`coding-agents/buzz-sanity-check.sh` for all five targets in addition to each
+generic runtime contract. The specialized gate covers nest initialization,
+mounted-home persistence, no-clobber behavior, canonical templates and links,
+and symlink-root rejection; it does not constitute relay or Desktop E2E.
 
 For reproducible launches, use a full-commit tag or resolved digest. `latest`
 is the provider's user-facing convenience default after promotion, not an

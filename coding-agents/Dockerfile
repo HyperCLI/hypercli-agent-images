@@ -53,6 +53,12 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --locked \
       -p sprig; \
     install -D -m 0755 /build/buzz/target/sprig/sprig /out/sprig; \
+    install -D -m 0644 \
+      /build/buzz/desktop/src-tauri/src/managed_agents/nest_agents.md \
+      /out/buzz-nest/AGENTS.md; \
+    install -D -m 0644 \
+      /build/buzz/desktop/src-tauri/src/managed_agents/nest_skill.md \
+      /out/buzz-nest/.agents/skills/buzz-cli/SKILL.md; \
     strip /out/sprig
 
 FROM debian:bookworm-slim AS goose-fetch
@@ -119,7 +125,9 @@ RUN rm -rf \
     && chmod 0440 /etc/sudoers.d/90-node-nopasswd
 
 COPY --from=buzz-builder /out/sprig /usr/local/bin/sprig
+COPY --from=buzz-builder /out/buzz-nest /opt/hypercli-coding-agent/buzz-nest
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-coding-agent-entrypoint
+COPY --chmod=0755 buzz-entrypoint.sh /usr/local/bin/hypercli-buzz-agent-entrypoint
 RUN ln -s sprig /usr/local/bin/buzz-acp \
     && ln -s sprig /usr/local/bin/buzz-dev-mcp \
     && ln -s sprig /usr/local/bin/buzz \
@@ -235,3 +243,52 @@ ENV KIMI_CODE_HOME=/home/node/.kimi-code \
     BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/kimi \
     BUZZ_ACP_AGENT_ARGS=acp
 USER node
+
+# Buzz-specialized stages preserve the generic runtime images above for direct
+# shell/API use while giving hosted Buzz ACP launches the stock ~/.buzz nest.
+# Keep WORKDIR inherited as /home/node: the Buzz wrapper creates and enters the
+# nest after Lagoon has restored the mounted persistent home.
+FROM opencode AS buzz-opencode
+LABEL org.opencontainers.image.title="HyperCLI Buzz OpenCode Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz"
+ENV CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
+    HYPERCLI_BUZZ_RUNTIME=opencode
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-agent-entrypoint"]
+CMD ["sleep", "infinity"]
+
+FROM codex AS buzz-codex
+LABEL org.opencontainers.image.title="HyperCLI Buzz Codex Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz"
+ENV CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
+    HYPERCLI_BUZZ_RUNTIME=codex
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-agent-entrypoint"]
+CMD ["sleep", "infinity"]
+
+FROM claude-code AS buzz-claude-code
+LABEL org.opencontainers.image.title="HyperCLI Buzz Claude Code Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz"
+ENV CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
+    HYPERCLI_BUZZ_RUNTIME=claude-code
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-agent-entrypoint"]
+CMD ["sleep", "infinity"]
+
+FROM goose AS buzz-goose
+LABEL org.opencontainers.image.title="HyperCLI Buzz Goose Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz"
+ENV CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
+    HYPERCLI_BUZZ_RUNTIME=goose
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-agent-entrypoint"]
+CMD ["sleep", "infinity"]
+
+FROM kimi-code AS buzz-kimi-code
+LABEL org.opencontainers.image.title="HyperCLI Buzz Kimi Code Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz"
+ENV CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
+    HYPERCLI_BUZZ_RUNTIME=kimi-code
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-agent-entrypoint"]
+CMD ["sleep", "infinity"]
