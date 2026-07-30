@@ -12,7 +12,11 @@ import json
 import sys
 
 config = json.loads(sys.argv[1])
-assert config.get("Entrypoint") == ["/usr/bin/tini", "--"], config.get("Entrypoint")
+assert config.get("Entrypoint") == [
+    "/usr/bin/tini",
+    "--",
+    "/usr/local/bin/hypercli-coding-agent-entrypoint",
+], config.get("Entrypoint")
 assert config.get("Cmd") == ["sleep", "infinity"], config.get("Cmd")
 healthcheck = config.get("Healthcheck")
 assert healthcheck is None or healthcheck.get("Test") == ["NONE"], healthcheck
@@ -38,6 +42,7 @@ docker run --rm \
   buzz-acp --help >/dev/null
   buzz --help >/dev/null
   command -v buzz-dev-mcp >/dev/null
+  test -x /usr/local/bin/hypercli-coding-agent-entrypoint
 '
 
 echo "$1: shared coding-agent base contract passed"
