@@ -2,8 +2,8 @@
 
 ## Coding agents
 
-`coding-agents/Dockerfile` is the shared image definition for the Buzz-hosted
-coding runtimes. Its `RUNTIME_IMAGE` defaults to the CI-gated public HyperCLI
+`coding-agents/Dockerfile` is the shared image definition for HyperCLI-hosted
+Buzz coding runtimes. Its `RUNTIME_IMAGE` defaults to the CI-gated public HyperCLI
 OpenClaw image, so the carrier inherits the exact Python HyperCLI installation
 and operational packages already exercised by the OpenClaw image gates. CI
 should override it with the immutable digest of the OpenClaw image it has
@@ -67,15 +67,15 @@ repeated builds on one builder, but they are not a substitute for the two
 digest-pinned carriers—OpenClaw lineage and the shared coding base—across
 isolated CI workers.
 
-The baked ACP child commands are:
+The baked ACP child commands and authentication boundaries are:
 
-| Target | ACP child |
-| --- | --- |
-| `opencode` | `opencode acp` |
-| `codex` | `codex-acp` |
-| `claude-code` | `claude-agent-acp` |
-| `goose` | `goose acp` |
-| `kimi-code` | `kimi acp` |
+| Target | ACP child | Default configuration/authentication |
+| --- | --- | --- |
+| `opencode` | `opencode acp` | Seeds a HyperCLI Anthropic provider using `HYPER_AGENTS_API_KEY` |
+| `codex` | `codex-acp` | Retains native Codex API/device authentication |
+| `claude-code` | `claude-agent-acp` | Retains native Claude subscription/Console/SSO authentication |
+| `goose` | `goose acp` | Seeds a HyperCLI Anthropic provider using `HYPER_AGENTS_API_KEY` |
+| `kimi-code` | `kimi acp` | Retains Moonshot's upstream Kimi Code login/service |
 
 All targets build the Sprig multicall binary from the full commit in
 `BUZZ_COMMIT`. `buzz-acp`, `buzz-dev-mcp`, and `buzz` are links to that exact
@@ -130,3 +130,31 @@ OpenCode and Goose seed their HyperCLI Anthropic-provider configuration into
 the persistent home only when the user has not already supplied one. Kimi Code
 keeps its upstream Moonshot login/configuration path. Codex and Claude Code
 retain their native vendor authentication paths.
+
+CI launches all five images through HyperClaw and Lagoon, validates their
+runtime/auth discovery, and promotes the tested content to public GHCR
+full-commit and `latest` tags. OpenCode and Goose additionally run a real
+HyperCLI Anthropic-native tool-use inference. The separate provider gate is
+configured to use the public full-commit OpenCode tag and validate provider
+create/retry plus the deployed environment. The job must pass before it is
+release evidence. It does not send a prompt through a Buzz relay or exercise an
+official Desktop client.
+
+For reproducible launches, use a full-commit tag or resolved digest. `latest`
+is the provider's user-facing convenience default after promotion, not an
+immutable deployment reference.
+
+## Security boundary
+
+Coding images intentionally grant passwordless sudo to the `node` user and
+`buzz-acp` currently auto-approves ACP permission requests. The effective
+boundary is therefore the per-agent namespace, filesystem/persistence scope,
+resource limits, and scoped runtime credentials. The current per-agent
+NetworkPolicy restricts ingress but does not restrict egress.
+
+Lagoon stores caller-supplied runtime environment in the per-agent `reef-env`
+Kubernetes Secret, but the current backend also persists those raw values in
+ordinary launch JSON and exposes env/exec APIs. Do not treat these images or the
+unsigned provider test release as a production-safe secret boundary until the
+backend moves launch secrets to encrypted/external references and narrows those
+read/exec capabilities.
