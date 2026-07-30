@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.7
+
+ARG BUZZ_BASE_IMAGE=hypercli-buzz-base:local
+FROM ${BUZZ_BASE_IMAGE}
+
+ARG CLAUDE_CODE_VERSION=2.1.207
+ARG CLAUDE_ACP_VERSION=0.59.0
+
+USER root
+COPY --chmod=0755 claude/entrypoint.sh /usr/local/bin/hypercli-buzz-claude-entrypoint
+RUN npm install --global --no-audit --no-fund \
+      "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+      "@agentclientprotocol/claude-agent-acp@${CLAUDE_ACP_VERSION}" && \
+    claude --version && \
+    claude-agent-acp --version && \
+    printf '%s\n' claude-code > /opt/hypercli-buzz/runtime
+
+LABEL org.opencontainers.image.title="HyperCLI Buzz Claude Code Agent" \
+      org.hypercli.buzz_runtime="true" \
+      org.hypercli.buzz_workspace="/home/node/.buzz" \
+      org.hypercli.coding_runtime="claude-code" \
+      org.hypercli.coding_runtime_version="${CLAUDE_CODE_VERSION}" \
+      org.hypercli.acp_adapter_version="${CLAUDE_ACP_VERSION}"
+
+ENV BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/claude-agent-acp \
+    BUZZ_ACP_AGENT_ARGS=
+
+USER node
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-claude-entrypoint"]
+CMD ["sleep", "infinity"]
