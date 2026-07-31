@@ -3,12 +3,10 @@
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
 
-ARG BUZZ_REPO=https://github.com/block/buzz.git
-ARG BUZZ_COMMIT=6300a6b1d03e32c473c7b6568df663c8927565cf
+ARG BUZZ_COMMIT
 
 FROM ${RUST_IMAGE} AS buzz-builder
 
-ARG BUZZ_REPO
 ARG BUZZ_COMMIT
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,13 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN set -eux; \
-    printf '%s' "${BUZZ_COMMIT}" | grep -Eq '^[0-9a-f]{40}$'; \
-    git init buzz; \
-    git -C buzz remote add origin "${BUZZ_REPO}"; \
-    git -C buzz fetch --depth 1 origin "${BUZZ_COMMIT}"; \
-    test "$(git -C buzz rev-parse FETCH_HEAD)" = "${BUZZ_COMMIT}"; \
-    git -C buzz checkout --detach FETCH_HEAD
+RUN printf '%s' "${BUZZ_COMMIT}" | grep -Eq '^[0-9a-f]{40}$'
+COPY --from=buzz-source . /build/buzz
 
 COPY AGENTS.md /expected/AGENTS.md
 RUN cmp \

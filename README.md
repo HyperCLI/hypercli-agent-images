@@ -18,7 +18,10 @@ buzz/
 Build the common Node 24 carrier, then one provider image:
 
 ```bash
+BUZZ_SOURCE=/path/to/hyperclaw-backend/buzz
 docker build \
+  --build-context "buzz-source=${BUZZ_SOURCE}" \
+  --build-arg "BUZZ_COMMIT=$(git -C "${BUZZ_SOURCE}" rev-parse HEAD)" \
   --build-arg HYPERCLI_REF=<full-hypercli-commit> \
   -t hypercli-buzz-base \
   -f buzz/base/Dockerfile buzz
