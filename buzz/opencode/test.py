@@ -25,6 +25,10 @@ assert_common_contract(
     agent_command="/usr/local/bin/opencode",
     agent_args="acp",
     entrypoint="/usr/local/bin/hypercli-buzz-opencode-entrypoint",
+    required_agents_text=(
+        "Every turn that processes a user message MUST end with "
+        "`buzz messages send`."
+    ),
 )
 assert_auth_methods(
     image,
