@@ -37,6 +37,7 @@ tools = [
     "hyper",
     "git",
     "jq",
+    "rg",
     "ssh",
     "sudo",
     "tini",

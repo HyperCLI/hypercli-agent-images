@@ -198,6 +198,7 @@ payload = {
             "hyper",
             "git",
             "jq",
+            "rg",
             "ssh",
             "sudo",
             "tini",

@@ -47,8 +47,8 @@ The five public runtime images are:
 | `kimi-code` | `hypercli-buzz-kimi-code` | `kimi acp` | Upstream Moonshot login |
 
 The common carrier installs Python, `hyper` with all CLI extras, build tools,
-`jq`, passwordless sudo for `node`, and Buzz's pinned Sprig multicall binary.
-It does not inherit from or contain OpenClaw.
+`jq`, `rg` (ripgrep), passwordless sudo for `node`, and Buzz's pinned Sprig
+multicall binary. It does not inherit from or contain OpenClaw.
 
 The persistent sync root remains `/home/node`, and HyperCLI Workspace
 projections remain under `/home/node/workspaces`. The main process reconciles
