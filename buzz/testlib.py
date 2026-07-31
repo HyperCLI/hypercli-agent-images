@@ -197,6 +197,7 @@ payload = {
             "python3",
             "hyper",
             "git",
+            "jq",
             "ssh",
             "sudo",
             "tini",
