@@ -7,7 +7,8 @@ ARG CODEX_VERSION=0.146.0
 ARG CODEX_ACP_VERSION=1.1.7
 
 USER root
-RUN npm install --global --no-audit --no-fund \
+RUN export HOME=/root && \
+    npm install --global --no-audit --no-fund \
       "@openai/codex@${CODEX_VERSION}" \
       "@agentclientprotocol/codex-acp@${CODEX_ACP_VERSION}" && \
     codex --version && \

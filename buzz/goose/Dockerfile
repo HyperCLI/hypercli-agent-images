@@ -40,7 +40,8 @@ COPY --from=goose-fetch /out/goose /usr/local/bin/goose
 COPY --chown=node:node goose/config.yaml /opt/hypercli-buzz/goose-config.yaml
 COPY --chown=node:node goose/provider.json /opt/hypercli-buzz/goose-provider.json
 COPY --chmod=0755 goose/entrypoint.sh /usr/local/bin/hypercli-buzz-goose-entrypoint
-RUN goose --version && \
+RUN export HOME=/root && \
+    goose --version && \
     goose acp --help >/dev/null && \
     printf '%s\n' goose > /opt/hypercli-buzz/runtime
 

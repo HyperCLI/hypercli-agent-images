@@ -8,7 +8,8 @@ ARG CLAUDE_ACP_VERSION=0.59.0
 
 USER root
 COPY --chmod=0755 claude/entrypoint.sh /usr/local/bin/hypercli-buzz-claude-entrypoint
-RUN npm install --global --no-audit --no-fund \
+RUN export HOME=/root && \
+    npm install --global --no-audit --no-fund \
       "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
       "@agentclientprotocol/claude-agent-acp@${CLAUDE_ACP_VERSION}" && \
     claude --version && \

@@ -8,7 +8,8 @@ ARG KIMI_CODE_VERSION=0.31.0
 USER root
 COPY --chown=node:node kimi-code/tui.toml /opt/hypercli-buzz/kimi-tui.toml
 COPY --chmod=0755 kimi-code/entrypoint.sh /usr/local/bin/hypercli-buzz-kimi-entrypoint
-RUN npm install --global --no-audit --no-fund \
+RUN export HOME=/root && \
+    npm install --global --no-audit --no-fund \
       "@moonshot-ai/kimi-code@${KIMI_CODE_VERSION}" && \
     kimi --version && \
     kimi acp --help >/dev/null && \
