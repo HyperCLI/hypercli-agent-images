@@ -169,6 +169,7 @@ directories = [
     nest / ".agents",
     nest / ".agents/skills",
     nest / ".agents/skills/buzz-cli",
+    nest / ".agents/skills/hypercli",
 ]
 
 payload = {
@@ -184,6 +185,9 @@ payload = {
     ).read_text(encoding="utf-8").splitlines()[0],
     "skill_has_name": "name: buzz-cli" in (
         nest / ".agents/skills/buzz-cli/SKILL.md"
+    ).read_text(encoding="utf-8"),
+    "hypercli_skill_has_name": "name: hypercli" in (
+        nest / ".agents/skills/hypercli/SKILL.md"
     ).read_text(encoding="utf-8"),
     "directory_modes": {
         str(path): stat.S_IMODE(path.stat().st_mode)
@@ -219,6 +223,9 @@ payload = {
             nest / ".goose/skills/buzz-cli",
             nest / ".claude/skills/buzz-cli",
             nest / ".codex/skills/buzz-cli",
+            nest / ".goose/skills/hypercli",
+            nest / ".claude/skills/hypercli",
+            nest / ".codex/skills/hypercli",
         ]
     },
 }
@@ -256,6 +263,11 @@ def assert_common_contract(
     assert labels.get("org.hypercli.coding_runtime") == runtime
     assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(NEST)
     assert env.get("HYPER_WORKSPACES_DIR") == str(WORKSPACES)
+    assert env.get("HOME") == "/home/node"
+    assert env.get("XDG_CONFIG_HOME") == "/home/node/.config"
+    assert env.get("XDG_DATA_HOME") == "/home/node/.local/share"
+    assert env.get("XDG_STATE_HOME") == "/home/node/.local/state"
+    assert env.get("XDG_CACHE_HOME") == "/home/node/.cache"
     assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
     assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
 
@@ -266,6 +278,7 @@ def assert_common_contract(
     assert payload["runtime"] == runtime
     assert payload["agents_heading"] == "# Buzz Nest"
     assert payload["skill_has_name"] is True
+    assert payload["hypercli_skill_has_name"] is True
     assert set(payload["directory_modes"].values()) == {0o700}
     assert all(payload["tools"].values()), payload["tools"]
     assert payload["workspaces_is_dir"] is True
@@ -273,7 +286,8 @@ def assert_common_contract(
     assert payload["base_prompt_in_image"] is False
     assert payload["base_prompt_in_nest"] is False
     assert set(payload["skill_links"].values()) == {
-        "../../.agents/skills/buzz-cli"
+        "../../.agents/skills/buzz-cli",
+        "../../.agents/skills/hypercli",
     }
     if required_agents_text is not None:
         required_probe = run_python(
@@ -306,9 +320,14 @@ def assert_nest_persistence(
 
         agents = persisted / ".buzz/AGENTS.md"
         skill = persisted / ".buzz/.agents/skills/buzz-cli/SKILL.md"
+        hypercli_skill = persisted / ".buzz/.agents/skills/hypercli/SKILL.md"
         goose_link = persisted / ".buzz/.goose/skills/buzz-cli"
         agents.write_text("user-managed AGENTS\n", encoding="utf-8")
         skill.write_text("user-managed skill\n", encoding="utf-8")
+        hypercli_skill.write_text(
+            "user-managed HyperCLI skill\n",
+            encoding="utf-8",
+        )
         goose_link.unlink()
         goose_link.write_text(
             "user-managed goose link replacement\n",
@@ -336,6 +355,10 @@ def assert_nest_persistence(
             run(image, ["true"], mounts=[(persisted, "/home/node")])
             assert agents.read_text(encoding="utf-8") == agents_content
         assert skill.read_text(encoding="utf-8") == "user-managed skill\n"
+        assert (
+            hypercli_skill.read_text(encoding="utf-8")
+            == "user-managed HyperCLI skill\n"
+        )
         assert not goose_link.is_symlink()
         assert (
             goose_link.read_text(encoding="utf-8")

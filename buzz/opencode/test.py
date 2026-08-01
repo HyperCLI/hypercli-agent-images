@@ -50,7 +50,7 @@ assert_models(
 )
 assert_user_config_preserved(
     image,
-    relative_path="opencode.json",
+    relative_path=".config/opencode/opencode.json",
     generated_contains="kimi-k2.6-anthropic",
     user_content=json.dumps({"userManaged": True}) + "\n",
 )

@@ -105,6 +105,9 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
 COPY --from=buzz-builder /out/sprig /usr/local/bin/sprig
 COPY --from=buzz-builder /out/nest /opt/hypercli-buzz/nest
 COPY AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
+RUN install -D -m 0644 \
+      /opt/hypercli/skills/SKILL.md \
+      /opt/hypercli-buzz/nest/.agents/skills/hypercli/SKILL.md
 COPY --chmod=0755 init.sh /usr/local/bin/hypercli-buzz-init
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
 
@@ -115,7 +118,12 @@ RUN ln -s sprig /usr/local/bin/buzz-acp && \
     buzz-acp --help >/dev/null && \
     buzz --help >/dev/null
 
-ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
+ENV HOME=/home/node \
+    XDG_CONFIG_HOME=/home/node/.config \
+    XDG_DATA_HOME=/home/node/.local/share \
+    XDG_STATE_HOME=/home/node/.local/state \
+    XDG_CACHE_HOME=/home/node/.cache \
+    HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
     HYPER_API_BASE=https://api.hypercli.com \
     HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave \
     HYPER_WORKSPACES_DIR=/home/node/workspaces \

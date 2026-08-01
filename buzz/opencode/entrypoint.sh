@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-config=/home/node/opencode.json
+config_dir=${XDG_CONFIG_HOME:-/home/node/.config}/opencode
+config=${config_dir}/opencode.json
+mkdir -p "${config_dir}"
 if [ ! -e "${config}" ] && [ ! -L "${config}" ]; then
   cp /opt/hypercli-buzz/opencode.json "${config}"
 fi

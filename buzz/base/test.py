@@ -21,6 +21,16 @@ assert config.get("Entrypoint") == [
 ]
 assert config.get("WorkingDir") == "/home/node"
 assert config.get("Cmd") == ["sleep", "infinity"]
+env = dict(
+    item.split("=", 1)
+    for item in config.get("Env") or []
+    if "=" in item
+)
+assert env.get("HOME") == "/home/node"
+assert env.get("XDG_CONFIG_HOME") == "/home/node/.config"
+assert env.get("XDG_DATA_HOME") == "/home/node/.local/share"
+assert env.get("XDG_STATE_HOME") == "/home/node/.local/state"
+assert env.get("XDG_CACHE_HOME") == "/home/node/.cache"
 
 probe = r"""
 import json

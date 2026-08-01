@@ -20,7 +20,8 @@ mkdir -p \
   "${nest}/OUTBOX" \
   "${nest}/REPOS" \
   "${nest}/.scratch" \
-  "${nest}/.agents/skills/buzz-cli"
+  "${nest}/.agents/skills/buzz-cli" \
+  "${nest}/.agents/skills/hypercli"
 
 chmod 0700 \
   "${nest}" \
@@ -33,7 +34,8 @@ chmod 0700 \
   "${nest}/.scratch" \
   "${nest}/.agents" \
   "${nest}/.agents/skills" \
-  "${nest}/.agents/skills/buzz-cli"
+  "${nest}/.agents/skills/buzz-cli" \
+  "${nest}/.agents/skills/hypercli"
 
 copy_if_missing() {
   source_path=$1
@@ -56,6 +58,9 @@ copy_if_missing "${template}/AGENTS.md" "${nest}/AGENTS.md"
 copy_if_missing \
   "${template}/.agents/skills/buzz-cli/SKILL.md" \
   "${nest}/.agents/skills/buzz-cli/SKILL.md"
+copy_if_missing \
+  "${template}/.agents/skills/hypercli/SKILL.md" \
+  "${nest}/.agents/skills/hypercli/SKILL.md"
 
 for skill_dir in .goose/skills .claude/skills .codex/skills; do
   mkdir -p "${nest}/${skill_dir}"
@@ -63,4 +68,7 @@ for skill_dir in .goose/skills .claude/skills .codex/skills; do
   link_if_missing \
     "${nest}/${skill_dir}/buzz-cli" \
     "../../.agents/skills/buzz-cli"
+  link_if_missing \
+    "${nest}/${skill_dir}/hypercli" \
+    "../../.agents/skills/hypercli"
 done
