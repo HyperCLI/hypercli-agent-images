@@ -11,7 +11,7 @@ COPY --chown=node:node opencode/response-policy.md /opt/hypercli-buzz/opencode/r
 COPY --chmod=0755 opencode/entrypoint.sh /usr/local/bin/hypercli-buzz-opencode-entrypoint
 COPY --chmod=0755 opencode/reconcile_response_policy.py /usr/local/bin/hypercli-buzz-opencode-policy
 RUN npm install --global --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}" && \
-    opencode --version && \
+    HOME=/root opencode --version && \
     printf '%s\n' opencode > /opt/hypercli-buzz/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Buzz OpenCode Agent" \
