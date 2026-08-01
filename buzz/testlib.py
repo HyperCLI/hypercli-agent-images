@@ -264,10 +264,6 @@ def assert_common_contract(
     assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(NEST)
     assert env.get("HYPER_WORKSPACES_DIR") == str(WORKSPACES)
     assert env.get("HOME") == "/home/node"
-    assert env.get("XDG_CONFIG_HOME") == "/home/node/.config"
-    assert env.get("XDG_DATA_HOME") == "/home/node/.local/share"
-    assert env.get("XDG_STATE_HOME") == "/home/node/.local/state"
-    assert env.get("XDG_CACHE_HOME") == "/home/node/.cache"
     assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
     assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
 

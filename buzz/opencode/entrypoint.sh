@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-config_dir=${XDG_CONFIG_HOME:-/home/node/.config}/opencode
+config_dir=${HOME}/.config/opencode
 config=${config_dir}/opencode.json
 mkdir -p "${config_dir}"
 if [ ! -e "${config}" ] && [ ! -L "${config}" ]; then

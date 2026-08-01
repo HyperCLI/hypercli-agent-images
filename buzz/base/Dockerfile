@@ -119,10 +119,6 @@ RUN ln -s sprig /usr/local/bin/buzz-acp && \
     buzz --help >/dev/null
 
 ENV HOME=/home/node \
-    XDG_CONFIG_HOME=/home/node/.config \
-    XDG_DATA_HOME=/home/node/.local/share \
-    XDG_STATE_HOME=/home/node/.local/state \
-    XDG_CACHE_HOME=/home/node/.cache \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
     HYPER_API_BASE=https://api.hypercli.com \
     HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave \
