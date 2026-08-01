@@ -30,7 +30,7 @@ assert_auth_methods(
     image,
     agent_command="/usr/local/bin/codex-acp",
     agent_args="",
-    expected={"api-key", "chat-gpt"},
+    expected={"api-key"},
 )
 
 assert "--device-auth" in run(image, ["codex", "login", "--help"]).stdout

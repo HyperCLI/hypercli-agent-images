@@ -22,7 +22,8 @@ LABEL org.opencontainers.image.title="HyperCLI Buzz Codex Agent" \
       org.hypercli.coding_runtime_version="${CODEX_VERSION}" \
       org.hypercli.acp_adapter_version="${CODEX_ACP_VERSION}"
 
-ENV BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/codex-acp \
+ENV NO_BROWSER=1 \
+    BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/codex-acp \
     BUZZ_ACP_AGENT_ARGS=
 
 USER node
