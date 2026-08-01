@@ -8,6 +8,8 @@ CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${STATE_DIR}/openclaw.json}"
 WORKSPACE_DIR="${STATE_DIR}/workspace"
 HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/workspaces}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
+HYPERCLI_SKILLS_DIR="/opt/hypercli/skills"
+OPENCLAW_SKILLS_DIR="${STATE_DIR}/skills"
 INSTALL_PLUGINS="${OPENCLAW_INSTALL_PLUGINS:-}"
 FORCE_INSTALL_PLUGINS="${OPENCLAW_FORCE_INSTALL_PLUGINS:-0}"
 DESKTOP_ENABLED="${OPENCLAW_DESKTOP_ENABLED:-0}"
@@ -23,7 +25,26 @@ enabled() {
   esac
 }
 
+sync_hypercli_skills() {
+  local source_entry entry_name target_entry
+
+  if [[ ! -d "${HYPERCLI_SKILLS_DIR}" ]]; then
+    echo "[openclaw] bundled HyperCLI skills directory is missing: ${HYPERCLI_SKILLS_DIR}" >&2
+    return 1
+  fi
+
+  mkdir -p "${OPENCLAW_SKILLS_DIR}"
+  while IFS= read -r -d '' source_entry; do
+    entry_name="${source_entry##*/}"
+    target_entry="${OPENCLAW_SKILLS_DIR}/${entry_name}"
+    rm -rf "${target_entry}"
+    cp -R "${source_entry}" "${target_entry}"
+    echo "[openclaw] synchronized bundled HyperCLI skill entry (${entry_name})"
+  done < <(find "${HYPERCLI_SKILLS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
+}
+
 mkdir -p "${WORKSPACE_DIR}" "${SESSIONS_DIR}"
+sync_hypercli_skills
 
 if [[ -n "${HYPER_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"

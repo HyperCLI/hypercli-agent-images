@@ -105,9 +105,9 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
 COPY --from=buzz-builder /out/sprig /usr/local/bin/sprig
 COPY --from=buzz-builder /out/nest /opt/hypercli-buzz/nest
 COPY AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
-RUN install -D -m 0644 \
-      /opt/hypercli/skills/SKILL.md \
-      /opt/hypercli-buzz/nest/.agents/skills/hypercli/SKILL.md
+COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
+RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
+      -name SKILL.md -type f -print -quit | grep -q .
 COPY --chmod=0755 init.sh /usr/local/bin/hypercli-buzz-init
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
 

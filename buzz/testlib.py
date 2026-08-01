@@ -169,8 +169,13 @@ directories = [
     nest / ".agents",
     nest / ".agents/skills",
     nest / ".agents/skills/buzz-cli",
-    nest / ".agents/skills/hypercli",
 ]
+
+hypercli_skills = sorted(
+    path.parent.name
+    for path in Path("/opt/hypercli/skills").glob("*/SKILL.md")
+)
+skills_index = Path("/home/node/SKILLS.md").read_text(encoding="utf-8")
 
 payload = {
     "uid": os.getuid(),
@@ -186,9 +191,21 @@ payload = {
     "skill_has_name": "name: buzz-cli" in (
         nest / ".agents/skills/buzz-cli/SKILL.md"
     ).read_text(encoding="utf-8"),
-    "hypercli_skill_has_name": "name: hypercli" in (
-        nest / ".agents/skills/hypercli/SKILL.md"
-    ).read_text(encoding="utf-8"),
+    "hypercli_skill_names": {
+        skill: f"name: {skill}" in (
+            nest / f".agents/skills/{skill}/SKILL.md"
+        ).read_text(encoding="utf-8")
+        for skill in hypercli_skills
+    },
+    "skills_index_mentions": {
+        skill: f"`{skill}`" in skills_index
+        for skill in hypercli_skills
+    },
+    "skills_index_target": os.readlink("/home/node/SKILLS.md"),
+    "canonical_skill_links": {
+        skill: os.readlink(nest / f".agents/skills/{skill}")
+        for skill in hypercli_skills
+    },
     "directory_modes": {
         str(path): stat.S_IMODE(path.stat().st_mode)
         for path in directories
@@ -220,12 +237,8 @@ payload = {
     "skill_links": {
         str(path): os.readlink(path)
         for path in [
-            nest / ".goose/skills/buzz-cli",
-            nest / ".claude/skills/buzz-cli",
-            nest / ".codex/skills/buzz-cli",
-            nest / ".goose/skills/hypercli",
-            nest / ".claude/skills/hypercli",
-            nest / ".codex/skills/hypercli",
+            nest / f".claude/skills/{skill}"
+            for skill in ["buzz-cli", *hypercli_skills]
         ]
     },
 }
@@ -274,7 +287,13 @@ def assert_common_contract(
     assert payload["runtime"] == runtime
     assert payload["agents_heading"] == "# Buzz Nest"
     assert payload["skill_has_name"] is True
-    assert payload["hypercli_skill_has_name"] is True
+    assert all(payload["hypercli_skill_names"].values())
+    assert all(payload["skills_index_mentions"].values())
+    assert payload["skills_index_target"] == "/opt/hypercli-buzz/SKILLS.md"
+    assert payload["canonical_skill_links"] == {
+        skill: f"/opt/hypercli/skills/{skill}"
+        for skill in payload["hypercli_skill_names"]
+    }
     assert set(payload["directory_modes"].values()) == {0o700}
     assert all(payload["tools"].values()), payload["tools"]
     assert payload["workspaces_is_dir"] is True
@@ -283,8 +302,14 @@ def assert_common_contract(
     assert payload["base_prompt_in_nest"] is False
     assert set(payload["skill_links"].values()) == {
         "../../.agents/skills/buzz-cli",
-        "../../.agents/skills/hypercli",
+        *{
+            f"../../.agents/skills/{skill}"
+            for skill in payload["hypercli_skill_names"]
+        },
     }
+    assert len(payload["skill_links"]) == (
+        len(payload["hypercli_skill_names"]) + 1
+    )
     if required_agents_text is not None:
         required_probe = run_python(
             image,
@@ -316,17 +341,24 @@ def assert_nest_persistence(
 
         agents = persisted / ".buzz/AGENTS.md"
         skill = persisted / ".buzz/.agents/skills/buzz-cli/SKILL.md"
-        hypercli_skill = persisted / ".buzz/.agents/skills/hypercli/SKILL.md"
-        goose_link = persisted / ".buzz/.goose/skills/buzz-cli"
+        hypercli_skill = persisted / ".buzz/.agents/skills/hypercli"
+        skills_index = persisted / "SKILLS.md"
+        claude_skill_link = persisted / ".buzz/.claude/skills/buzz-cli"
         agents.write_text("user-managed AGENTS\n", encoding="utf-8")
         skill.write_text("user-managed skill\n", encoding="utf-8")
+        hypercli_skill.unlink()
         hypercli_skill.write_text(
             "user-managed HyperCLI skill\n",
             encoding="utf-8",
         )
-        goose_link.unlink()
-        goose_link.write_text(
-            "user-managed goose link replacement\n",
+        skills_index.unlink()
+        skills_index.write_text(
+            "user-managed skill index\n",
+            encoding="utf-8",
+        )
+        claude_skill_link.unlink()
+        claude_skill_link.write_text(
+            "user-managed Claude skill replacement\n",
             encoding="utf-8",
         )
 
@@ -355,10 +387,13 @@ def assert_nest_persistence(
             hypercli_skill.read_text(encoding="utf-8")
             == "user-managed HyperCLI skill\n"
         )
-        assert not goose_link.is_symlink()
+        assert skills_index.read_text(encoding="utf-8") == (
+            "user-managed skill index\n"
+        )
+        assert not claude_skill_link.is_symlink()
         assert (
-            goose_link.read_text(encoding="utf-8")
-            == "user-managed goose link replacement\n"
+            claude_skill_link.read_text(encoding="utf-8")
+            == "user-managed Claude skill replacement\n"
         )
         if claude_compatibility:
             assert not claude.is_symlink()

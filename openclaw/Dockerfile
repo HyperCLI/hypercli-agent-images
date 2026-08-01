@@ -42,6 +42,7 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
     git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref && \
+    test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
 
