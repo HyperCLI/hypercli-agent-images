@@ -142,6 +142,21 @@ function parseCsv(name) {
   return values;
 }
 
+function parseJsonObject(name) {
+  const raw = env[name];
+  if (raw === undefined || raw === "") return undefined;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${name} must contain valid JSON`, { cause: error });
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${name} must contain a JSON object`);
+  }
+  return parsed;
+}
+
 const defaults = (((config.agents ||= {}).defaults ||= {}));
 const memorySearch = ((defaults.memorySearch ||= {}));
 const sync = ((memorySearch.sync ||= {}));
@@ -191,11 +206,18 @@ if (hostedSlackEnabled === true) {
     ? existingSlack.allowFrom.filter((entry) => typeof entry === "string" && entry.trim()).map((entry) => entry.trim())
     : [];
   const mergedAllowFrom = Array.from(new Set([...existingAllowFrom, ...slackAllowFrom]));
+  const hostedSlackGroupPolicy = (env.HYPER_SLACK_GROUP_POLICY || "").trim();
+  if (hostedSlackGroupPolicy && !["open", "allowlist", "disabled"].includes(hostedSlackGroupPolicy)) {
+    throw new Error("HYPER_SLACK_GROUP_POLICY must be open, allowlist, or disabled");
+  }
+  const hostedSlackChannels = parseJsonObject("HYPER_SLACK_CHANNELS_JSON");
   channels.slack = {
     ...existingSlack,
     enabled: true,
     mode: "relay",
     ...(mergedAllowFrom.length > 0 ? { dmPolicy: "allowlist", allowFrom: mergedAllowFrom } : {}),
+    ...(hostedSlackGroupPolicy ? { groupPolicy: hostedSlackGroupPolicy } : {}),
+    ...(hostedSlackChannels ? { channels: hostedSlackChannels } : {}),
     replyToMode: "all",
     replyToModeByChatType: {
       direct: "off",
