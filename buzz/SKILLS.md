@@ -14,8 +14,9 @@ Read the relevant skill before using a capability:
   coding-harness login boundaries: `/opt/hypercli/skills/hypercli-auth/SKILL.md`
 - `hypercli-account` - account, billing, API keys, subscriptions, and wallet
   operations: `/opt/hypercli/skills/hypercli-account/SKILL.md`
-- `hypercli-agents` - managed agent lifecycle, access, logs, shell, and gateway
-  operations: `/opt/hypercli/skills/hypercli-agents/SKILL.md`
+- `hypercli-agents` - managed agent lifecycle, dynamic HTTPS routes, runtime-bound
+  `self` control, access, logs, shell, and gateway operations:
+  `/opt/hypercli/skills/hypercli-agents/SKILL.md`
 - `hypercli-compute` - GPU inventory, instances, jobs, ports, and registries:
   `/opt/hypercli/skills/hypercli-compute/SKILL.md`
 - `hypercli-flows` - image and video generation:
