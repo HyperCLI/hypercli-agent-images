@@ -13,7 +13,7 @@ runtime content copied into an agent container.
 
 ```text
 Buzz Desktop
-  -> one-shot buzz-backend-hypercli-<runtime> provider process
+  -> one-shot HyperCLI backend-provider process
   -> hypercli-sdk
   -> HyperCLI deployments API
   -> HyperClaw/Lagoon
@@ -90,10 +90,15 @@ fields are accepted only for saved clients without a resolved launch block.
 The provider must reject invalid POSIX keys and remove provider-owned keys
 before applying its canonical values.
 
-The selected provider executable chooses the hosted runtime. The provider
-validates that the portable command names the same runtime, maps it to the
-absolute executable installed in the image, and preserves compatible
-descriptor arguments. A display field must never select a different runtime.
+The portable contract expects a command name. `launch.command` selects the
+hosted runtime; legacy requests without `launch` fall back to
+`agent.agent_command`. Runtime-named provider executables are discovery and
+saved-provider compatibility aliases, not runtime selectors, because Desktop
+stages the selected binary as `provider[.exe]`. The provider defensively
+normalizes a `/`- or `\\`-qualified value and optional `.exe` to a known
+basename, then chooses the canonical image and absolute child command while
+preserving descriptor arguments. Missing or unknown commands are rejected;
+display fields and saved provider config do not select a runtime.
 
 ## Why We Do Not Import The Kubernetes Provider
 
@@ -306,8 +311,12 @@ nest lives at `/home/node/.buzz`; synced HyperCLI workspaces live under
 Provider, SDK, ACP, or image changes must verify:
 
 1. Sanitized provider fixtures deserialize and round-trip the exact wire keys.
-2. Every provider alias selects the expected runtime and canonical image.
-3. Portable command validation rejects cross-runtime or path-based commands.
+2. Every supported `launch.command` basename selects the expected runtime,
+   canonical image, absolute child, args, and MCP command; the generic
+   executable and compatibility aliases expose the same provider protocol.
+3. Missing and unknown launch commands are rejected; path-qualified known
+   commands and optional case-insensitive `.exe` normalize to the same
+   canonical runtime, and the caller-supplied path is never executed.
 4. Environment precedence matches upstream and provider-owned keys cannot be
    overridden.
 5. Every image contains the exact child command, args, MCP command, runtime
