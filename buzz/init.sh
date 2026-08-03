@@ -67,11 +67,13 @@ for skill_file in /opt/hypercli/skills/*/SKILL.md; do
     "${skill_dir}"
 done
 
-mkdir -p "${nest}/.claude/skills"
-chmod 0700 "${nest}/.claude" "${nest}/.claude/skills"
-for skill_dir in "${nest}/.agents/skills"/*; do
-  skill=${skill_dir##*/}
-  link_if_missing \
-    "${nest}/.claude/skills/${skill}" \
-    "../../.agents/skills/${skill}"
+for harness_dir in .claude .codex .goose; do
+  mkdir -p "${nest}/${harness_dir}/skills"
+  chmod 0700 "${nest}/${harness_dir}" "${nest}/${harness_dir}/skills"
+  for skill_dir in "${nest}/.agents/skills"/*; do
+    skill=${skill_dir##*/}
+    link_if_missing \
+      "${nest}/${harness_dir}/skills/${skill}" \
+      "../../.agents/skills/${skill}"
+  done
 done

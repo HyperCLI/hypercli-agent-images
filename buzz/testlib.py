@@ -284,7 +284,8 @@ payload = {
     "skill_links": {
         str(path): os.readlink(path)
         for path in [
-            nest / f".claude/skills/{skill}"
+            nest / f"{harness}/skills/{skill}"
+            for harness in [".claude", ".codex", ".goose"]
             for skill in ["buzz-cli", *hypercli_skills]
         ]
     },
@@ -356,7 +357,7 @@ def assert_common_contract(
             for skill in payload["hypercli_skill_names"]
         },
     }
-    assert len(payload["skill_links"]) == (
+    assert len(payload["skill_links"]) == 3 * (
         len(payload["hypercli_skill_names"]) + 1
     )
     assert_nest_persistence(
@@ -379,7 +380,10 @@ def assert_nest_persistence(
         skill = persisted / ".buzz/.agents/skills/buzz-cli/SKILL.md"
         hypercli_skill = persisted / ".buzz/.agents/skills/hypercli"
         skills_index = persisted / "SKILLS.md"
-        claude_skill_link = persisted / ".buzz/.claude/skills/buzz-cli"
+        harness_skill_links = [
+            persisted / f".buzz/{harness}/skills/buzz-cli"
+            for harness in [".claude", ".codex", ".goose"]
+        ]
         agents.write_text("user-managed AGENTS\n", encoding="utf-8")
         skill.write_text("user-managed skill\n", encoding="utf-8")
         hypercli_skill.unlink()
@@ -392,11 +396,12 @@ def assert_nest_persistence(
             "user-managed skill index\n",
             encoding="utf-8",
         )
-        claude_skill_link.unlink()
-        claude_skill_link.write_text(
-            "user-managed Claude skill replacement\n",
-            encoding="utf-8",
-        )
+        for harness_skill_link in harness_skill_links:
+            harness_skill_link.unlink()
+            harness_skill_link.write_text(
+                "user-managed harness skill replacement\n",
+                encoding="utf-8",
+            )
 
         claude = persisted / ".buzz/CLAUDE.md"
         if claude_compatibility:
@@ -419,11 +424,11 @@ def assert_nest_persistence(
         assert skills_index.read_text(encoding="utf-8") == (
             "user-managed skill index\n"
         )
-        assert not claude_skill_link.is_symlink()
-        assert (
-            claude_skill_link.read_text(encoding="utf-8")
-            == "user-managed Claude skill replacement\n"
-        )
+        for harness_skill_link in harness_skill_links:
+            assert not harness_skill_link.is_symlink()
+            assert harness_skill_link.read_text(encoding="utf-8") == (
+                "user-managed harness skill replacement\n"
+            )
         if claude_compatibility:
             assert not claude.is_symlink()
             assert (
