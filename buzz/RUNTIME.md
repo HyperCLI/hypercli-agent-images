@@ -12,6 +12,17 @@ fields.
 - Project instructions: `/home/node/.buzz/AGENTS.md`
 - Shared skills: `/home/node/.buzz/.agents/skills`
 - Adapter: `/usr/local/bin/buzz-acp`
+- Buzz's portable `launch` block has no restart field. HyperCLI owns the hosted
+  substrate policy and launches these agents with `restart: false`, matching
+  the Kubernetes reference provider's `restartPolicy: Never` behavior.
+- The image entrypoint runs setup and then `exec`s the provider-supplied
+  command through `tini`. Hosted launches supply `/usr/local/bin/buzz-acp`, so
+  it replaces the image's fallback `sleep infinity` command and its exit code
+  becomes the container exit code.
+- An owner-signed `!shutdown` is consumed by `buzz-acp`. After its graceful ACP
+  drain, offline presence update, and relay close, the harness exits and the
+  no-restart pod remains terminal. A later explicit desktop Start/Deploy is the
+  boundary that asks the provider to start the stopped deployment again.
 - The image build compares `buzz/AGENTS.md` byte-for-byte with Buzz's
   `nest_agents.md`; update the pinned Buzz source and this copy together.
 - `BUZZ_ACP_SYSTEM_PROMPT` contains only the desktop-composed agent prompt.
@@ -51,3 +62,5 @@ Image and provider tests must verify:
 6. Display-name and text-mention variables cannot be overridden by user env.
 7. The provider-owned reply guard cannot be overridden by user env, uses one
    hard deadline, and accepts silence after the canonical two reminders.
+8. Every image's real `tini` and setup entrypoint chain terminates promptly and
+   preserves a launched command's nonzero exit code.

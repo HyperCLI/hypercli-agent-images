@@ -9,4 +9,4 @@ if [ ! -e "${instructions}" ] && [ ! -L "${instructions}" ]; then
 fi
 
 cd /home/node/.buzz
-exec "$@"
+exec /usr/local/bin/hypercli-buzz-entrypoint "$@"

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -9,7 +8,12 @@ from pathlib import Path
 BUZZ_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BUZZ_DIR))
 
-from testlib import docker, image_config, require_image_argument  # noqa: E402
+from testlib import (  # noqa: E402
+    assert_entrypoint_exit_passthrough,
+    docker,
+    image_config,
+    require_image_argument,
+)
 
 
 image = require_image_argument()
@@ -28,6 +32,7 @@ env = dict(
 )
 assert env.get("HOME") == "/home/node"
 assert env.get("BUZZ_ACP_MCP_COMMAND", "") == ""
+assert_entrypoint_exit_passthrough(image)
 
 probe = r"""
 import json

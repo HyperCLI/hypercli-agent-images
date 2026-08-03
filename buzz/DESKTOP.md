@@ -27,7 +27,9 @@ The desktop serializes the provider request in
 
 The provider must not infer a different prompt, access mode, or runtime from
 unrelated UI fields. HyperCLI selects its canonical image and ACP child from
-the basename of `agent.agent_command`; see `buzz/RUNTIME.md` for the matrix.
+the basename of `agent.launch.command`; `agent.agent_command` is only the
+compatibility fallback when a legacy payload has no `launch` block. See
+`buzz/RUNTIME.md` for the matrix.
 
 ## Provider process protocol
 
@@ -45,6 +47,14 @@ Protocol v1 has no generic provider `start`, `stop`, `delete`, `update`,
 must not be assumed to invoke this provider binary. Hosted lifecycle actions
 belong to the HyperCLI agents API/CLI until Buzz adds corresponding provider
 operations.
+
+The owner-signed `!shutdown` control message is not a provider RPC. `buzz-acp`
+consumes it from the relay, performs its graceful shutdown sequence, and exits.
+HyperCLI launches hosted Buzz deployments with `restart: false`, so that exit
+leaves the pod terminal instead of restarting the harness. The portable
+`launch` block has no restart field: this is provider-owned substrate policy.
+A later explicit desktop Start invokes `deploy` again, allowing the provider to
+start the stopped deterministic deployment.
 
 Provider stdout is reserved for the JSON response. Diagnostics belong on
 stderr and must not contain secrets. The desktop caps provider stdout at 1 MiB,
@@ -100,3 +110,5 @@ Changes to the provider, SDK launch types, ACP adapter, or images must retain:
 5. Adapter-neutral reply-guard behavior and bounded retries.
 6. Independent mention matching and author authorization.
 7. Byte-for-byte preservation of user-managed `.buzz/AGENTS.md` on restart.
+8. Hosted `restart: false` policy and real-entrypoint exit-code propagation, so
+   a graceful `!shutdown` remains stopped until an explicit Start/Deploy.
