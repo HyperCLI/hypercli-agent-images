@@ -5,12 +5,15 @@ import os
 import subprocess
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 
 
 NEST = Path("/home/node/.buzz")
 WORKSPACES = Path("/home/node/workspaces")
+ENTRYPOINT_EXIT_CODE = 42
+ENTRYPOINT_EXIT_TIMEOUT_SECONDS = 30
 
 
 def require_image_argument() -> str:
@@ -39,6 +42,50 @@ def image_config(image: str) -> dict[str, Any]:
     payload = json.loads(result.stdout)
     assert isinstance(payload, dict)
     return payload
+
+
+def assert_entrypoint_exit_passthrough(image: str) -> None:
+    """Prove the real image entrypoint terminates with its child process."""
+    container_name = f"hypercli-buzz-entrypoint-exit-{uuid.uuid4().hex}"
+    docker(
+        "create",
+        "--name",
+        container_name,
+        image,
+        "python3",
+        "-c",
+        f"raise SystemExit({ENTRYPOINT_EXIT_CODE})",
+    )
+    try:
+        docker("start", container_name)
+        try:
+            waited = subprocess.run(
+                ["docker", "wait", container_name],
+                check=False,
+                text=True,
+                capture_output=True,
+                timeout=ENTRYPOINT_EXIT_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise AssertionError(
+                f"{image}: real entrypoint did not exit within "
+                f"{ENTRYPOINT_EXIT_TIMEOUT_SECONDS}s"
+            ) from exc
+        assert waited.returncode == 0, (
+            f"docker wait failed with {waited.returncode}\n"
+            f"stdout:\n{waited.stdout}\nstderr:\n{waited.stderr}"
+        )
+        assert waited.stdout.strip() == str(ENTRYPOINT_EXIT_CODE), (
+            f"{image}: expected entrypoint exit {ENTRYPOINT_EXIT_CODE}, "
+            f"got {waited.stdout.strip()!r}"
+        )
+    finally:
+        cleanup = docker("rm", "--force", container_name, check=False)
+        if cleanup.returncode != 0:
+            raise AssertionError(
+                f"could not remove entrypoint probe container {container_name}\n"
+                f"stdout:\n{cleanup.stdout}\nstderr:\n{cleanup.stderr}"
+            )
 
 
 def run(
@@ -281,6 +328,7 @@ def assert_common_contract(
     assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
     assert env.get("BUZZ_ACP_MCP_COMMAND", "") == mcp_command
 
+    assert_entrypoint_exit_passthrough(image)
     payload = run_python(image, COMMON_PROBE)
     assert payload["uid"] == 1000
     assert payload["cwd"] == str(NEST)
