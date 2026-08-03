@@ -34,6 +34,9 @@ assert_auth_methods(
     expected={"claude-ai-login", "console-login"},
 )
 
+claude_path = run(image, ["sh", "-lc", "command -v claude"]).stdout.strip()
+assert claude_path == "/usr/local/bin/claude", claude_path
+
 login_help = run(image, ["claude", "auth", "login", "--help"]).stdout
 assert "--claudeai" in login_help
 assert "--console" in login_help
