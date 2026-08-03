@@ -252,9 +252,9 @@ def assert_common_contract(
     runtime: str,
     agent_command: str,
     agent_args: str,
+    mcp_command: str,
     entrypoint: str,
     claude_compatibility: bool = False,
-    required_agents_text: str | None = None,
 ) -> None:
     config = image_config(image)
     labels = config.get("Labels") or {}
@@ -279,6 +279,7 @@ def assert_common_contract(
     assert env.get("HOME") == "/home/node"
     assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
     assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
+    assert env.get("BUZZ_ACP_MCP_COMMAND", "") == mcp_command
 
     payload = run_python(image, COMMON_PROBE)
     assert payload["uid"] == 1000
@@ -310,21 +311,9 @@ def assert_common_contract(
     assert len(payload["skill_links"]) == (
         len(payload["hypercli_skill_names"]) + 1
     )
-    if required_agents_text is not None:
-        required_probe = run_python(
-            image,
-            (
-                "from pathlib import Path; import json; "
-                "print(json.dumps({'agents': "
-                "Path('/home/node/.buzz/AGENTS.md').read_text()}))"
-            ),
-        )
-        assert required_agents_text in required_probe["agents"]
-
     assert_nest_persistence(
         image,
         claude_compatibility=claude_compatibility,
-        required_agents_text=required_agents_text,
     )
 
 
@@ -332,7 +321,6 @@ def assert_nest_persistence(
     image: str,
     *,
     claude_compatibility: bool,
-    required_agents_text: str | None = None,
 ) -> None:
     with tempfile.TemporaryDirectory() as persisted_name:
         persisted = Path(persisted_name)
@@ -374,14 +362,7 @@ def assert_nest_persistence(
 
         run(image, ["true"], mounts=[(persisted, "/home/node")])
         agents_content = agents.read_text(encoding="utf-8")
-        assert "user-managed AGENTS\n" in agents_content
-        if required_agents_text is None:
-            assert agents_content == "user-managed AGENTS\n"
-        else:
-            assert required_agents_text in agents_content
-            assert agents_content.count(required_agents_text) == 1
-            run(image, ["true"], mounts=[(persisted, "/home/node")])
-            assert agents.read_text(encoding="utf-8") == agents_content
+        assert agents_content == "user-managed AGENTS\n"
         assert skill.read_text(encoding="utf-8") == "user-managed skill\n"
         assert (
             hypercli_skill.read_text(encoding="utf-8")

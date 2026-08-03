@@ -24,6 +24,7 @@ LABEL org.opencontainers.image.title="HyperCLI Buzz Codex Agent" \
 
 ENV NO_BROWSER=1 \
     BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/codex-acp \
-    BUZZ_ACP_AGENT_ARGS=
+    BUZZ_ACP_AGENT_ARGS= \
+    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
 
 USER node

@@ -27,6 +27,7 @@ env = dict(
     if "=" in item
 )
 assert env.get("HOME") == "/home/node"
+assert env.get("BUZZ_ACP_MCP_COMMAND", "") == ""
 
 probe = r"""
 import json

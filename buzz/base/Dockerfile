@@ -125,7 +125,7 @@ ENV HOME=/home/node \
     HYPER_WORKSPACES_DIR=/home/node/workspaces \
     CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
     CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
-    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
+    BUZZ_ACP_MCP_COMMAND=
 
 WORKDIR /home/node
 USER node

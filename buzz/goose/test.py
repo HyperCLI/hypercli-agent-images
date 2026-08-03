@@ -26,6 +26,7 @@ assert_common_contract(
     runtime="goose",
     agent_command="/usr/local/bin/goose",
     agent_args="acp",
+    mcp_command="",
     entrypoint="/usr/local/bin/hypercli-buzz-goose-entrypoint",
 )
 assert_auth_methods(

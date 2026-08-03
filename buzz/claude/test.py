@@ -23,6 +23,7 @@ assert_common_contract(
     runtime="claude-code",
     agent_command="/usr/local/bin/claude-agent-acp",
     agent_args="",
+    mcp_command="",
     entrypoint="/usr/local/bin/hypercli-buzz-claude-entrypoint",
     claude_compatibility=True,
 )
