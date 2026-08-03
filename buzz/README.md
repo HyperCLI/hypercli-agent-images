@@ -153,16 +153,16 @@ a sanitized error without upstream response bodies or secrets.
 
 | Hosted runtime | Canonical image | Portable command | Injected ACP child | Child args | MCP command | Prompt transport | Runtime state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted Anthropic auth |
 | OpenCode | `ghcr.io/hypercli/hypercli-buzz-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
 | Codex | `ghcr.io/hypercli/hypercli-buzz-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.codex` |
 | Claude Code | `ghcr.io/hypercli/hypercli-buzz-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
 | Goose | `ghcr.io/hypercli/hypercli-buzz-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | none | `_goose/unstable/session/system-prompt/set`, then ACP fallback | `.goose` |
 | Kimi Code | `ghcr.io/hypercli/hypercli-buzz-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
 
-OpenClaw is a separate gateway runtime. Upstream Buzz also contains the native
-`buzz-agent` ACP runtime. Sprig is the multicall package that dispatches to
-`buzz-acp`, `buzz-agent`, or `buzz-dev-mcp`; Sprig itself is not another
-runtime. Native `buzz-agent` is not yet a HyperCLI hosted provider alias.
+OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
+ACP runtime. Sprig is the multicall package that dispatches to `buzz-acp`,
+`buzz-agent`, or `buzz-dev-mcp`; Sprig itself is not another runtime.
 
 ## Container Injection
 
@@ -335,8 +335,8 @@ Provider, SDK, ACP, or image changes must verify:
     restoration invokes a provider lifecycle operation.
 
 Image candidates should be tested by immutable SHA tag. Promotion to `latest`
-must follow the runtime contract and offline ACP gates, including real
-OpenCode and Goose prompt-and-publish behavior where supported.
+must follow the runtime contract and offline ACP gates, including real Buzz
+Agent, OpenCode, and Goose inference behavior where supported.
 
 ## Source Map
 

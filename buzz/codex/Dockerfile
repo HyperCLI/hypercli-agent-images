@@ -7,6 +7,7 @@ ARG CODEX_VERSION=0.146.0
 ARG CODEX_ACP_VERSION=1.1.7
 
 USER root
+COPY --chmod=0755 codex/entrypoint.sh /usr/local/bin/hypercli-buzz-codex-entrypoint
 RUN export HOME=/root && \
     npm install --global --no-audit --no-fund \
       "@openai/codex@${CODEX_VERSION}" \
@@ -28,3 +29,5 @@ ENV NO_BROWSER=1 \
     BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
 
 USER node
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-codex-entrypoint"]
+CMD ["sleep", "infinity"]
