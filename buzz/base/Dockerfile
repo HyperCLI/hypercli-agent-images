@@ -21,7 +21,7 @@ WORKDIR /build
 RUN printf '%s' "${BUZZ_COMMIT}" | grep -Eq '^[0-9a-f]{40}$'
 COPY --from=buzz-source . /build/buzz
 
-COPY AGENTS.md /expected/AGENTS.md
+COPY nest/AGENTS.md /expected/AGENTS.md
 RUN cmp \
     /expected/AGENTS.md \
     /build/buzz/desktop/src-tauri/src/managed_agents/nest_agents.md
@@ -104,7 +104,7 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
 
 COPY --from=buzz-builder /out/sprig /usr/local/bin/sprig
 COPY --from=buzz-builder /out/nest /opt/hypercli-buzz/nest
-COPY AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
+COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
 COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
 RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
       -name SKILL.md -type f -print -quit | grep -q .
