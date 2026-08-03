@@ -32,6 +32,7 @@ assert_auth_methods(
     agent_command="/usr/local/bin/opencode",
     agent_args="acp",
     expected={"opencode-login"},
+    terminal={"opencode-login"},
 )
 
 login_result = run(image, ["opencode", "auth", "login", "--help"])

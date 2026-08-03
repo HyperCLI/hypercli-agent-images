@@ -324,12 +324,14 @@ Provider, SDK, ACP, or image changes must verify:
 6. `nest/AGENTS.md` matches pinned Buzz and survives repeated initialization.
 7. The real `tini` and setup entrypoint chain terminates promptly and preserves
    the launched command's nonzero exit status.
-8. The composed prompt reaches each runtime exactly once.
-9. ACP assistant text remains activity until the runtime explicitly publishes.
-10. Reply-guard retries are bounded under one hard deadline.
-11. Text mentions and author authorization remain independent.
-12. Provider deploy reuses running state and restarts stopped state in place.
-13. Tests do not claim Desktop settings, membership, shutdown, deletion, or
+8. A real Nostr keypair and owner-signed, agent-mentioned `!shutdown` drives
+   online-to-offline presence, relay close, and candidate-container exit.
+9. The composed prompt reaches each runtime exactly once.
+10. ACP assistant text remains activity until the runtime explicitly publishes.
+11. Reply-guard retries are bounded under one hard deadline.
+12. Text mentions and author authorization remain independent.
+13. Provider deploy reuses running state and restarts stopped state in place.
+14. Tests do not claim Desktop settings, membership, shutdown, deletion, or
     restoration invokes a provider lifecycle operation.
 
 Image candidates should be tested by immutable SHA tag. Promotion to `latest`

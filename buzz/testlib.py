@@ -51,6 +51,8 @@ def assert_entrypoint_exit_passthrough(image: str) -> None:
         "create",
         "--name",
         container_name,
+        "--network",
+        "none",
         image,
         "python3",
         "-c",
@@ -96,7 +98,7 @@ def run(
     mounts: list[tuple[Path, str]] | None = None,
     check: bool = True,
 ) -> subprocess.CompletedProcess[str]:
-    args = ["run", "--rm"]
+    args = ["run", "--rm", "--network", "none"]
     for key, value in (env or {}).items():
         args.extend(["--env", f"{key}={value}"])
     for source, destination in mounts or []:
@@ -152,6 +154,7 @@ def assert_auth_methods(
     agent_command: str,
     agent_args: str,
     expected: set[str],
+    terminal: set[str] | None = None,
     env: dict[str, str] | None = None,
 ) -> None:
     payload = run_json(
@@ -165,12 +168,26 @@ def assert_auth_methods(
     )
     methods = payload.get("methods")
     assert isinstance(methods, list), payload
-    method_ids = {
-        method.get("id")
+    methods_by_id = {
+        method["id"]: method
         for method in methods
         if isinstance(method, dict) and isinstance(method.get("id"), str)
     }
-    assert expected <= method_ids, (expected - method_ids, payload)
+    assert set(methods_by_id) == expected, payload
+
+    terminal = terminal or set()
+    assert terminal <= expected
+    for method_id, method in methods_by_id.items():
+        meta = method.get("_meta")
+        terminal_meta = meta.get("terminal-auth") if isinstance(meta, dict) else None
+        terminal_routed = method.get("type") == "terminal" or isinstance(
+            terminal_meta, dict
+        )
+        assert terminal_routed == (method_id in terminal), method
+        if terminal_routed:
+            assert isinstance(terminal_meta, dict), method
+            assert isinstance(terminal_meta.get("command"), str), method
+            assert isinstance(terminal_meta.get("args"), list), method
 
 
 def assert_models(

@@ -30,6 +30,7 @@ assert_auth_methods(
     agent_command="/usr/local/bin/kimi",
     agent_args="acp",
     expected={"login"},
+    terminal={"login"},
 )
 run(image, ["kimi", "login", "--help"])
 assert_user_config_preserved(

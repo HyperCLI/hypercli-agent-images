@@ -32,6 +32,7 @@ assert_auth_methods(
     agent_command="/usr/local/bin/claude-agent-acp",
     agent_args="",
     expected={"claude-ai-login", "console-login"},
+    terminal={"claude-ai-login", "console-login"},
 )
 
 claude_path = run(image, ["sh", "-lc", "command -v claude"]).stdout.strip()
