@@ -205,7 +205,26 @@ also expose them through:
 - `.buzz/.goose/skills`.
 
 Claude additionally receives `.buzz/CLAUDE.md -> AGENTS.md`. Existing
-user-managed paths always win.
+user-managed paths always win. Its entrypoint also creates a non-secret
+`.claude/settings.json` model catalog only when absent.
+
+### Runtime inference environment
+
+Lagoon injects `HYPER_AGENTS_API_KEY` and `HYPER_API_BASE` into the container.
+The image entrypoints do not translate or persist that credential.
+`hypercli-buzz-acp` performs runtime-specific translation immediately before
+every lazy child spawn and respawn:
+
+- Claude Code: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_MODEL`;
+- Codex: a non-secret `CODEX_CONFIG` custom-provider overlay whose `env_key`
+  points at `HYPER_AGENTS_API_KEY` and whose wire API is `responses`;
+- Kimi Code 0.31: the native in-memory `KIMI_MODEL_*` overlay.
+
+The mapping is all-or-nothing and does not overwrite an explicit native
+runtime environment, preventing a HyperCLI key/vendor URL mix. Set
+`HYPERCLI_RUNTIME_INFERENCE=native` when a synced vendor login/config should be
+used instead. Codex configuration is reproducible, but inference remains
+blocked until the HyperCLI gateway exposes an OpenAI Responses surface.
 
 ### Provider-owned environment
 
@@ -287,10 +306,13 @@ login commands execute local adapters and terminals. They cannot execute in a
 provider-hosted pod or return a remote verification URL/code through provider
 protocol v1.
 
-Hosted subscription login therefore uses an authenticated HyperCLI shell/auth
-session. Codex device login and analogous Claude/OpenCode flows require a live
-remote PTY, structured URL/code extraction, status, input, cancellation, and
-resume. Do not encode a challenge in `agent_id` or a provider error.
+Hosted HyperCLI inference does not require vendor login for Claude or Kimi;
+the ACP child receives Lagoon's short-lived credential. Vendor login remains
+useful for native models/features and is selected explicitly with
+`HYPERCLI_RUNTIME_INFERENCE=native`. Codex device login and analogous
+Claude/OpenCode flows still require a live remote PTY, structured URL/code
+extraction, status, input, cancellation, and resume. Do not encode a challenge
+in `agent_id` or a provider error.
 
 ACP authentication is useful as a protocol reference but does not install a
 runtime. Terminal authentication tells the client to launch a separate

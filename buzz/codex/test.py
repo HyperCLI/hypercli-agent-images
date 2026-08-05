@@ -53,6 +53,11 @@ with tempfile.TemporaryDirectory() as home_name:
         agent_command="/usr/local/bin/codex-acp",
         agent_args="",
         mounts=[(home, "/home/node")],
+        env={
+            "BUZZ_ACP_MODEL": "runtime-model",
+            "HYPER_API_BASE": "https://api.dev.hypercli.com/",
+            "HYPER_AGENTS_API_KEY": "runtime-secret",
+        },
     )
 
 print(f"{image}: Codex contract passed")

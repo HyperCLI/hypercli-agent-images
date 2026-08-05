@@ -38,6 +38,32 @@ assert_auth_methods(
 claude_path = run(image, ["sh", "-lc", "command -v claude"]).stdout.strip()
 assert claude_path == "/usr/local/bin/claude", claude_path
 
+configured = run(
+    image,
+    [
+        "python3",
+        "-c",
+        """
+import json
+import os
+from pathlib import Path
+
+settings = json.loads(Path('/home/node/.claude/settings.json').read_text())
+assert settings['model'] == 'runtime-model'
+assert settings['availableModels'] == ['runtime-model']
+assert settings['$schema'] == 'https://json.schemastore.org/claude-code-settings.json'
+assert 'env' not in settings
+assert 'runtime-secret' not in json.dumps(settings)
+""",
+    ],
+    env={
+        "BUZZ_ACP_MODEL": "runtime-model",
+        "HYPER_API_BASE": "https://api.dev.hypercli.com/",
+        "HYPER_AGENTS_API_KEY": "runtime-secret",
+    },
+)
+assert configured.returncode == 0
+
 login_help = run(image, ["claude", "auth", "login", "--help"]).stdout
 assert "--claudeai" in login_help
 assert "--console" in login_help
@@ -49,6 +75,11 @@ assert_models(
     image,
     agent_command="/usr/local/bin/claude-agent-acp",
     agent_args="",
+    env={
+        "BUZZ_ACP_MODEL": "runtime-model",
+        "HYPER_API_BASE": "https://api.dev.hypercli.com/",
+        "HYPER_AGENTS_API_KEY": "runtime-secret",
+    },
 )
 
 print(f"{image}: Claude Code contract passed")
