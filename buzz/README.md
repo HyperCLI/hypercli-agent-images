@@ -205,26 +205,35 @@ also expose them through:
 - `.buzz/.goose/skills`.
 
 Claude additionally receives `.buzz/CLAUDE.md -> AGENTS.md`. Existing
-user-managed paths always win. Its entrypoint also creates a non-secret
-`.claude/settings.json` model catalog only when absent.
+user-managed paths always win. Native mode does not create
+`.claude/settings.json`. Explicit HyperCLI compatibility mode may create a
+three-key model catalog plus `.claude/.hypercli-settings.json` ownership
+marker. Returning to native mode removes a still-unmodified marked catalog,
+or the exact legacy three-key `kimi-k2.6-anthropic` catalog emitted by older
+images. Any extra key or different value is preserved as user-owned config.
 
 ### Runtime inference environment
 
 Lagoon injects `HYPER_AGENTS_API_KEY` and `HYPER_API_BASE` into the container.
-The image entrypoints do not translate or persist that credential.
-`hypercli-buzz-acp` performs runtime-specific translation immediately before
-every lazy child spawn and respawn:
+The image entrypoints do not translate or persist that credential. Buzz Agent,
+OpenCode, and Goose are the zero-login HyperCLI runtimes. Claude Code, Codex,
+and Kimi Code are native-first: missing `HYPERCLI_RUNTIME_INFERENCE` means the
+child receives no implicit HyperCLI model, URL, or credential overlay.
+
+Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks
+`hypercli-buzz-acp` to perform runtime-specific compatibility translation
+immediately before each native-runtime child spawn and respawn:
 
 - Claude Code: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_MODEL`;
 - Codex: a non-secret `CODEX_CONFIG` custom-provider overlay whose `env_key`
   points at `HYPER_AGENTS_API_KEY` and whose wire API is `responses`;
 - Kimi Code 0.31: the native in-memory `KIMI_MODEL_*` overlay.
 
-The mapping is all-or-nothing and does not overwrite an explicit native
-runtime environment, preventing a HyperCLI key/vendor URL mix. Set
-`HYPERCLI_RUNTIME_INFERENCE=native` when a synced vendor login/config should be
-used instead. Codex configuration is reproducible, but inference remains
-blocked until the HyperCLI gateway exposes an OpenAI Responses surface.
+The mapping is all-or-nothing and does not overwrite an explicit vendor
+runtime environment, preventing a HyperCLI key/vendor URL mix. Explicit
+`HYPERCLI_RUNTIME_INFERENCE=native` is accepted but not required. Codex
+compatibility configuration is reproducible, but inference remains blocked
+until the HyperCLI gateway exposes an OpenAI Responses surface.
 
 ### Runtime-native authentication
 
@@ -243,9 +252,10 @@ one-shot deployment provider does not proxy interactive authentication and
 credentials must not be copied into its launch request.
 
 Every wrapper's `status` action prints exactly one JSON object with `runtime`
-and `authenticated` (`true`, `false`, or `null` when the upstream CLI exposes
-no status probe) and exits successfully. Exit code 2 is reserved for invalid
-wrapper usage.
+and boolean `authenticated`, then exits successfully. Kimi mirrors its native
+OAuth `hasToken` check by safely validating the mode-0600
+`.kimi-code/credentials/kimi-code.json` wire file and never prints its content.
+Exit code 2 is reserved for invalid wrapper usage.
 
 ### Provider-owned environment
 
@@ -327,13 +337,13 @@ login commands execute local adapters and terminals. They cannot execute in a
 provider-hosted pod or return a remote verification URL/code through provider
 protocol v1.
 
-Hosted HyperCLI inference does not require vendor login for Claude or Kimi;
-the ACP child receives Lagoon's short-lived credential. Vendor login remains
-useful for native models/features and is selected explicitly with
-`HYPERCLI_RUNTIME_INFERENCE=native`. Codex device login and analogous
-Claude/OpenCode flows still require a live remote PTY, structured URL/code
-extraction, status, input, cancellation, and resume. Do not encode a challenge
-in `agent_id` or a provider error.
+Buzz Agent, OpenCode, and Goose use hosted HyperCLI inference without a vendor
+login. Claude Code, Codex, and Kimi Code require their native persisted login
+by default. Their device/browser flows require a live remote PTY, structured
+URL/code extraction, status, input where applicable, cancellation, and resume.
+HyperCLI compatibility for those runtimes is an explicit advanced opt-in; it
+is never a fallback for a missing vendor login. Do not encode a challenge in
+`agent_id` or a provider error.
 
 ACP authentication is useful as a protocol reference but does not install a
 runtime. Terminal authentication tells the client to launch a separate

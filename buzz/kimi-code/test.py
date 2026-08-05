@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -44,7 +45,7 @@ wrapper_status = run(image, ["hypercli-runtime-auth", "status"], check=False)
 assert wrapper_status.returncode == 0
 assert json.loads(wrapper_status.stdout) == {
     "runtime": "kimi-code",
-    "authenticated": None,
+    "authenticated": False,
 }
 run(image, ["hypercli-runtime-auth", "login", "--help"])
 runtime_env = {
@@ -67,13 +68,68 @@ assert not config.exists()
     env=runtime_env,
 )
 assert configured.returncode == 0
+with tempfile.TemporaryDirectory() as home_name:
+    home = Path(home_name)
+    home.chmod(0o777)
+    credentials = home / ".kimi-code/credentials"
+    credentials.mkdir(parents=True)
+    credential = credentials / "kimi-code.json"
+    credential.write_text(
+        json.dumps(
+            {
+                "access_token": "credential-probe-token",
+                "refresh_token": "credential-probe-refresh",
+                "expires_at": 4_102_444_800,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    credential.chmod(0o600)
+    mounted_status = run(
+        image,
+        ["hypercli-runtime-auth", "status"],
+        mounts=[(home, "/home/node")],
+    )
+    assert json.loads(mounted_status.stdout) == {
+        "runtime": "kimi-code",
+        "authenticated": True,
+    }
+    assert "credential-probe" not in mounted_status.stdout
+
+    credential.chmod(0o644)
+    insecure_status = run(
+        image,
+        ["hypercli-runtime-auth", "status"],
+        mounts=[(home, "/home/node")],
+    )
+    assert json.loads(insecure_status.stdout)["authenticated"] is False
+
+    credential.write_text('{"access_token":""}\n', encoding="utf-8")
+    credential.chmod(0o600)
+    empty_status = run(
+        image,
+        ["hypercli-runtime-auth", "status"],
+        mounts=[(home, "/home/node")],
+    )
+    assert json.loads(empty_status.stdout)["authenticated"] is False
+
+    credential.write_text("not-json\n", encoding="utf-8")
+    credential.chmod(0o600)
+    corrupt_status = run(
+        image,
+        ["hypercli-runtime-auth", "status"],
+        mounts=[(home, "/home/node")],
+    )
+    assert json.loads(corrupt_status.stdout)["authenticated"] is False
+
+run(image, ["kimi", "doctor"], env=runtime_env)
 assert_models(
     image,
     agent_command="/usr/local/bin/kimi",
     agent_args="acp",
-    env=runtime_env,
+    env={**runtime_env, "HYPERCLI_RUNTIME_INFERENCE": "hypercli"},
 )
-run(image, ["kimi", "doctor"], env=runtime_env)
 assert_user_config_preserved(
     image,
     relative_path=".kimi-code/tui.toml",
