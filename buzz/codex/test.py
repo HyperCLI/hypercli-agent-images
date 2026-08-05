@@ -13,6 +13,7 @@ from testlib import (  # noqa: E402
     assert_auth_methods,
     assert_common_contract,
     assert_models,
+    assert_runtime_auth_wrapper,
     require_image_argument,
     run,
 )
@@ -33,11 +34,25 @@ assert_auth_methods(
     agent_args="",
     expected={"api-key"},
 )
+assert_runtime_auth_wrapper(
+    image,
+    runtime_command="/usr/local/bin/hypercli-codex-auth",
+)
 
 assert "--device-auth" in run(image, ["codex", "login", "--help"]).stdout
 status = run(image, ["codex", "login", "status"], check=False)
 assert status.returncode == 1
 assert "Not logged in" in status.stdout + status.stderr
+wrapper_status = run(image, ["hypercli-runtime-auth", "status"], check=False)
+assert wrapper_status.returncode == 0
+assert json.loads(wrapper_status.stdout) == {
+    "runtime": "codex",
+    "authenticated": False,
+}
+assert "--device-auth" in run(
+    image,
+    ["hypercli-runtime-auth", "login", "--help"],
+).stdout
 
 with tempfile.TemporaryDirectory() as home_name:
     home = Path(home_name)

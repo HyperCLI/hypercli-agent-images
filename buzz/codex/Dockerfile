@@ -8,10 +8,12 @@ ARG CODEX_ACP_VERSION=1.1.7
 
 USER root
 COPY --chmod=0755 codex/entrypoint.sh /usr/local/bin/hypercli-buzz-codex-entrypoint
+COPY --chmod=0755 codex/runtime-auth.sh /usr/local/bin/hypercli-codex-auth
 RUN export HOME=/root && \
     npm install --global --no-audit --no-fund \
       "@openai/codex@${CODEX_VERSION}" \
       "@agentclientprotocol/codex-acp@${CODEX_ACP_VERSION}" && \
+    ln -s hypercli-codex-auth /usr/local/bin/hypercli-runtime-auth && \
     codex --version && \
     codex-acp --version && \
     printf '%s\n' codex > /opt/hypercli-buzz/runtime

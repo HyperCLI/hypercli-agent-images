@@ -12,6 +12,7 @@ from testlib import (  # noqa: E402
     assert_auth_methods,
     assert_common_contract,
     assert_models,
+    assert_runtime_auth_wrapper,
     require_image_argument,
     run,
 )
@@ -33,6 +34,10 @@ assert_auth_methods(
     agent_args="",
     expected={"claude-ai-login", "console-login"},
     terminal={"claude-ai-login", "console-login"},
+)
+assert_runtime_auth_wrapper(
+    image,
+    runtime_command="/usr/local/bin/hypercli-claude-auth",
 )
 
 claude_path = run(image, ["sh", "-lc", "command -v claude"]).stdout.strip()
@@ -71,6 +76,22 @@ assert "--sso" in login_help
 status = run(image, ["claude", "auth", "status", "--json"], check=False)
 assert status.returncode == 1
 assert json.loads(status.stdout)["loggedIn"] is False
+wrapper_status = run(image, ["hypercli-runtime-auth", "status"], check=False)
+assert wrapper_status.returncode == 0
+assert json.loads(wrapper_status.stdout) == {
+    "runtime": "claude-code",
+    "authenticated": False,
+}
+wrapper_login_help = run(
+    image,
+    ["hypercli-runtime-auth", "login", "--help"],
+).stdout
+assert "--claudeai" in wrapper_login_help
+wrapper_token_help = run(
+    image,
+    ["hypercli-runtime-auth", "setup-token", "--help"],
+).stdout
+assert "setup-token" in wrapper_token_help.lower()
 assert_models(
     image,
     agent_command="/usr/local/bin/claude-agent-acp",

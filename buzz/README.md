@@ -226,6 +226,27 @@ runtime environment, preventing a HyperCLI key/vendor URL mix. Set
 used instead. Codex configuration is reproducible, but inference remains
 blocked until the HyperCLI gateway exposes an OpenAI Responses surface.
 
+### Runtime-native authentication
+
+Claude Code, Codex, and Kimi Code images expose a stable
+`/usr/local/bin/hypercli-runtime-auth` command for authenticated remote exec or
+PTY sessions. It resolves to the runtime-specific wrapper installed in the
+same image:
+
+- Claude Code: `hypercli-claude-auth status|login|setup-token|logout`;
+- Codex: `hypercli-codex-auth status|login|logout`;
+- Kimi Code: `hypercli-kimi-auth status|login`.
+
+Login runs inside the hosted runtime so native credentials persist beneath the
+sync-backed home directory. These commands are an image/exec contract; the
+one-shot deployment provider does not proxy interactive authentication and
+credentials must not be copied into its launch request.
+
+Every wrapper's `status` action prints exactly one JSON object with `runtime`
+and `authenticated` (`true`, `false`, or `null` when the upstream CLI exposes
+no status probe) and exits successfully. Exit code 2 is reserved for invalid
+wrapper usage.
+
 ### Provider-owned environment
 
 The provider must inject and protect these categories:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from testlib import (  # noqa: E402
     assert_auth_methods,
     assert_common_contract,
     assert_models,
+    assert_runtime_auth_wrapper,
     assert_user_config_preserved,
     require_image_argument,
     run,
@@ -33,7 +35,18 @@ assert_auth_methods(
     expected={"login"},
     terminal={"login"},
 )
+assert_runtime_auth_wrapper(
+    image,
+    runtime_command="/usr/local/bin/hypercli-kimi-auth",
+)
 run(image, ["kimi", "login", "--help"])
+wrapper_status = run(image, ["hypercli-runtime-auth", "status"], check=False)
+assert wrapper_status.returncode == 0
+assert json.loads(wrapper_status.stdout) == {
+    "runtime": "kimi-code",
+    "authenticated": None,
+}
+run(image, ["hypercli-runtime-auth", "login", "--help"])
 runtime_env = {
     "BUZZ_ACP_MODEL": "runtime-model",
     "HYPER_API_BASE": "https://api.dev.hypercli.com/",

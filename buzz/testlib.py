@@ -190,6 +190,39 @@ def assert_auth_methods(
             assert isinstance(terminal_meta.get("args"), list), method
 
 
+def assert_runtime_auth_wrapper(
+    image: str,
+    *,
+    runtime_command: str,
+) -> None:
+    """Prove the stable HyperCLI auth entrypoint resolves to this runtime."""
+    payload = run_python(
+        image,
+        f"""
+import json
+import os
+from pathlib import Path
+
+generic = Path('/usr/local/bin/hypercli-runtime-auth')
+specific = Path({runtime_command!r})
+print(json.dumps({{
+    'generic_is_link': generic.is_symlink(),
+    'generic_target': os.path.realpath(generic),
+    'specific_is_file': specific.is_file(),
+    'specific_executable': os.access(specific, os.X_OK),
+}}))
+""",
+    )
+    assert payload == {
+        "generic_is_link": True,
+        "generic_target": runtime_command,
+        "specific_is_file": True,
+        "specific_executable": True,
+    }, payload
+    help_result = run(image, ["hypercli-runtime-auth", "--help"])
+    assert f"Usage: {Path(runtime_command).name}" in help_result.stdout
+
+
 def assert_models(
     image: str,
     *,

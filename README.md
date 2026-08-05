@@ -39,10 +39,11 @@ python3 buzz/base/test.py hypercli-buzz-base
 python3 buzz/opencode/test.py hypercli-buzz-opencode
 ```
 
-The five public runtime images are:
+The six public runtime images are:
 
 | Directory | Image | ACP child | Authentication |
 | --- | --- | --- | --- |
+| `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI Anthropic-compatible inference |
 | `opencode` | `hypercli-buzz-opencode` | `opencode acp` | OpenCode login or seeded HyperCLI Anthropic provider |
 | `codex` | `hypercli-buzz-codex` | `codex-acp` | Codex API key or device login |
 | `claude` | `hypercli-buzz-claude` | `claude-agent-acp` | Claude subscription, Console, or SSO |
