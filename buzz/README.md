@@ -127,7 +127,7 @@ All hosted Buzz coding runtimes use:
 
 | Property | Value |
 | --- | --- |
-| Size | `large` |
+| Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
 | Entrypoint command | `/usr/local/bin/buzz-acp` |
 | Restart | `false` |
 | Routes | none |
@@ -144,6 +144,8 @@ idempotent:
 - a stopped deployment is started in place with the current translated launch
   request;
 - a create conflict is recovered by looking up the same stable deployment.
+- a create-time slot race refreshes capacity and may fall back to an
+  unattempted lower available tier.
 
 Readiness succeeds only at `RUNNING`. `PENDING`, `RESTORING`, `SYNCING`, and
 `STARTING` are polled. Terminal failure states and the readiness timeout return
@@ -161,8 +163,9 @@ a sanitized error without upstream response bodies or secrets.
 | Kimi Code | `ghcr.io/hypercli/hypercli-buzz-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
-ACP runtime. Sprig is the multicall package that dispatches to `buzz-acp`,
-`buzz-agent`, or `buzz-dev-mcp`; Sprig itself is not another runtime.
+ACP runtime. The upstream Sprig multicall binary still supplies `buzz`,
+`buzz-agent`, and `buzz-dev-mcp`; the stable `buzz-acp` executable is built
+from HyperCLI's `hypercli-buzz-acp` package and is not a Sprig symlink.
 
 ## Container Injection
 
@@ -170,7 +173,7 @@ ACP runtime. Sprig is the multicall package that dispatches to `buzz-acp`,
 
 The image must provide:
 
-- `/usr/local/bin/buzz-acp`, linked to the pinned Sprig binary;
+- `/usr/local/bin/buzz-acp`, built from the exact pinned HyperCLI commit;
 - the runtime CLI and any required ACP adapter from the matrix above;
 - `/opt/hypercli` at a pinned HyperCLI commit;
 - `/opt/hypercli-buzz/nest/AGENTS.md`, copied from `nest/AGENTS.md`;
@@ -340,7 +343,7 @@ Agent, OpenCode, and Goose inference behavior where supported.
 
 ## Source Map
 
-Pinned Buzz:
+Pinned upstream Buzz dependencies:
 
 - provider request construction: `desktop/src-tauri/src/commands/agents_deploy.rs`;
 - provider invocation: `desktop/src-tauri/src/managed_agents/backend.rs`;
@@ -349,14 +352,13 @@ Pinned Buzz:
 - remote status projection: `desktop/src-tauri/src/managed_agents/runtime.rs`;
 - frontend lifecycle actions:
   `desktop/src/features/agents/lib/managedAgentControlActions.ts`;
-- ACP child transport: `crates/buzz-acp/src/acp.rs`;
-- runtime setup mode: `crates/buzz-acp/src/setup_mode.rs`;
 - native runtime: `crates/buzz-agent`;
 - Sprig dispatch: `crates/sprig/src/main.rs`;
 - upstream Kubernetes reference: `crates/buzz-backend-kubernetes`.
 
 HyperCLI:
 
+- hosted ACP source and upstream pin: `buzz-acp`;
 - provider translation: `buzz-backend-provider/src/lib.rs`;
 - typed launch rendering: `rs-sdk/src/types.rs`;
 - golden contract: `tests/fixtures/buzz-launch-contract.json`;
@@ -366,5 +368,4 @@ HyperClaw backend and images:
 
 - canonical backend contract: `backend/agents/launch_contract.py`;
 - image definitions and initialization: this directory;
-- image contract tests: `test_*.py` and parent smoke/CI tests;
-- downstream Buzz patches: pinned `buzz/DRIFT.md`.
+- image contract tests: `test_*.py` and parent smoke/CI tests.

@@ -11,8 +11,9 @@ workspace initialization.
 - `nest/AGENTS.md` is shipped runtime content. It must remain byte-for-byte
   equal to Buzz Desktop's pinned `nest_agents.md`.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
-- The pinned Buzz submodule owns ACP framing, relay behavior, prompt transport,
-  mention matching, and the shared reply guard.
+- `hypercli/buzz-acp` owns hosted ACP framing, relay behavior, prompt transport,
+  mention matching, and the shared reply guard. Its Cargo manifest pins the
+  unmodified upstream Buzz crates it consumes.
 - The HyperCLI provider owns translation from Buzz's portable launch request to
   the HyperCLI deployments API.
 - HyperClaw/Lagoon owns remote scheduling and container lifecycle.
@@ -22,8 +23,9 @@ and the executable tests together when the contract changes.
 
 ## Change Rules
 
-- Track upstream Buzz behavior and keep downstream ACP drift minimal and
-  explicitly documented in the Buzz fork's `DRIFT.md`.
+- Track upstream Buzz behavior and keep the hosted delta in
+  `hypercli/buzz-acp` minimal. Advance its single documented upstream pin only
+  after reviewing the complete upstream `buzz-acp` diff and running its tests.
 - Never invent a Desktop provider operation. Protocol v1 supports only `info`
   and `deploy`.
 - Preserve the resolved `launch` block. Do not reconstruct prompt, access,

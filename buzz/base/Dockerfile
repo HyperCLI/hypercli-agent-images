@@ -3,11 +3,11 @@
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
 
-ARG BUZZ_COMMIT
+FROM ${RUST_IMAGE} AS source-builder
 
-FROM ${RUST_IMAGE} AS buzz-builder
-
-ARG BUZZ_COMMIT
+ARG BUZZ_REPO=https://github.com/block/buzz.git
+ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
+ARG HYPERCLI_REF
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -18,8 +18,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN printf '%s' "${BUZZ_COMMIT}" | grep -Eq '^[0-9a-f]{40}$'
-COPY --from=buzz-source . /build/buzz
+RUN set -eux; \
+    printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
+    git init /build/hypercli; \
+    git -C /build/hypercli remote add origin "${HYPERCLI_REPO}"; \
+    git -C /build/hypercli fetch --depth 1 origin "${HYPERCLI_REF}"; \
+    test "$(git -C /build/hypercli rev-parse FETCH_HEAD)" = "${HYPERCLI_REF}"; \
+    git -C /build/hypercli checkout --detach FETCH_HEAD; \
+    printf '%s\n' "${HYPERCLI_REF}" > /build/hypercli/.baked-ref; \
+    BUZZ_REF="$(sed -n 's/^upstream-buzz-ref = "\([0-9a-f]\{40\}\)"$/\1/p' /build/hypercli/buzz-acp/Cargo.toml)"; \
+    printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
+    mkdir -p /out; \
+    printf '%s\n' "${BUZZ_REF}" > /out/buzz-ref; \
+    git init /build/buzz; \
+    git -C /build/buzz remote add origin "${BUZZ_REPO}"; \
+    git -C /build/buzz fetch --depth 1 origin "${BUZZ_REF}"; \
+    test "$(git -C /build/buzz rev-parse FETCH_HEAD)" = "${BUZZ_REF}"; \
+    git -C /build/buzz checkout --detach FETCH_HEAD
 
 COPY nest/AGENTS.md /expected/AGENTS.md
 RUN cmp \
@@ -41,17 +56,26 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       /out/nest/.agents/skills/buzz-cli/SKILL.md; \
     strip /out/sprig
 
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=/build/hypercli/target,sharing=locked \
+    set -eux; \
+    cargo build \
+      --manifest-path /build/hypercli/Cargo.toml \
+      --release \
+      --locked \
+      -p hypercli-buzz-acp; \
+    install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/buzz-acp; \
+    strip /out/buzz-acp
+
 FROM ${NODE_IMAGE}
 
 ARG NODE_IMAGE
-ARG BUZZ_COMMIT
-ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 ARG HYPERCLI_REF
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
       org.opencontainers.image.title="HyperCLI Buzz Agent Base" \
       org.opencontainers.image.base.name="${NODE_IMAGE}" \
-      org.hypercli.buzz_commit="${BUZZ_COMMIT}" \
       org.hypercli.coding_runtime="base"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -81,14 +105,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --from=source-builder /build/hypercli /opt/hypercli
 RUN set -eux; \
-    printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
-    git init /opt/hypercli; \
-    git -C /opt/hypercli remote add origin "${HYPERCLI_REPO}"; \
-    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}"; \
-    test "$(git -C /opt/hypercli rev-parse FETCH_HEAD)" = "${HYPERCLI_REF}"; \
-    git -C /opt/hypercli checkout --detach FETCH_HEAD; \
-    git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref; \
+    test "$(cat /opt/hypercli/.baked-ref)" = "${HYPERCLI_REF}"; \
     pip3 install --break-system-packages --no-cache-dir \
       /opt/hypercli/sdk \
       "/opt/hypercli/cli[all]"; \
@@ -102,8 +121,10 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
       > /etc/sudoers.d/90-node-nopasswd && \
     chmod 0440 /etc/sudoers.d/90-node-nopasswd
 
-COPY --from=buzz-builder /out/sprig /usr/local/bin/sprig
-COPY --from=buzz-builder /out/nest /opt/hypercli-buzz/nest
+COPY --from=source-builder /out/sprig /usr/local/bin/sprig
+COPY --from=source-builder /out/nest /opt/hypercli-buzz/nest
+COPY --from=source-builder /out/buzz-acp /usr/local/bin/buzz-acp
+COPY --from=source-builder /out/buzz-ref /opt/hypercli-buzz/.buzz-commit
 COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
 COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
 RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
@@ -111,10 +132,8 @@ RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
 COPY --chmod=0755 init.sh /usr/local/bin/hypercli-buzz-init
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
 
-RUN ln -s sprig /usr/local/bin/buzz-acp && \
-    ln -s sprig /usr/local/bin/buzz-dev-mcp && \
+RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
-    printf '%s\n' "${BUZZ_COMMIT}" > /opt/hypercli-buzz/.buzz-commit && \
     buzz-acp --help >/dev/null && \
     buzz --help >/dev/null
 

@@ -67,6 +67,7 @@ print(json.dumps({
     "buzz_commit": Path(
         "/opt/hypercli-buzz/.buzz-commit"
     ).read_text().strip(),
+    "buzz_acp_is_symlink": Path("/usr/local/bin/buzz-acp").is_symlink(),
     "hypercli_ref": Path(
         "/opt/hypercli/.baked-ref"
     ).read_text().strip(),
@@ -89,6 +90,7 @@ assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
 assert len(payload["buzz_commit"]) == 40
 assert len(payload["hypercli_ref"]) == 40
+assert payload["buzz_acp_is_symlink"] is False
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
 
