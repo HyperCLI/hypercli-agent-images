@@ -49,8 +49,8 @@ hermes_model_api_base_from_agents_base() {
   esac
 }
 
-if [[ -z "${HERMES_MODEL_API_BASE:-}" ]]; then
-  export HERMES_MODEL_API_BASE="$(
+if [[ -z "${HERMES_INFERENCE_API_BASE:-}" ]]; then
+  export HERMES_INFERENCE_API_BASE="$(
     hermes_model_api_base_from_agents_base "${HYPER_AGENTS_API_BASE:-https://api.agents.hypercli.com}"
   )"
 fi

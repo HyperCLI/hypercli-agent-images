@@ -7,7 +7,7 @@ model:
 providers:
   hypercli:
     name: HyperCLI
-    api: ${env:HERMES_MODEL_API_BASE}
+    api: ${env:HERMES_INFERENCE_API_BASE}
     key_env: HYPER_AGENTS_API_KEY
     transport: ${env:HERMES_MODEL_TRANSPORT}
     default_model: ${env:HERMES_DEFAULT_MODEL}

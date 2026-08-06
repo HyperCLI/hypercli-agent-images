@@ -106,7 +106,7 @@ def main() -> None:
             "-v", f"{volume}:/opt/data",
             "-e", f"API_SERVER_KEY={API_KEY}",
             "-e", f"HYPER_API_KEY={MODEL_KEY}",
-            "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}/v1",
+            "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
             "-e", "HERMES_MODEL_TRANSPORT=chat_completions",
             "-e", "HERMES_DEFAULT_MODEL=mock-hermes",
             IMAGE,
@@ -135,7 +135,7 @@ def main() -> None:
             "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
-        assert "api: ${env:HERMES_MODEL_API_BASE}" in seeded
+        assert "api: ${env:HERMES_INFERENCE_API_BASE}" in seeded
         assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
@@ -144,9 +144,26 @@ def main() -> None:
             "docker", "run", "--rm",
             "-e", "HYPER_AGENTS_API_BASE=https://api.dev.hypercli.com/agents",
             IMAGE,
-            "sh", "-c", "printf '%s' \"${HERMES_MODEL_API_BASE}\"",
+            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
         ).stdout
         assert dev_model_base.rstrip().endswith("https://api.agents.dev.hypercli.com/v1")
+
+        custom_model_base = run(
+            "docker", "run", "--rm",
+            "-e", "HYPER_AGENTS_API_BASE=http://models.internal/",
+            IMAGE,
+            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
+        ).stdout
+        assert custom_model_base.rstrip().endswith("http://models.internal/v1")
+
+        overridden_model_base = run(
+            "docker", "run", "--rm",
+            "-e", "HYPER_AGENTS_API_BASE=https://api.dev.hypercli.com/agents",
+            "-e", "HERMES_INFERENCE_API_BASE=https://override.example/v1",
+            IMAGE,
+            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
+        ).stdout
+        assert overridden_model_base.rstrip().endswith("https://override.example/v1")
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
