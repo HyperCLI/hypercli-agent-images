@@ -97,8 +97,8 @@ def main() -> None:
             "-p", "127.0.0.1::8642",
             "-v", f"{volume}:/opt/data",
             "-e", f"API_SERVER_KEY={API_KEY}",
-            "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
-            "-e", f"HERMES_MODEL_API_BASE=http://host.docker.internal:{model_port}/v1",
+            "-e", f"HYPER_API_KEY={MODEL_KEY}",
+            "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}/v1",
             "-e", "HERMES_MODEL_TRANSPORT=chat_completions",
             "-e", "HERMES_DEFAULT_MODEL=mock-hermes",
             IMAGE,
@@ -127,7 +127,22 @@ def main() -> None:
             "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
+        assert "api: ${env:HYPER_AGENTS_API_BASE}" in seeded
+        assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
+        assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
+
+        run(
+            "docker", "run", "--rm", "--entrypoint", "/bin/sh",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "-c", "chown -R 12345:12346 /opt/data && rm -rf /opt/data/skills/hypercli",
+        )
+        ownership = run(
+            "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "stat", "-c", "%u:%g", "/opt/data/skills/hypercli",
+        ).stdout
+        assert ownership.rstrip().endswith("12345:12346")
 
         marker = "# preserve-existing-config"
         run(

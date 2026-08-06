@@ -2,9 +2,19 @@
 set -euo pipefail
 
 HERMES_HOME="${HERMES_HOME:-/opt/data}"
-CONFIG_PATH="${HERMES_CONFIG_PATH:-${HERMES_HOME}/config.yaml}"
+CONFIG_PATH="${HERMES_HOME}/config.yaml"
+CONFIG_TEMPLATE="${HERMES_CONFIG_TEMPLATE:-/opt/hypercli-hermes/config.yaml}"
 HYPERCLI_SKILLS_DIR="${HYPERCLI_SKILLS_DIR:-/opt/hypercli/skills}"
 HERMES_SKILLS_DIR="${HERMES_SKILLS_DIR:-${HERMES_HOME}/skills}"
+
+valid_id() {
+  [[ "$1" =~ ^[0-9]+$ ]] && (( 10#$1 >= 1 && 10#$1 <= 65534 ))
+}
+
+HERMES_OWNER_UID="${HERMES_UID:-${PUID:-10000}}"
+HERMES_OWNER_GID="${HERMES_GID:-${PGID:-10000}}"
+valid_id "${HERMES_OWNER_UID}" || HERMES_OWNER_UID=10000
+valid_id "${HERMES_OWNER_GID}" || HERMES_OWNER_GID=10000
 
 if [[ -n "${HYPER_API_KEY:-}" && -z "${HYPER_AGENTS_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
@@ -18,43 +28,15 @@ if [[ -d "${HYPERCLI_SKILLS_DIR}" ]]; then
     target_entry="${HERMES_SKILLS_DIR}/${entry_name}"
     if [[ ! -e "${target_entry}" ]]; then
       cp -a "${source_entry}" "${target_entry}"
+      chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_entry}"
       echo "[hermes-agent] seeded HyperCLI skill (${entry_name})"
     fi
   done < <(find "${HYPERCLI_SKILLS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
 fi
 
 if [[ ! -e "${CONFIG_PATH}" ]]; then
-  HERMES_CONFIG_PATH="${CONFIG_PATH}" /opt/hermes/.venv/bin/python - <<'PY'
-import os
-from pathlib import Path
-
-import yaml
-
-path = Path(os.environ["HERMES_CONFIG_PATH"])
-provider = os.environ.get("HERMES_MODEL_PROVIDER", "hypercli").strip() or "hypercli"
-model = os.environ.get("HERMES_DEFAULT_MODEL", "kimi-k2.6-anthropic").strip()
-base = (
-    os.environ.get("HERMES_MODEL_API_BASE", "").strip()
-    or os.environ.get("HYPER_AGENTS_API_BASE", "").strip()
-    or "https://api.agents.hypercli.com"
-).rstrip("/")
-transport = os.environ.get("HERMES_MODEL_TRANSPORT", "anthropic_messages").strip()
-
-config = {
-    "model": {"provider": provider, "default": model},
-    "providers": {
-        provider: {
-            "api": base,
-            "key_env": "HYPER_AGENTS_API_KEY",
-            "transport": transport,
-            "default_model": model,
-        }
-    },
-}
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-PY
-  echo "[hermes-agent] seeded managed provider config at ${CONFIG_PATH}"
+  cp "${CONFIG_TEMPLATE}" "${CONFIG_PATH}"
+  echo "[hermes-agent] seeded default config at ${CONFIG_PATH}"
 else
   echo "[hermes-agent] preserving existing config at ${CONFIG_PATH}"
 fi
