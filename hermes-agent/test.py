@@ -84,6 +84,12 @@ def main() -> None:
     assert "8642/tcp" in inspect["ExposedPorts"]
     assert inspect["Healthcheck"]["Test"][0] == "CMD-SHELL"
 
+    sudo = run(
+        "docker", "run", "--rm", "--entrypoint", "/bin/sh", IMAGE,
+        "-c", "sudo -n id -u",
+    )
+    assert sudo.stdout.strip() == "0"
+
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout
 

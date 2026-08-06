@@ -33,6 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     zip \
     unzip \
+    && printf '%s\n' 'node ALL=(ALL) NOPASSWD:ALL' \
+      > /etc/sudoers.d/90-node-nopasswd \
+    && chmod 0440 /etc/sudoers.d/90-node-nopasswd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /home/node/.openclaw && \

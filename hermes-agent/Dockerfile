@@ -13,6 +13,9 @@ LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
 
 USER root
 
+RUN apt-get update && apt-get install -y --no-install-recommends sudo \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
