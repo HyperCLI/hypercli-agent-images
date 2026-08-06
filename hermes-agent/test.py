@@ -135,10 +135,18 @@ def main() -> None:
             "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
-        assert "api: ${env:HYPER_AGENTS_API_BASE}" in seeded
+        assert "api: ${env:HERMES_MODEL_API_BASE}" in seeded
         assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
+
+        dev_model_base = run(
+            "docker", "run", "--rm",
+            "-e", "HYPER_AGENTS_API_BASE=https://api.dev.hypercli.com/agents",
+            IMAGE,
+            "sh", "-c", "printf '%s' \"${HERMES_MODEL_API_BASE}\"",
+        ).stdout
+        assert dev_model_base.rstrip().endswith("https://api.agents.dev.hypercli.com/v1")
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
