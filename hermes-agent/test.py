@@ -19,6 +19,25 @@ PROMPT = "Hermes image contract ping"
 REPLY = "Hermes image contract pong"
 TEST_RUN_LABEL = "io.hypercli.hermes-test-run"
 TEST_RUN_ID = os.environ.get("HERMES_TEST_RUN_ID", f"local-{uuid.uuid4().hex}")
+EXPECTED_RUNTIME_TOOLS = (
+    "cc",
+    "curl",
+    "ffmpeg",
+    "git",
+    "jq",
+    "lsof",
+    "make",
+    "nano",
+    "pdftotext",
+    "pip3",
+    "python3",
+    "rg",
+    "sudo",
+    "unzip",
+    "vim",
+    "xxd",
+    "zip",
+)
 
 
 def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -89,6 +108,14 @@ def main() -> None:
         "-c", "sudo -n id -u",
     )
     assert sudo.stdout.strip() == "0"
+
+    runtime_tools = run(
+        "docker", "run", "--rm", "--entrypoint", "/bin/sh", IMAGE,
+        "-c", 'for tool in "$@"; do command -v "$tool" >/dev/null || exit 1; done',
+        "hermes-runtime-tools",
+        *EXPECTED_RUNTIME_TOOLS,
+    )
+    assert runtime_tools.returncode == 0
 
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout

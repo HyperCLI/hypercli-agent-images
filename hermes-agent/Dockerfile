@@ -13,7 +13,25 @@ LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends sudo \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    ffmpeg \
+    poppler-utils \
+    lsof \
+    python3 \
+    python3-dev \
+    python3-pip \
+    ripgrep \
+    build-essential \
+    sudo \
+    vim \
+    xxd \
+    nano \
+    zip \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
@@ -22,7 +40,7 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     uv pip install --python /opt/hermes/.venv/bin/python \
-      /opt/hypercli/sdk /opt/hypercli/cli && \
+      /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     ln -sf /opt/hermes/.venv/bin/hyper /usr/local/bin/hyper && \
     hyper --help >/dev/null
 
