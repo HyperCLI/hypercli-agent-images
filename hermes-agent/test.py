@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -16,6 +17,8 @@ API_KEY = "hermes-image-test-api-key-32-chars"
 MODEL_KEY = "hermes-image-test-model-key"
 PROMPT = "Hermes image contract ping"
 REPLY = "Hermes image contract pong"
+TEST_RUN_LABEL = "io.hypercli.hermes-test-run"
+TEST_RUN_ID = os.environ.get("HERMES_TEST_RUN_ID", f"local-{uuid.uuid4().hex}")
 
 
 def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -90,9 +93,14 @@ def main() -> None:
     container = f"hermes-image-test-{uuid.uuid4().hex[:10]}"
     volume = f"hermes-image-test-{uuid.uuid4().hex[:10]}"
     try:
-        run("docker", "volume", "create", volume)
+        run(
+            "docker", "volume", "create",
+            "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
+            volume,
+        )
         run(
             "docker", "run", "-d", "--name", container,
+            "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
             "--add-host", "host.docker.internal:host-gateway",
             "-p", "127.0.0.1::8642",
             "-v", f"{volume}:/opt/data",
