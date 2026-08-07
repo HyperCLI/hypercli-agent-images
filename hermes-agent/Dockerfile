@@ -52,11 +52,12 @@ RUN mkdir -p "${COREPACK_HOME}" \
     && pnpm --version \
     && yarn --version
 
-RUN printf '%s' "${HYPERCLI_SHA}" | grep -Eq '^[0-9a-f]{40}$' && \
+RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
+    test -n "${checkout_ref}" && \
     git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
-    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_SHA}" && \
+    git -C /opt/hypercli fetch --depth 1 origin "${checkout_ref}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
-    test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}" && \
+    { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     uv pip install --python /opt/hermes/.venv/bin/python \
       /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
