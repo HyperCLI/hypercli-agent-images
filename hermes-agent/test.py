@@ -240,6 +240,28 @@ def main() -> None:
         repaired = [line for line in repaired_output if re.fullmatch(r"\d+:\d+", line)]
         assert repaired == ["12345:12346", "12345:12346", "0:0"]
 
+        run(
+            "docker", "run", "--rm", "--entrypoint", "/bin/sh",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "-c",
+            "mkdir -p /opt/data/ownership-escape && "
+            "touch /opt/data/ownership-escape/SKILL.md && "
+            "chown 0:0 /opt/data/ownership-escape/SKILL.md && "
+            "rm -rf /opt/data/skills/hypercli && "
+            "ln -s /opt/data/ownership-escape /opt/data/skills/hypercli",
+        )
+        escaped_ownership = run(
+            "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "stat", "-c", "%u:%g", "/opt/data/ownership-escape/SKILL.md",
+        ).stdout
+        assert escaped_ownership.rstrip().endswith("0:0")
+        run(
+            "docker", "run", "--rm", "--entrypoint", "/bin/sh",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "-c", "rm /opt/data/skills/hypercli",
+        )
+
         marker = "# preserve-existing-config"
         run(
             "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
