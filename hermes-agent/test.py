@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -221,6 +222,20 @@ def main() -> None:
             "stat", "-c", "%u:%g", "/opt/data/skills/hypercli",
         ).stdout
         assert ownership.rstrip().endswith("12345:12346")
+
+        run(
+            "docker", "run", "--rm", "--entrypoint", "/bin/sh",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "-c", "chown -R 0:0 /opt/data/skills /opt/data/config.yaml",
+        )
+        repaired_output = run(
+            "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "sh", "-c",
+            "stat -c '%u:%g' /opt/data/skills/hypercli/SKILL.md /opt/data/config.yaml",
+        ).stdout.splitlines()
+        repaired = [line for line in repaired_output if re.fullmatch(r"\d+:\d+", line)]
+        assert repaired == ["12345:12346", "12345:12346"]
 
         marker = "# preserve-existing-config"
         run(

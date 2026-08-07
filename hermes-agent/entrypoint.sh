@@ -63,9 +63,12 @@ if [[ -d "${HYPERCLI_SKILLS_DIR}" ]]; then
     target_entry="${HERMES_SKILLS_DIR}/${entry_name}"
     if [[ ! -e "${target_entry}" ]]; then
       cp -a "${source_entry}" "${target_entry}"
-      chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_entry}"
       echo "[hermes-agent] seeded HyperCLI skill (${entry_name})"
     fi
+    # A retained volume may contain a bundled skill seeded by an older root
+    # wrapper. Repair only the image-owned targets on every boot; do not walk or
+    # rewrite the user's wider /opt/data tree.
+    chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_entry}"
   done < <(find "${HYPERCLI_SKILLS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
 fi
 
@@ -75,5 +78,6 @@ if [[ ! -e "${CONFIG_PATH}" ]]; then
 else
   echo "[hermes-agent] preserving existing config at ${CONFIG_PATH}"
 fi
+chown -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
 
 exec /opt/hermes/docker/entrypoint-dispatch.sh "$@"
