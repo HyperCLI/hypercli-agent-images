@@ -28,15 +28,21 @@ EXPECTED_RUNTIME_TOOLS = (
     "lsof",
     "make",
     "nano",
+    "node",
+    "npm",
+    "npx",
     "pdftotext",
     "pip3",
+    "pnpm",
     "python3",
     "rg",
     "sudo",
     "unzip",
     "vim",
     "xxd",
+    "yarn",
     "zip",
+    "corepack",
 )
 
 
@@ -104,18 +110,24 @@ def main() -> None:
     assert inspect["Healthcheck"]["Test"][0] == "CMD-SHELL"
 
     sudo = run(
-        "docker", "run", "--rm", "--entrypoint", "/bin/sh", IMAGE,
-        "-c", "sudo -n id -u",
+        "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
+        "-c", 'test "$(id -u)" -ne 0 && sudo -n id -u',
     )
     assert sudo.stdout.strip() == "0"
 
     runtime_tools = run(
-        "docker", "run", "--rm", "--entrypoint", "/bin/sh", IMAGE,
+        "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
         "-c", 'for tool in "$@"; do command -v "$tool" >/dev/null || exit 1; done',
         "hermes-runtime-tools",
         *EXPECTED_RUNTIME_TOOLS,
     )
     assert runtime_tools.returncode == 0
+
+    package_managers = run(
+        "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
+        "-c", "corepack --version && pnpm --version && yarn --version",
+    )
+    assert package_managers.stdout.splitlines() == ["0.35.0", "11.2.2", "1.22.22"]
 
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout

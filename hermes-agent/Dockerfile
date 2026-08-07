@@ -32,7 +32,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     zip \
     unzip \
+    && printf '%s\n' 'hermes ALL=(ALL) NOPASSWD:ALL' \
+      > /etc/sudoers.d/90-hermes-nopasswd \
+    && chmod 0440 /etc/sudoers.d/90-hermes-nopasswd \
     && rm -rf /var/lib/apt/lists/*
+
+ENV COREPACK_HOME=/usr/local/share/corepack
+RUN mkdir -p "${COREPACK_HOME}" \
+    && npm install --global --force corepack@0.35.0 \
+    && corepack install --global pnpm@11.2.2 yarn@1.22.22 \
+    && chmod -R a+rX "${COREPACK_HOME}" \
+    && corepack --version \
+    && pnpm --version \
+    && yarn --version
 
 RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \

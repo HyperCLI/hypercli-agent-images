@@ -78,6 +78,11 @@ synthetic offline ACP regression before promotion.
 The independently maintained `openclaw/` image remains the OpenClaw runtime.
 It is not a base for the Buzz coding-agent images.
 
+The OpenClaw and Hermes images share a general coding-tool floor: Python and
+native build tools, Node/npm/npx, pinned Corepack/pnpm/Yarn, media/PDF tools,
+editors, archives, HyperCLI with all extras, and passwordless sudo for their
+actual runtime users. Runtime-specific applications and plugins remain separate.
+
 ## Security boundary
 
 Coding images intentionally grant passwordless sudo to the `node` user and
