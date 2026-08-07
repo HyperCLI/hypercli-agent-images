@@ -1,15 +1,21 @@
 ARG HERMES_BASE_IMAGE=nousresearch/hermes-agent:v2026.8.3@sha256:16788311e2fa3035456bdc1bafb8ec2b1777db64ebf020af9bb7eb73c3712c9e
 ARG HYPERCLI_REF=main
+ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
 FROM ${HERMES_BASE_IMAGE}
 
 ARG HERMES_BASE_IMAGE
 ARG HYPERCLI_REF
+ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO
 
 LABEL org.opencontainers.image.base.name="${HERMES_BASE_IMAGE}"
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
+LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
+
+ENV HYPERCLI_REF=${HYPERCLI_REF}
+ENV HYPERCLI_SHA=${HYPERCLI_SHA}
 
 USER root
 
@@ -46,10 +52,11 @@ RUN mkdir -p "${COREPACK_HOME}" \
     && pnpm --version \
     && yarn --version
 
-RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
-    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
+RUN printf '%s' "${HYPERCLI_SHA}" | grep -Eq '^[0-9a-f]{40}$' && \
+    git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
+    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_SHA}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
-    git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref && \
+    test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}" && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     uv pip install --python /opt/hermes/.venv/bin/python \
       /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \

@@ -2,12 +2,15 @@
 
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
+ARG HYPERCLI_REF=main
+ARG HYPERCLI_SHA
 
 FROM ${RUST_IMAGE} AS source-builder
 
 ARG BUZZ_REPO=https://github.com/block/buzz.git
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 ARG HYPERCLI_REF
+ARG HYPERCLI_SHA
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -19,13 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 RUN set -eux; \
-    printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
-    git init /build/hypercli; \
-    git -C /build/hypercli remote add origin "${HYPERCLI_REPO}"; \
-    git -C /build/hypercli fetch --depth 1 origin "${HYPERCLI_REF}"; \
-    test "$(git -C /build/hypercli rev-parse FETCH_HEAD)" = "${HYPERCLI_REF}"; \
-    git -C /build/hypercli checkout --detach FETCH_HEAD; \
-    printf '%s\n' "${HYPERCLI_REF}" > /build/hypercli/.baked-ref; \
+    printf '%s' "${HYPERCLI_SHA}" | grep -Eq '^[0-9a-f]{40}$'; \
+    git clone --depth 1 "${HYPERCLI_REPO}" /build/hypercli; \
+    git -C /build/hypercli fetch --depth 1 origin "${HYPERCLI_SHA}"; \
+    git -C /build/hypercli checkout FETCH_HEAD; \
+    test "$(git -C /build/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; \
     BUZZ_REF="$(sed -n 's/^upstream-buzz-ref = "\([0-9a-f]\{40\}\)"$/\1/p' /build/hypercli/buzz-acp/Cargo.toml)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
@@ -72,11 +73,17 @@ FROM ${NODE_IMAGE}
 
 ARG NODE_IMAGE
 ARG HYPERCLI_REF
+ARG HYPERCLI_SHA
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
       org.opencontainers.image.title="HyperCLI Buzz Agent Base" \
       org.opencontainers.image.base.name="${NODE_IMAGE}" \
+      org.hypercli.hypercli_ref="${HYPERCLI_REF}" \
+      org.hypercli.hypercli_sha="${HYPERCLI_SHA}" \
       org.hypercli.coding_runtime="base"
+
+ENV HYPERCLI_REF=${HYPERCLI_REF} \
+    HYPERCLI_SHA=${HYPERCLI_SHA}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -107,7 +114,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=source-builder /build/hypercli /opt/hypercli
 RUN set -eux; \
-    test "$(cat /opt/hypercli/.baked-ref)" = "${HYPERCLI_REF}"; \
     pip3 install --break-system-packages --no-cache-dir \
       /opt/hypercli/sdk \
       "/opt/hypercli/cli[all]"; \

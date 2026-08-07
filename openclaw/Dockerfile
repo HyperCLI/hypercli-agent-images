@@ -1,15 +1,21 @@
 ARG HYPERCLI_REF=main
+ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1
 
 FROM ${OPENCLAW_BASE_IMAGE}
 
 ARG HYPERCLI_REF
+ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO
 ARG OPENCLAW_BASE_IMAGE
 
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
+LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
 LABEL org.opencontainers.image.base.name="${OPENCLAW_BASE_IMAGE}"
+
+ENV HYPERCLI_REF=${HYPERCLI_REF}
+ENV HYPERCLI_SHA=${HYPERCLI_SHA}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -41,10 +47,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /home/node/.openclaw && \
     chown -R node:node /home/node /opt/hypercli-openclaw
 
-RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
-    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_REF}" && \
+RUN printf '%s' "${HYPERCLI_SHA}" | grep -Eq '^[0-9a-f]{40}$' && \
+    git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
+    git -C /opt/hypercli fetch --depth 1 origin "${HYPERCLI_SHA}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
-    git -C /opt/hypercli rev-parse HEAD > /opt/hypercli/.baked-ref && \
+    test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}" && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
     hyper --help >/dev/null
