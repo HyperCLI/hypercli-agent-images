@@ -1,7 +1,7 @@
 _config_version: 33
 
 model:
-  provider: hypercli
+  provider: custom:hypercli
   default: ${env:HERMES_DEFAULT_MODEL}
 
 providers:
@@ -10,4 +10,3 @@ providers:
     api: ${env:HERMES_INFERENCE_API_BASE}
     key_env: HYPER_AGENTS_API_KEY
     transport: ${env:HERMES_MODEL_TRANSPORT}
-    default_model: ${env:HERMES_DEFAULT_MODEL}

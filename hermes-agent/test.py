@@ -52,41 +52,68 @@ def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
 
 
 class ModelHandler(BaseHTTPRequestHandler):
+    observed_requests: list[dict[str, object]] = []
+
     def log_message(self, *_args: object) -> None:
         return
 
     def do_POST(self) -> None:
-        if self.path != "/v1/chat/completions":
+        if self.path != "/v1/messages":
             self.send_error(404)
             return
         payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
-        if self.headers.get("Authorization") != f"Bearer {MODEL_KEY}":
+        self.observed_requests.append(
+            {
+                "path": self.path,
+                "has_x_api_key": self.headers.get("x-api-key") == MODEL_KEY,
+                "anthropic_version": self.headers.get("anthropic-version"),
+                "model": payload.get("model"),
+                "stream": payload.get("stream"),
+                "has_prompt": PROMPT in json.dumps(payload.get("messages", [])),
+            }
+        )
+        if self.headers.get("x-api-key") != MODEL_KEY:
             self.send_error(401)
             return
-        if not any(PROMPT in str(item.get("content")) for item in payload.get("messages", [])):
+        if self.headers.get("anthropic-version") != "2023-06-01":
+            self.send_error(400)
+            return
+        if payload.get("model") != "mock-hermes-anthropic":
+            self.send_error(400)
+            return
+        if PROMPT not in json.dumps(payload.get("messages", [])):
             self.send_error(400)
             return
         if payload.get("stream"):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()
-            chunks = [
-                {"id": "chatcmpl-hermes-image-test", "object": "chat.completion.chunk", "created": 1, "model": "mock-hermes", "choices": [{"index": 0, "delta": {"role": "assistant", "content": REPLY}, "finish_reason": None}]},
-                {"id": "chatcmpl-hermes-image-test", "object": "chat.completion.chunk", "created": 1, "model": "mock-hermes", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            events = [
+                ("message_start", {"type": "message_start", "message": {"id": "msg_hermes_image_test", "type": "message", "role": "assistant", "content": [], "model": "mock-hermes-anthropic", "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 4, "output_tokens": 0}}}),
+                ("content_block_start", {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}),
+                ("content_block_delta", {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": REPLY}}),
+                ("content_block_stop", {"type": "content_block_stop", "index": 0}),
+                ("message_delta", {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 4}}),
+                ("message_stop", {"type": "message_stop"}),
             ]
-            for chunk in chunks:
-                self.wfile.write(("data: " + json.dumps(chunk) + "\n\n").encode())
-            self.wfile.write(b"data: [DONE]\n\n")
+            for event, data in events:
+                self.wfile.write(
+                    f"event: {event}\ndata: {json.dumps(data)}\n\n".encode()
+                )
             self.wfile.flush()
             return
-        body = json.dumps({
-            "id": "chatcmpl-hermes-image-test",
-            "object": "chat.completion",
-            "created": 1,
-            "model": "mock-hermes",
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": REPLY}, "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": 4, "completion_tokens": 4, "total_tokens": 8},
-        }).encode()
+        body = json.dumps(
+            {
+                "id": "msg_hermes_image_test",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": REPLY}],
+                "model": "mock-hermes-anthropic",
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {"input_tokens": 4, "output_tokens": 4},
+            }
+        ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -109,6 +136,8 @@ def main() -> None:
     assert inspect["Cmd"] == ["gateway", "run"]
     assert "8642/tcp" in inspect["ExposedPorts"]
     assert inspect["Healthcheck"]["Test"][0] == "CMD-SHELL"
+    assert "HERMES_DEFAULT_MODEL=kimi-k2.6-anthropic" in inspect["Env"]
+    assert "HERMES_MODEL_TRANSPORT=anthropic_messages" in inspect["Env"]
 
     sudo = run(
         "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
@@ -153,8 +182,7 @@ def main() -> None:
             "-e", f"API_SERVER_KEY={API_KEY}",
             "-e", f"HYPER_API_KEY={MODEL_KEY}",
             "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
-            "-e", "HERMES_MODEL_TRANSPORT=chat_completions",
-            "-e", "HERMES_DEFAULT_MODEL=mock-hermes",
+            "-e", "HERMES_DEFAULT_MODEL=mock-hermes-anthropic",
             IMAGE,
         )
         port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
@@ -173,7 +201,10 @@ def main() -> None:
             bearer=API_KEY,
             payload={"model": "hermes-agent", "messages": [{"role": "user", "content": PROMPT}], "stream": False},
         )
-        assert result["choices"][0]["message"]["content"] == REPLY
+        assert result["choices"][0]["message"]["content"] == REPLY, (
+            result,
+            ModelHandler.observed_requests,
+        )
 
         seeded = run(
             "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
@@ -182,6 +213,7 @@ def main() -> None:
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
         assert "api: ${env:HERMES_INFERENCE_API_BASE}" in seeded
+        assert "provider: custom:hypercli" in seeded
         assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded

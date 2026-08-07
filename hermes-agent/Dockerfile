@@ -56,6 +56,12 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     ln -sf /opt/hermes/.venv/bin/hyper /usr/local/bin/hyper && \
     hyper --help >/dev/null
 
+COPY --chmod=0644 gateway-runtime-model-env.patch /tmp/gateway-runtime-model-env.patch
+RUN cd /opt/hermes && \
+    git apply --check /tmp/gateway-runtime-model-env.patch && \
+    git apply /tmp/gateway-runtime-model-env.patch && \
+    rm /tmp/gateway-runtime-model-env.patch
+
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
 COPY --chmod=0755 entrypoint.sh /opt/hypercli-hermes/entrypoint.sh
 
