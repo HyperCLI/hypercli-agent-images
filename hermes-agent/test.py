@@ -18,6 +18,7 @@ API_KEY = "hermes-image-test-api-key-32-chars"
 MODEL_KEY = "hermes-image-test-model-key"
 PROMPT = "Hermes image contract ping"
 REPLY = "Hermes image contract pong"
+MODEL = "kimi-k2.6-anthropic"
 TEST_RUN_LABEL = "io.hypercli.hermes-test-run"
 TEST_RUN_ID = os.environ.get("HERMES_TEST_RUN_ID", f"local-{uuid.uuid4().hex}")
 EXPECTED_RUNTIME_TOOLS = (
@@ -78,7 +79,7 @@ class ModelHandler(BaseHTTPRequestHandler):
         if self.headers.get("anthropic-version") != "2023-06-01":
             self.send_error(400)
             return
-        if payload.get("model") != "mock-hermes-anthropic":
+        if payload.get("model") != MODEL:
             self.send_error(400)
             return
         if PROMPT not in json.dumps(payload.get("messages", [])):
@@ -89,7 +90,7 @@ class ModelHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()
             events = [
-                ("message_start", {"type": "message_start", "message": {"id": "msg_hermes_image_test", "type": "message", "role": "assistant", "content": [], "model": "mock-hermes-anthropic", "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 4, "output_tokens": 0}}}),
+                ("message_start", {"type": "message_start", "message": {"id": "msg_hermes_image_test", "type": "message", "role": "assistant", "content": [], "model": MODEL, "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 4, "output_tokens": 0}}}),
                 ("content_block_start", {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}),
                 ("content_block_delta", {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": REPLY}}),
                 ("content_block_stop", {"type": "content_block_stop", "index": 0}),
@@ -108,7 +109,7 @@ class ModelHandler(BaseHTTPRequestHandler):
                 "type": "message",
                 "role": "assistant",
                 "content": [{"type": "text", "text": REPLY}],
-                "model": "mock-hermes-anthropic",
+                "model": MODEL,
                 "stop_reason": "end_turn",
                 "stop_sequence": None,
                 "usage": {"input_tokens": 4, "output_tokens": 4},
@@ -130,14 +131,42 @@ def request_json(url: str, *, bearer: str | None = None, payload: dict | None = 
         return json.load(response)
 
 
+def request_sse(url: str, *, bearer: str, payload: dict) -> list[tuple[str, dict]]:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "text/event-stream",
+            "Authorization": f"Bearer {bearer}",
+            "Content-Type": "application/json",
+        },
+        data=json.dumps(payload).encode(),
+    )
+    events: list[tuple[str, dict]] = []
+    event_name = "message"
+    data_lines: list[str] = []
+    with urllib.request.urlopen(request, timeout=30) as response:
+        for raw_line in response:
+            line = raw_line.decode().rstrip("\r\n")
+            if line.startswith("event:"):
+                event_name = line.removeprefix("event:").strip()
+            elif line.startswith("data:"):
+                data_lines.append(line.removeprefix("data:").lstrip())
+            elif not line and data_lines:
+                events.append((event_name, json.loads("\n".join(data_lines))))
+                event_name = "message"
+                data_lines = []
+    return events
+
+
 def main() -> None:
     inspect = json.loads(run("docker", "image", "inspect", IMAGE).stdout)[0]["Config"]
     assert inspect["Entrypoint"] == ["/opt/hypercli-hermes/entrypoint.sh"]
     assert inspect["Cmd"] == ["gateway", "run"]
     assert "8642/tcp" in inspect["ExposedPorts"]
     assert inspect["Healthcheck"]["Test"][0] == "CMD-SHELL"
-    assert "HERMES_DEFAULT_MODEL=kimi-k2.6-anthropic" in inspect["Env"]
-    assert "HERMES_MODEL_TRANSPORT=anthropic_messages" in inspect["Env"]
+    assert not any(value.startswith("HERMES_DEFAULT_MODEL=") for value in inspect["Env"])
+    assert not any(value.startswith("HERMES_MODEL_TRANSPORT=") for value in inspect["Env"])
+    assert not any(value.startswith("HERMES_INFERENCE_API_BASE=") for value in inspect["Env"])
 
     sudo = run(
         "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
@@ -180,9 +209,8 @@ def main() -> None:
             "-p", "127.0.0.1::8642",
             "-v", f"{volume}:/opt/data",
             "-e", f"API_SERVER_KEY={API_KEY}",
-            "-e", f"HYPER_API_KEY={MODEL_KEY}",
+            "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
             "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
-            "-e", "HERMES_DEFAULT_MODEL=mock-hermes-anthropic",
             IMAGE,
         )
         port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
@@ -206,44 +234,59 @@ def main() -> None:
             ModelHandler.observed_requests,
         )
 
+        parent_session_id = f"image-parent-{uuid.uuid4().hex}"
+        fork_session_id = f"image-fork-{uuid.uuid4().hex}"
+        parent = request_json(
+            f"{base}/api/sessions",
+            bearer=API_KEY,
+            payload={"id": parent_session_id, "source": "api_server"},
+        )
+        assert parent["session"]["model"] == MODEL, parent
+        parent_chat = request_json(
+            f"{base}/api/sessions/{parent_session_id}/chat",
+            bearer=API_KEY,
+            payload={"message": PROMPT},
+        )
+        assert parent_chat["message"]["content"] == REPLY, parent_chat
+        forked = request_json(
+            f"{base}/api/sessions/{parent_session_id}/fork",
+            bearer=API_KEY,
+            payload={"id": fork_session_id},
+        )
+        assert forked["session"]["id"] == fork_session_id, forked
+        assert forked["session"]["parent_session_id"] == parent_session_id, forked
+        assert forked["session"]["model"] == MODEL, forked
+        assert forked["session"]["has_model_config"] is False, forked
+        fork_stream = request_sse(
+            f"{base}/api/sessions/{fork_session_id}/chat/stream",
+            bearer=API_KEY,
+            payload={"message": PROMPT},
+        )
+        fork_event_names = [name for name, _payload in fork_stream]
+        assert "error" not in fork_event_names, fork_stream
+        assert "assistant.completed" in fork_event_names, fork_stream
+        assert "run.completed" in fork_event_names, fork_stream
+        assert fork_event_names[-1] == "done", fork_stream
+        fork_completed = next(
+            payload for name, payload in fork_stream if name == "assistant.completed"
+        )
+        assert fork_completed["content"] == REPLY, fork_completed
+
         seeded = run(
             "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
             "python", "-c",
             "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
-        assert "api: ${env:HERMES_INFERENCE_API_BASE}" in seeded
+        assert "api: ${env:HYPER_AGENTS_API_BASE}" in seeded
         assert "provider: custom:hypercli" in seeded
-        assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
+        assert f"default: {MODEL}" in seeded
+        assert "transport: anthropic_messages" in seeded
+        assert f"model_name: {MODEL}" in seeded
         assert "model_routes:" in seeded
-        assert "model: ${env:HERMES_DEFAULT_MODEL}" in seeded
+        assert f"model: {MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
-
-        dev_model_base = run(
-            "docker", "run", "--rm",
-            "-e", "HYPER_AGENTS_API_BASE=https://api.dev.hypercli.com/agents",
-            IMAGE,
-            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
-        ).stdout
-        assert dev_model_base.rstrip().endswith("https://api.agents.dev.hypercli.com/v1")
-
-        custom_model_base = run(
-            "docker", "run", "--rm",
-            "-e", "HYPER_AGENTS_API_BASE=http://models.internal/",
-            IMAGE,
-            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
-        ).stdout
-        assert custom_model_base.rstrip().endswith("http://models.internal/v1")
-
-        overridden_model_base = run(
-            "docker", "run", "--rm",
-            "-e", "HYPER_AGENTS_API_BASE=https://api.dev.hypercli.com/agents",
-            "-e", "HERMES_INFERENCE_API_BASE=https://override.example/v1",
-            IMAGE,
-            "sh", "-c", "printf '%s' \"${HERMES_INFERENCE_API_BASE}\"",
-        ).stdout
-        assert overridden_model_base.rstrip().endswith("https://override.example/v1")
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",

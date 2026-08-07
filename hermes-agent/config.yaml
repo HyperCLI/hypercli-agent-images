@@ -2,20 +2,21 @@ _config_version: 33
 
 model:
   provider: custom:hypercli
-  default: ${env:HERMES_DEFAULT_MODEL}
+  default: kimi-k2.6-anthropic
 
 providers:
   hypercli:
     name: HyperCLI
-    api: ${env:HERMES_INFERENCE_API_BASE}
+    api: ${env:HYPER_AGENTS_API_BASE}
     key_env: HYPER_AGENTS_API_KEY
-    transport: ${env:HERMES_MODEL_TRANSPORT}
+    transport: anthropic_messages
 
 gateway:
   platforms:
     api_server:
       extra:
+        model_name: kimi-k2.6-anthropic
         model_routes:
-          hermes-agent:
+          kimi-k2.6-anthropic:
             provider: custom:hypercli
-            model: ${env:HERMES_DEFAULT_MODEL}
+            model: kimi-k2.6-anthropic

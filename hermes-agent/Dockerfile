@@ -56,12 +56,6 @@ RUN git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     ln -sf /opt/hermes/.venv/bin/hyper /usr/local/bin/hyper && \
     hyper --help >/dev/null
 
-COPY --chmod=0644 gateway-runtime-model-env.patch /tmp/gateway-runtime-model-env.patch
-RUN cd /opt/hermes && \
-    git apply --check /tmp/gateway-runtime-model-env.patch && \
-    git apply /tmp/gateway-runtime-model-env.patch && \
-    rm /tmp/gateway-runtime-model-env.patch
-
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
 COPY --chmod=0755 entrypoint.sh /opt/hypercli-hermes/entrypoint.sh
 
@@ -69,8 +63,6 @@ ENV HERMES_HOME=/opt/data
 ENV HERMES_WRITE_SAFE_ROOT=/opt/data
 ENV HYPER_WORKSPACES_DIR=/opt/data/workspaces
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
-ENV HERMES_DEFAULT_MODEL=kimi-k2.6-anthropic
-ENV HERMES_MODEL_TRANSPORT=anthropic_messages
 ENV API_SERVER_ENABLED=true
 ENV API_SERVER_HOST=0.0.0.0
 ENV API_SERVER_PORT=8642

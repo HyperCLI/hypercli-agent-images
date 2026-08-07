@@ -35,41 +35,6 @@ if [[ -n "${HYPER_API_KEY:-}" && -z "${HYPER_AGENTS_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
 fi
 
-hermes_model_api_base_from_agents_base() {
-  local base="${1%/}"
-  case "${base}" in
-    https://api.dev.hypercli.com|https://api.dev.hypercli.com/*|\
-    https://api.dev.hyperclaw.app|https://api.dev.hyperclaw.app/*|\
-    https://dev-api.hyperclaw.app|https://dev-api.hyperclaw.app/*|\
-    https://api.agents.dev.hypercli.com|https://api.agents.dev.hypercli.com/*)
-      printf '%s' "https://api.agents.dev.hypercli.com/v1"
-      ;;
-    https://api.hypercli.com|https://api.hypercli.com/*|\
-    https://api.hyperclaw.app|https://api.hyperclaw.app/*|\
-    https://api.agents.hypercli.com|https://api.agents.hypercli.com/*)
-      printf '%s' "https://api.agents.hypercli.com/v1"
-      ;;
-    */v1)
-      printf '%s' "${base}"
-      ;;
-    */agents)
-      printf '%s/v1' "${base%/agents}"
-      ;;
-    */api)
-      printf '%s/v1' "${base%/api}"
-      ;;
-    *)
-      printf '%s/v1' "${base}"
-      ;;
-  esac
-}
-
-if [[ -z "${HERMES_INFERENCE_API_BASE:-}" ]]; then
-  export HERMES_INFERENCE_API_BASE="$(
-    hermes_model_api_base_from_agents_base "${HYPER_AGENTS_API_BASE:-https://api.agents.hypercli.com}"
-  )"
-fi
-
 if ! path_ancestors_are_safe "${HERMES_HOME}/."; then
   echo "[hermes-agent] refusing symlinked HERMES_HOME ancestry: ${HERMES_HOME}" >&2
   exit 1
