@@ -147,9 +147,9 @@ idempotent:
 - a create-time slot race refreshes capacity and may fall back to an
   unattempted lower available tier.
 
-Readiness succeeds only at `RUNNING`. `PENDING`, `RESTORING`, `SYNCING`, and
-`STARTING` are polled. Terminal failure states and the readiness timeout return
-a sanitized error without upstream response bodies or secrets.
+Readiness succeeds only at `RUNNING`. `PENDING`, `DOWNLOADING`, `RESTORING`,
+and `SYNCING` are polled. `FAILED` and the readiness timeout return a sanitized
+error without upstream response bodies or secrets.
 
 ## Runtime Matrix
 
