@@ -12,3 +12,19 @@ index cd18f15..82e139b 100644
      model_cfg = cfg.get("model", {})
      if isinstance(model_cfg, str):
          return model_cfg
+diff --git a/gateway/platforms/api_server.py b/gateway/platforms/api_server.py
+index 298322f..85566c4 100644
+--- a/gateway/platforms/api_server.py
++++ b/gateway/platforms/api_server.py
+@@ -1345,8 +1345,9 @@ class ApiServerAdapter(PlatformAdapter):
+         #       api_key: "sk-…"          # optional — per-route UPSTREAM provider
+         #                                # key override (NOT caller auth; never logged)
+         #       base_url: "https://…"    # optional — per-route base URL override
+-        self._model_routes: Dict[str, Dict[str, Any]] = self._parse_model_routes(
+-            extra.get("model_routes"),
++        from hermes_cli.config import _expand_env_vars
++        self._model_routes: Dict[str, Dict[str, Any]] = self._parse_model_routes(
++            _expand_env_vars(extra.get("model_routes")),
+         )
+         # direct_model_requests: opt-in passthrough for a bare ``model`` value
+         # (no ``provider``) on the OpenAI-compatible surfaces

@@ -10,3 +10,12 @@ providers:
     api: ${env:HERMES_INFERENCE_API_BASE}
     key_env: HYPER_AGENTS_API_KEY
     transport: ${env:HERMES_MODEL_TRANSPORT}
+
+gateway:
+  platforms:
+    api_server:
+      extra:
+        model_routes:
+          hermes-agent:
+            provider: custom:hypercli
+            model: ${env:HERMES_DEFAULT_MODEL}

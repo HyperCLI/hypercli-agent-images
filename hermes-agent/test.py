@@ -215,6 +215,8 @@ def main() -> None:
         assert "api: ${env:HERMES_INFERENCE_API_BASE}" in seeded
         assert "provider: custom:hypercli" in seeded
         assert "default: ${env:HERMES_DEFAULT_MODEL}" in seeded
+        assert "model_routes:" in seeded
+        assert "model: ${env:HERMES_DEFAULT_MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
 

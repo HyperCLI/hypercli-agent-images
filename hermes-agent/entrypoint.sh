@@ -70,10 +70,6 @@ if [[ -z "${HERMES_INFERENCE_API_BASE:-}" ]]; then
   )"
 fi
 
-if [[ -n "${HERMES_DEFAULT_MODEL:-}" && -z "${API_SERVER_MODEL_NAME:-}" ]]; then
-  export API_SERVER_MODEL_NAME="${HERMES_DEFAULT_MODEL}"
-fi
-
 if ! path_ancestors_are_safe "${HERMES_HOME}/."; then
   echo "[hermes-agent] refusing symlinked HERMES_HOME ancestry: ${HERMES_HOME}" >&2
   exit 1
