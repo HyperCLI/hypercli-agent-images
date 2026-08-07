@@ -66,9 +66,16 @@ if [[ -d "${HYPERCLI_SKILLS_DIR}" ]]; then
       echo "[hermes-agent] seeded HyperCLI skill (${entry_name})"
     fi
     # A retained volume may contain a bundled skill seeded by an older root
-    # wrapper. Repair only the image-owned targets on every boot; do not walk or
-    # rewrite the user's wider /opt/data tree.
-    chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_entry}"
+    # wrapper. Repair only paths present in the immutable image source manifest;
+    # user-added files nested under the same skill directory remain untouched.
+    # ``find -P`` plus ``chown -h`` never follows a user-controlled symlink.
+    while IFS= read -r -d '' source_path; do
+      relative_path="${source_path#"${source_entry}"}"
+      target_path="${target_entry}${relative_path}"
+      if [[ -e "${target_path}" || -L "${target_path}" ]]; then
+        chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_path}"
+      fi
+    done < <(find -P "${source_entry}" -print0)
   done < <(find "${HYPERCLI_SKILLS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
 fi
 
@@ -78,6 +85,6 @@ if [[ ! -e "${CONFIG_PATH}" ]]; then
 else
   echo "[hermes-agent] preserving existing config at ${CONFIG_PATH}"
 fi
-chown -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
+chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
 
 exec /opt/hermes/docker/entrypoint-dispatch.sh "$@"
