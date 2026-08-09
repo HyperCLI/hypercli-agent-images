@@ -11,7 +11,7 @@ from typing import Any
 
 
 NEST = Path("/home/node/.buzz")
-WORKSPACES = Path("/home/node/workspaces")
+WORKSPACES = Path("/home/node/shared")
 ENTRYPOINT_EXIT_CODE = 42
 ENTRYPOINT_EXIT_TIMEOUT_SECONDS = 30
 
@@ -325,7 +325,7 @@ payload = {
             "buzz-dev-mcp",
         ]
     },
-    "workspaces_is_dir": Path("/home/node/workspaces").is_dir(),
+    "workspaces_is_dir": Path("/home/node/shared").is_dir(),
     "nested_workspaces_exists": (nest / "workspaces").exists(),
     "base_prompt_in_image": Path(
         "/opt/hypercli-buzz/nest/base_prompt.md"

@@ -12,7 +12,7 @@ if [ -L "${nest}" ]; then
 fi
 
 mkdir -p \
-  /home/node/workspaces \
+  /home/node/shared \
   "${nest}/GUIDES" \
   "${nest}/RESEARCH" \
   "${nest}/PLANS" \

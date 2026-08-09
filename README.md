@@ -55,7 +55,7 @@ The common carrier installs Python, `hyper` with all CLI extras, build tools,
 multicall binary. It does not inherit from or contain OpenClaw.
 
 The persistent sync root remains `/home/node`, and HyperCLI Workspace
-projections remain under `/home/node/workspaces`. The main process reconciles
+projections remain under `/home/node/shared`. The main process reconciles
 the stock Buzz nest after that home is mounted, then runs from
 `/home/node/.buzz`. It seeds only missing files, so restored user content is
 preserved.

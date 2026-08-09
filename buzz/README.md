@@ -180,7 +180,7 @@ The image must provide:
 - `/opt/hypercli-buzz/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
   pinned Buzz `nest_skill.md`;
 - `/opt/hypercli-buzz/SKILLS.md`, the installed-skill index;
-- `/home/node/workspaces` and `/home/node/.buzz`, owned by UID/GID 1000.
+- `/home/node/shared` and `/home/node/.buzz`, owned by UID/GID 1000.
 
 Initialization creates the standard Buzz nest directories and copies template
 files only when the destination does not exist. It must not overwrite a
@@ -272,7 +272,7 @@ The provider must inject and protect these categories:
 | Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
-| Workspaces | `HYPER_WORKSPACES_BOOT_SYNC=1`, `HYPER_WORKSPACES_DIR=/home/node/workspaces`, `HYPER_WORKSPACES_SYNC_READY_ONLY=1`, optional selected workspace |
+| Workspaces | `HYPER_WORKSPACES_BOOT_SYNC=1`, `HYPER_WORKSPACES_DIR=/home/node/shared`, `HYPER_WORKSPACES_SYNC_READY_ONLY=1`, optional selected workspace |
 
 The provider also projects validated non-reserved `launch.env` values. It must
 not allow user environment to override identity, relay, authorization,
@@ -360,7 +360,7 @@ change. Do not describe that proposal as shipped behavior.
 
 Workspace initialization and HyperCLI workspace sync are distinct. The Buzz
 nest lives at `/home/node/.buzz`; synced HyperCLI workspaces live under
-`/home/node/workspaces`.
+`/home/node/shared`.
 
 ## Regression Gates
 

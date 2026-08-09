@@ -122,7 +122,7 @@ RUN set -eux; \
 RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
     install -d -m 0700 -o node -g node \
       /home/node/.coding-agent \
-      /home/node/workspaces && \
+      /home/node/shared && \
     printf '%s\n' 'node ALL=(ALL) NOPASSWD:ALL' \
       > /etc/sudoers.d/90-node-nopasswd && \
     chmod 0440 /etc/sudoers.d/90-node-nopasswd
@@ -147,7 +147,7 @@ ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
     HYPER_API_BASE=https://api.hypercli.com \
     HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave \
-    HYPER_WORKSPACES_DIR=/home/node/workspaces \
+    HYPER_WORKSPACES_DIR=/home/node/shared \
     CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
     CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
     BUZZ_ACP_MCP_COMMAND=

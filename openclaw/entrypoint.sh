@@ -6,7 +6,7 @@ STATE_DIR="${OPENCLAW_STATE_DIR:-${USER_HOME}/.openclaw}"
 CONFIG_TEMPLATE="${OPENCLAW_CONFIG_TEMPLATE:-/opt/hypercli-openclaw/openclaw.json}"
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${STATE_DIR}/openclaw.json}"
 WORKSPACE_DIR="${STATE_DIR}/workspace"
-HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/workspaces}"
+HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${USER_HOME}/shared}"
 SESSIONS_DIR="${STATE_DIR}/agents/default/sessions"
 HYPERCLI_SKILLS_DIR="/opt/hypercli/skills"
 OPENCLAW_SKILLS_DIR="${STATE_DIR}/skills"
@@ -160,7 +160,7 @@ function parseJsonObject(name) {
 const defaults = (((config.agents ||= {}).defaults ||= {}));
 const memorySearch = ((defaults.memorySearch ||= {}));
 const sync = ((memorySearch.sync ||= {}));
-const workspaceIndexPath = "~/workspaces";
+const workspaceIndexPath = "~/shared";
 const extraPaths = Array.isArray(memorySearch.extraPaths) ? memorySearch.extraPaths : [];
 if (!extraPaths.includes(workspaceIndexPath)) extraPaths.push(workspaceIndexPath);
 memorySearch.extraPaths = extraPaths;
