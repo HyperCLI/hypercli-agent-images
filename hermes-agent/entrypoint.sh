@@ -6,6 +6,7 @@ CONFIG_PATH="${HERMES_HOME}/config.yaml"
 CONFIG_TEMPLATE="${HERMES_CONFIG_TEMPLATE:-/opt/hypercli-hermes/config.yaml}"
 HYPERCLI_SKILLS_DIR="${HYPERCLI_SKILLS_DIR:-/opt/hypercli/skills}"
 HERMES_SKILLS_DIR="${HERMES_SKILLS_DIR:-${HERMES_HOME}/skills}"
+HERMES_PLATFORM_MANAGED_DIR="/run/hypercli-hermes-managed"
 
 valid_id() {
   [[ "$1" =~ ^[0-9]+$ ]] && (( 10#$1 >= 1 && 10#$1 <= 65534 ))
@@ -41,6 +42,43 @@ if ! path_ancestors_are_safe "${HERMES_HOME}/."; then
 fi
 
 mkdir -p "${HERMES_HOME}" "${HERMES_SKILLS_DIR}" "${HYPER_WORKSPACES_DIR:-${HERMES_HOME}/workspaces}"
+
+# Hermes intentionally lets a retained ~/.hermes/.env override the inherited
+# process environment. Hosted launch credentials are different: Backend mints
+# them for this exact runtime generation, so retained user state must not
+# replace them. Hermes' native managed-scope overlay is applied after user
+# dotenv files; project only the fixed platform-owned keys into that ephemeral
+# overlay without modifying the retained volume.
+export HERMES_MANAGED_DIR="${HERMES_PLATFORM_MANAGED_DIR}"
+mkdir -p "${HERMES_MANAGED_DIR}"
+python3 - "${HERMES_MANAGED_DIR}/.env" <<'PY'
+import json
+import os
+from pathlib import Path
+import sys
+
+target = Path(sys.argv[1])
+keys = (
+    "API_SERVER_CORS_ORIGINS",
+    "API_SERVER_ENABLED",
+    "API_SERVER_HOST",
+    "API_SERVER_KEY",
+    "API_SERVER_MODEL_NAME",
+    "API_SERVER_PORT",
+    "HYPER_AGENTS_API_BASE",
+    "HYPER_AGENTS_API_KEY",
+)
+content = "".join(
+    f"{key}={json.dumps(os.environ[key])}\n"
+    for key in keys
+    if key in os.environ
+)
+temporary = target.with_suffix(".tmp")
+temporary.write_text(content, encoding="utf-8")
+os.chmod(temporary, 0o600)
+os.replace(temporary, target)
+PY
+chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HERMES_MANAGED_DIR}"
 
 if [[ -L "${HERMES_SKILLS_DIR}" ]]; then
   echo "[hermes-agent] skipping bundled skill repair through symlink: ${HERMES_SKILLS_DIR}" >&2

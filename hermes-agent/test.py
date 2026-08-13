@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -15,10 +16,12 @@ from threading import Thread
 
 IMAGE = sys.argv[1] if len(sys.argv) > 1 else "hypercli-hermes-agent:local"
 API_KEY = "hermes-image-test-api-key-32-chars"
+ROTATED_API_KEY = "hermes-image-test-rotated-api-key-32-chars"
 MODEL_KEY = "hermes-image-test-model-key"
 PROMPT = "Hermes image contract ping"
 REPLY = "Hermes image contract pong"
 MODEL = "kimi-k2.6-anthropic"
+ALLOWED_ORIGIN = "https://agents.example"
 TEST_RUN_LABEL = "io.hypercli.hermes-test-run"
 TEST_RUN_ID = os.environ.get("HERMES_TEST_RUN_ID", f"local-{uuid.uuid4().hex}")
 EXPECTED_RUNTIME_TOOLS = (
@@ -158,6 +161,63 @@ def request_sse(url: str, *, bearer: str, payload: dict) -> list[tuple[str, dict
     return events
 
 
+def request_status(url: str, *, bearer: str) -> int:
+    request = urllib.request.Request(
+        url,
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return response.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+
+
+def request_preflight(url: str, *, origin: str) -> tuple[int, str | None]:
+    request = urllib.request.Request(
+        url,
+        method="OPTIONS",
+        headers={
+            "Access-Control-Request-Method": "GET",
+            "Origin": origin,
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return response.status, response.headers.get("Access-Control-Allow-Origin")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.headers.get("Access-Control-Allow-Origin")
+
+
+def start_container(
+    container: str,
+    volume: str,
+    model_port: int,
+    api_key: str,
+) -> str:
+    run(
+        "docker", "run", "-d", "--name", container,
+        "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
+        "--add-host", "host.docker.internal:host-gateway",
+        "-p", "127.0.0.1::8642",
+        "-v", f"{volume}:/opt/data",
+        "-e", f"API_SERVER_KEY={api_key}",
+        "-e", f"API_SERVER_CORS_ORIGINS={ALLOWED_ORIGIN}",
+        "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
+        "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
+        IMAGE,
+    )
+    port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
+    base = f"http://127.0.0.1:{port}"
+    for _ in range(60):
+        try:
+            if request_json(f"{base}/health").get("status") == "ok":
+                return base
+        except Exception:
+            time.sleep(1)
+    raise AssertionError(run("docker", "logs", container, check=False).stdout)
+
+
 def main() -> None:
     inspect = json.loads(run("docker", "image", "inspect", IMAGE).stdout)[0]["Config"]
     assert inspect["Entrypoint"] == ["/opt/hypercli-hermes/entrypoint.sh"]
@@ -202,27 +262,14 @@ def main() -> None:
             "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
             volume,
         )
-        run(
-            "docker", "run", "-d", "--name", container,
-            "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
-            "--add-host", "host.docker.internal:host-gateway",
-            "-p", "127.0.0.1::8642",
-            "-v", f"{volume}:/opt/data",
-            "-e", f"API_SERVER_KEY={API_KEY}",
-            "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
-            "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
-            IMAGE,
+        base = start_container(container, volume, model_port, API_KEY)
+        assert request_preflight(f"{base}/v1/models", origin=ALLOWED_ORIGIN) == (
+            200,
+            ALLOWED_ORIGIN,
         )
-        port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
-        base = f"http://127.0.0.1:{port}"
-        for _ in range(60):
-            try:
-                if request_json(f"{base}/health").get("status") == "ok":
-                    break
-            except Exception:
-                time.sleep(1)
-        else:
-            raise AssertionError(run("docker", "logs", container, check=False).stdout)
+        assert request_preflight(
+            f"{base}/v1/models", origin="https://evil.example"
+        )[0] == 403
 
         result = request_json(
             f"{base}/v1/chat/completions",
@@ -271,6 +318,58 @@ def main() -> None:
             payload for name, payload in fork_stream if name == "assistant.completed"
         )
         assert fork_completed["content"] == REPLY, fork_completed
+
+        parent_messages = request_json(
+            f"{base}/api/sessions/{parent_session_id}/messages",
+            bearer=API_KEY,
+        )
+        fork_messages = request_json(
+            f"{base}/api/sessions/{fork_session_id}/messages",
+            bearer=API_KEY,
+        )
+        assert parent_messages["data"], parent_messages
+        assert fork_messages["data"], fork_messages
+
+        run("docker", "rm", "-f", container)
+        run(
+            "docker", "run", "--rm", "--entrypoint", "/bin/sh",
+            "-v", f"{volume}:/opt/data", IMAGE,
+            "-c",
+            "printf '%s\\n' "
+            "'API_SERVER_KEY=stale-retained-api-key-32-characters' "
+            "'HYPER_AGENTS_API_KEY=stale-retained-model-key' "
+            "'HYPER_AGENTS_API_BASE=http://127.0.0.1:9' "
+            "'API_SERVER_CORS_ORIGINS=https://stale.example' "
+            "> /opt/data/.env",
+        )
+        base = start_container(container, volume, model_port, ROTATED_API_KEY)
+        assert request_status(
+            f"{base}/api/sessions/{parent_session_id}/messages",
+            bearer=API_KEY,
+        ) == 401
+        restored_parent = request_json(
+            f"{base}/api/sessions/{parent_session_id}/messages",
+            bearer=ROTATED_API_KEY,
+        )
+        restored_fork = request_json(
+            f"{base}/api/sessions/{fork_session_id}/messages",
+            bearer=ROTATED_API_KEY,
+        )
+        assert restored_parent["data"] == parent_messages["data"]
+        assert restored_fork["data"] == fork_messages["data"]
+        assert request_preflight(f"{base}/v1/models", origin=ALLOWED_ORIGIN) == (
+            200,
+            ALLOWED_ORIGIN,
+        )
+        assert request_preflight(
+            f"{base}/v1/models", origin="https://stale.example"
+        )[0] == 403
+        rotated_model = request_json(
+            f"{base}/v1/chat/completions",
+            bearer=ROTATED_API_KEY,
+            payload={"model": MODEL, "messages": [{"role": "user", "content": PROMPT}]},
+        )
+        assert rotated_model["choices"][0]["message"]["content"] == REPLY
 
         seeded = run(
             "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
