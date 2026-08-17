@@ -357,15 +357,16 @@ if [[ -n "${INSTALL_PLUGINS}" ]]; then
   done
 fi
 
-# Doctor's final phase validates the same snapshot, so this is only worth its own
-# node start on the paths where doctor ran (or where plugins were just installed)
-# and we still want to fail here rather than inside the gateway.
-if [[ "${RUNTIME_CHANGED}" == "1" || -n "${INSTALL_PLUGINS}" ]]; then
-  /usr/local/bin/openclaw config validate
-  echo "[openclaw] config verified"
-  if [[ -r "${BUILD_INFO_PATH}" ]]; then
-    cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
-  fi
+# Runs on every boot even when doctor is skipped: the config synthesis above
+# rewrites openclaw.json each time, so this is the only thing standing between a
+# bad rewrite and a gateway crash loop.
+/usr/local/bin/openclaw config validate
+echo "[openclaw] config verified"
+
+# Only record the checkpoint once the config this build produced has validated,
+# so a failed boot repairs again next time instead of skipping straight past it.
+if [[ "${RUNTIME_CHANGED}" == "1" && -r "${BUILD_INFO_PATH}" ]]; then
+  cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
 fi
 
 desktop_enabled() {
