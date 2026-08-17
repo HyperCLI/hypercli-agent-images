@@ -309,8 +309,32 @@ if [[ -n "${OPENCLAW_BUNDLED_PLUGINS_DIR:-}" ]]; then
   done
 fi
 
-echo "[openclaw] repairing restored OpenClaw state"
-/usr/local/bin/openclaw doctor --fix --non-interactive --yes
+# OpenClaw's gateway preflight already skips the legacy/plugin migration import
+# graph when a version checkpoint matches, but `doctor` does not take that flag,
+# so it redoes that work on every boot. Key off the same thing the runtime does —
+# the image's build-info — and repair only when the runtime changed or the state
+# root is new. The checkpoint is a verbatim copy so the comparison stays a cheap
+# `cmp` rather than another node start.
+BUILD_INFO_PATH="${OPENCLAW_BUILD_INFO_PATH:-/app/dist/build-info.json}"
+RUNTIME_CHECKPOINT="${STATE_DIR}/.hypercli-runtime-checkpoint.json"
+RUNTIME_CHANGED=1
+if [[ -r "${BUILD_INFO_PATH}" ]] && cmp -s "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}"; then
+  RUNTIME_CHANGED=0
+fi
+
+if [[ "${RUNTIME_CHANGED}" == "1" ]]; then
+  echo "[openclaw] repairing OpenClaw state for this runtime build"
+  /usr/local/bin/openclaw doctor --fix --non-interactive --yes
+else
+  echo "[openclaw] state already repaired for this runtime build; skipping doctor"
+fi
+
+# Doctor hardens these itself; the skip path has to keep doing it. Both are
+# idempotent and cost nothing.
+chmod 700 "${STATE_DIR}" 2>/dev/null || true
+if [[ -f "${CONFIG_PATH}" ]]; then
+  chmod 600 "${CONFIG_PATH}" 2>/dev/null || true
+fi
 
 if [[ -n "${INSTALL_PLUGINS}" ]]; then
   normalized_plugins="${INSTALL_PLUGINS//,/ }"
@@ -333,8 +357,16 @@ if [[ -n "${INSTALL_PLUGINS}" ]]; then
   done
 fi
 
-/usr/local/bin/openclaw config validate
-echo "[openclaw] config verified"
+# Doctor's final phase validates the same snapshot, so this is only worth its own
+# node start on the paths where doctor ran (or where plugins were just installed)
+# and we still want to fail here rather than inside the gateway.
+if [[ "${RUNTIME_CHANGED}" == "1" || -n "${INSTALL_PLUGINS}" ]]; then
+  /usr/local/bin/openclaw config validate
+  echo "[openclaw] config verified"
+  if [[ -r "${BUILD_INFO_PATH}" ]]; then
+    cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
+  fi
+fi
 
 desktop_enabled() {
   enabled "${DESKTOP_ENABLED}"

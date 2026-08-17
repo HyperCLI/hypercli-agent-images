@@ -1,7 +1,7 @@
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
-ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1
+ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1-2
 
 FROM ${OPENCLAW_BASE_IMAGE}
 
