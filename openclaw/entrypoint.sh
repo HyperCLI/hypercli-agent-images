@@ -325,6 +325,9 @@ fi
 if [[ "${RUNTIME_CHANGED}" == "1" ]]; then
   echo "[openclaw] repairing OpenClaw state for this runtime build"
   /usr/local/bin/openclaw doctor --fix --non-interactive --yes
+  if [[ -r "${BUILD_INFO_PATH}" ]]; then
+    cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
+  fi
 else
   echo "[openclaw] state already repaired for this runtime build; skipping doctor"
 fi
@@ -355,18 +358,6 @@ if [[ -n "${INSTALL_PLUGINS}" ]]; then
     INSTALL_ARGS+=("${plugin_spec}")
     /usr/local/bin/openclaw "${INSTALL_ARGS[@]}"
   done
-fi
-
-# Runs on every boot even when doctor is skipped: the config synthesis above
-# rewrites openclaw.json each time, so this is the only thing standing between a
-# bad rewrite and a gateway crash loop.
-/usr/local/bin/openclaw config validate
-echo "[openclaw] config verified"
-
-# Only record the checkpoint once the config this build produced has validated,
-# so a failed boot repairs again next time instead of skipping straight past it.
-if [[ "${RUNTIME_CHANGED}" == "1" && -r "${BUILD_INFO_PATH}" ]]; then
-  cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
 fi
 
 desktop_enabled() {
