@@ -10,7 +10,7 @@
         "models": [
           {
             "id": "default-anthropic",
-            "name": "Default",
+            "name": "default",
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
@@ -18,7 +18,7 @@
           },
           {
             "id": "kimi-k3-anthropic",
-            "name": "Kimi K3",
+            "name": "kimi-k3",
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
@@ -26,7 +26,7 @@
           },
           {
             "id": "kimi-k2.6-anthropic",
-            "name": "Kimi K2.6",
+            "name": "kimi-k2.6",
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
