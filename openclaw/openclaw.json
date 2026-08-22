@@ -9,20 +9,28 @@
         "authHeader": true,
         "models": [
           {
-            "id": "kimi-k2.6-anthropic",
-            "name": "Kimi K2.6",
+            "id": "default-anthropic",
+            "name": "Default",
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
             "maxTokens": 262144
           },
           {
-            "id": "glm-5-anthropic",
-            "name": "GLM-5",
+            "id": "kimi-k3-anthropic",
+            "name": "Kimi K3",
             "reasoning": true,
-            "input": ["text"],
-            "contextWindow": 202752,
-            "maxTokens": 131072
+            "input": ["text", "image"],
+            "contextWindow": 262144,
+            "maxTokens": 262144
+          },
+          {
+            "id": "kimi-k2.6-anthropic",
+            "name": "Kimi K2.6",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "contextWindow": 262144,
+            "maxTokens": 262144
           }
         ]
       }
@@ -48,14 +56,17 @@
     "defaults": {
       "workspace": "~/.openclaw/workspace",
       "model": {
-        "primary": "hypercli/kimi-k2.6-anthropic"
+        "primary": "hypercli/default-anthropic"
       },
       "models": {
-        "hypercli/kimi-k2.6-anthropic": {
-          "alias": "kimi"
+        "hypercli/default-anthropic": {
+          "alias": "default"
         },
-        "hypercli/glm-5-anthropic": {
-          "alias": "glm"
+        "hypercli/kimi-k3-anthropic": {
+          "alias": "kimi-k3"
+        },
+        "hypercli/kimi-k2.6-anthropic": {
+          "alias": "kimi-k2.6"
         }
       },
       "memorySearch": {
