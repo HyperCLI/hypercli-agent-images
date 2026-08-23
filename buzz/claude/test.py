@@ -98,6 +98,27 @@ with tempfile.TemporaryDirectory() as home_name:
     assert not settings.exists()
     assert not marker.exists()
 
+    default_env = {
+        "HYPERCLI_RUNTIME_INFERENCE": "hypercli",
+        "HYPER_API_BASE": "https://api.dev.hypercli.com/",
+        "HYPER_AGENTS_API_KEY": "runtime-secret",
+    }
+    run(image, ["true"], env=default_env, mounts=mounts)
+    configured = json.loads(settings.read_text(encoding="utf-8"))
+    assert configured == {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "model": "coding-anthropic",
+        "availableModels": ["coding-anthropic"],
+    }
+    assert json.loads(marker.read_text(encoding="utf-8")) == {
+        "managed_by": "hypercli",
+        "version": 1,
+        "model": "coding-anthropic",
+    }
+    run(image, ["true"], mounts=mounts)
+    assert not settings.exists()
+    assert not marker.exists()
+
     # A user edit relinquishes ownership and survives a native-mode launch.
     run(image, ["true"], env=compatibility_env, mounts=mounts)
     edited = json.loads(settings.read_text(encoding="utf-8"))

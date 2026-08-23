@@ -2,7 +2,7 @@ _config_version: 33
 
 model:
   provider: custom:hypercli
-  default: kimi-k2.6-anthropic
+  default: default-anthropic
 
 providers:
   hypercli:
@@ -15,8 +15,8 @@ gateway:
   platforms:
     api_server:
       extra:
-        model_name: kimi-k2.6-anthropic
+        model_name: default-anthropic
         model_routes:
-          kimi-k2.6-anthropic:
+          default-anthropic:
             provider: custom:hypercli
-            model: kimi-k2.6-anthropic
+            model: default-anthropic

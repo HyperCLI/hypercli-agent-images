@@ -9,8 +9,8 @@
         "apiKey": "{env:HYPER_AGENTS_API_KEY}"
       },
       "models": {
-        "kimi-k2.6-anthropic": {
-          "name": "Kimi K2.6",
+        "coding-anthropic": {
+          "name": "coding",
           "limit": {
             "context": 262144,
             "output": 65536
@@ -19,5 +19,5 @@
       }
     }
   },
-  "model": "hypercli/kimi-k2.6-anthropic"
+  "model": "hypercli/coding-anthropic"
 }

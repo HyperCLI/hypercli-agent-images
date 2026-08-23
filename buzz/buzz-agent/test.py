@@ -60,7 +60,7 @@ print(json.dumps({
 defaults = run_python(image, env_probe, env=runtime_env)
 assert defaults == {
     "BUZZ_AGENT_PROVIDER": "anthropic",
-    "BUZZ_AGENT_MODEL": "kimi-k2.6-anthropic",
+    "BUZZ_AGENT_MODEL": "coding-anthropic",
     "ANTHROPIC_BASE_URL": "https://api.example.invalid",
     "ANTHROPIC_API_KEY": "image-sanity-placeholder",
 }

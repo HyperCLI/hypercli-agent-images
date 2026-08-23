@@ -15,7 +15,7 @@
   ],
   "models": [
     {
-      "name": "kimi-k2.6-anthropic",
+      "name": "coding-anthropic",
       "context_limit": 262144,
       "reasoning": true
     }

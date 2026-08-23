@@ -3,7 +3,7 @@ providers:
   hypercli:
     configured: true
     enabled: true
-    model: kimi-k2.6-anthropic
+    model: coding-anthropic
 GOOSE_MODE: auto
 GOOSE_TELEMETRY_ENABLED: false
 extensions:
