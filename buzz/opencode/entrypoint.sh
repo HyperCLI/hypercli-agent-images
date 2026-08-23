@@ -8,6 +8,4 @@ if [ ! -e "${config}" ] && [ ! -L "${config}" ]; then
   cp /opt/hypercli-buzz/opencode.json "${config}"
 fi
 
-/usr/local/bin/hypercli-buzz-init
-
 exec /usr/local/bin/hypercli-buzz-entrypoint "$@"

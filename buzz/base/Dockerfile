@@ -2,7 +2,7 @@
 
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
-ARG HYPERCLI_REF=main
+ARG HYPERCLI_REF=54076c54f6f6a69de1e26646629de2183f8067c6
 
 FROM ${RUST_IMAGE} AS source-builder
 
@@ -20,8 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 RUN set -eux; \
-    git clone --no-tags --depth 1 --branch "${HYPERCLI_REF}" \
-      "${HYPERCLI_REPO}" /build/hypercli; \
+    printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
+    git init /build/hypercli; \
+    git -C /build/hypercli remote add origin "${HYPERCLI_REPO}"; \
+    git -C /build/hypercli fetch --depth 1 origin "${HYPERCLI_REF}"; \
+    test "$(git -C /build/hypercli rev-parse FETCH_HEAD)" = "${HYPERCLI_REF}"; \
+    git -C /build/hypercli checkout --detach FETCH_HEAD; \
     BUZZ_REF="$(sed -n 's/^upstream-buzz-ref = "\([0-9a-f]\{40\}\)"$/\1/p' /build/hypercli/buzz-acp/Cargo.toml)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
