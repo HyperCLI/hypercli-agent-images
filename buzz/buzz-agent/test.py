@@ -47,15 +47,24 @@ assert models["agent"]["name"] == "buzz-agent", models
 env_probe = """
 import json
 import os
-print(json.dumps({
+from pathlib import Path
+
+env = {
     key: os.environ.get(key)
     for key in (
         "BUZZ_AGENT_PROVIDER",
         "BUZZ_AGENT_MODEL",
         "ANTHROPIC_BASE_URL",
         "ANTHROPIC_API_KEY",
+        "BUZZ_ACP_MCP_COMMAND",
+        "BUZZ_MODEL_PREFIX",
     )
-}))
+}
+env.update({
+    "hypercli_skill_exists": Path("/home/node/.buzz/.agents/skills/hypercli/SKILL.md").is_file(),
+    "goose_skill_link": os.readlink("/home/node/.buzz/.goose/skills/hypercli"),
+})
+print(json.dumps(env))
 """
 defaults = run_python(image, env_probe, env=runtime_env)
 assert defaults == {
@@ -63,6 +72,10 @@ assert defaults == {
     "BUZZ_AGENT_MODEL": "coding-anthropic",
     "ANTHROPIC_BASE_URL": "https://api.example.invalid",
     "ANTHROPIC_API_KEY": "image-sanity-placeholder",
+    "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
+    "BUZZ_MODEL_PREFIX": None,
+    "hypercli_skill_exists": True,
+    "goose_skill_link": "../../.agents/skills/hypercli",
 }
 
 overrides = {
@@ -78,6 +91,10 @@ assert preserved == {
     "BUZZ_AGENT_MODEL": "user-model",
     "ANTHROPIC_BASE_URL": "",
     "ANTHROPIC_API_KEY": "user-key",
+    "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
+    "BUZZ_MODEL_PREFIX": None,
+    "hypercli_skill_exists": True,
+    "goose_skill_link": "../../.agents/skills/hypercli",
 }
 
 print(f"{image}: native Buzz Agent contract passed")

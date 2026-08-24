@@ -15,7 +15,52 @@
   ],
   "models": [
     {
+      "name": "default-anthropic",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "default",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
       "name": "coding-anthropic",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "coding",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k3-anthropic",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k3",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k2.6-anthropic",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k2.6",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k2.5-anthropic",
+      "context_limit": 262144,
+      "reasoning": true
+    },
+    {
+      "name": "kimi-k2.5",
       "context_limit": 262144,
       "reasoning": true
     }

@@ -55,7 +55,8 @@ ENV GOOSE_PATH_ROOT=/home/node/.goose \
     GOOSE_DISABLE_KEYRING=1 \
     GOOSE_TELEMETRY_ENABLED=false \
     BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/goose \
-    BUZZ_ACP_AGENT_ARGS=acp
+    BUZZ_ACP_AGENT_ARGS=acp \
+    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
 
 USER node
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-goose-entrypoint"]

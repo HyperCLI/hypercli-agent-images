@@ -43,11 +43,11 @@ The six public runtime images are:
 
 | Directory | Image | ACP child | Authentication |
 | --- | --- | --- | --- |
-| `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI Anthropic-compatible inference |
+| `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI Anthropic-compatible inference plus Buzz MCP/skills |
 | `opencode` | `hypercli-buzz-opencode` | `opencode acp` | OpenCode login or seeded HyperCLI Anthropic provider |
 | `codex` | `hypercli-buzz-codex` | `codex-acp` | Codex API key or device login |
 | `claude` | `hypercli-buzz-claude` | `claude-agent-acp` | Claude subscription, Console, or SSO |
-| `goose` | `hypercli-buzz-goose` | `goose acp` | Seeded HyperCLI Anthropic provider |
+| `goose` | `hypercli-buzz-goose` | `goose acp` | Seeded HyperCLI provider with OpenAI and Anthropic aliases plus Goose MCP/skills |
 | `kimi-code` | `hypercli-buzz-kimi-code` | `kimi acp` | Upstream Moonshot login |
 
 The common carrier installs Python, `hyper` with all CLI extras, build tools,
