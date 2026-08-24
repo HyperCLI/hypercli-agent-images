@@ -55,6 +55,14 @@ def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, check=check, text=True, capture_output=True)
 
 
+def parse_stdout_json(stdout: str) -> object:
+    start = stdout.find("{")
+    end = stdout.rfind("}")
+    if start == -1 or end == -1 or end < start:
+        raise AssertionError(f"stdout did not contain a JSON object: {stdout!r}")
+    return json.loads(stdout[start : end + 1])
+
+
 class ModelHandler(BaseHTTPRequestHandler):
     observed_requests: list[dict[str, object]] = []
 
@@ -425,7 +433,7 @@ def main() -> None:
             "python", "-c",
             "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout
-        mem0_config = json.loads(mem0_seeded)
+        mem0_config = parse_stdout_json(mem0_seeded)
         assert mem0_config["mode"] == "oss"
         assert mem0_config["agent_id"] == "hermes"
         assert mem0_config["oss"]["llm"]["provider"] == "openai"
