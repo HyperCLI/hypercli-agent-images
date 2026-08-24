@@ -10,11 +10,19 @@
         "models": [
           {
             "id": "default-anthropic",
-            "name": "default",
+            "name": "default-anthropic",
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
-            "maxTokens": 262144
+            "maxTokens": 65536
+          },
+          {
+            "id": "coding-anthropic",
+            "name": "coding-anthropic",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "contextWindow": 262144,
+            "maxTokens": 65536
           },
           {
             "id": "kimi-k3-anthropic",
@@ -22,7 +30,15 @@
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
-            "maxTokens": 262144
+            "maxTokens": 65536
+          },
+          {
+            "id": "kimi-k2.5-anthropic",
+            "name": "kimi-k2.5-anthropic",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "contextWindow": 262144,
+            "maxTokens": 65536
           },
           {
             "id": "kimi-k2.6-anthropic",
@@ -30,7 +46,7 @@
             "reasoning": true,
             "input": ["text", "image"],
             "contextWindow": 262144,
-            "maxTokens": 262144
+            "maxTokens": 65536
           }
         ]
       }
@@ -60,13 +76,19 @@
       },
       "models": {
         "hypercli/default-anthropic": {
-          "alias": "default"
+          "alias": "default-anthropic"
+        },
+        "hypercli/coding-anthropic": {
+          "alias": "coding-anthropic"
         },
         "hypercli/kimi-k3-anthropic": {
-          "alias": "kimi-k3"
+          "alias": "kimi-k3-anthropic"
+        },
+        "hypercli/kimi-k2.5-anthropic": {
+          "alias": "kimi-k2.5-anthropic"
         },
         "hypercli/kimi-k2.6-anthropic": {
-          "alias": "kimi-k2.6"
+          "alias": "kimi-k2.6-anthropic"
         }
       },
       "memorySearch": {

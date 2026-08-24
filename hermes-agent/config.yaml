@@ -11,6 +11,13 @@ providers:
     key_env: HYPER_AGENTS_API_KEY
     transport: anthropic_messages
 
+memory:
+  provider: mem0
+
+skills:
+  external_dirs:
+    - /opt/hypercli/skills
+
 gateway:
   platforms:
     api_server:
@@ -20,3 +27,15 @@ gateway:
           default-anthropic:
             provider: custom:hypercli
             model: default-anthropic
+          coding-anthropic:
+            provider: custom:hypercli
+            model: coding-anthropic
+          kimi-k3-anthropic:
+            provider: custom:hypercli
+            model: kimi-k3-anthropic
+          kimi-k2.5-anthropic:
+            provider: custom:hypercli
+            model: kimi-k2.5-anthropic
+          kimi-k2.6-anthropic:
+            provider: custom:hypercli
+            model: kimi-k2.6-anthropic

@@ -83,6 +83,52 @@ native build tools, Node/npm/npx, pinned Corepack/pnpm/Yarn, media/PDF tools,
 editors, archives, HyperCLI with all extras, and passwordless sudo for their
 actual runtime users. Runtime-specific applications and plugins remain separate.
 
+Both runtimes clone HyperCLI into `/opt/hypercli`, including the bundled
+`/opt/hypercli/skills` library. OpenClaw synchronizes those skills into its
+state directory on launch. Hermes seeds missing skills into `/opt/data/skills`
+and also registers `/opt/hypercli/skills` as `skills.external_dirs`, so the
+immutable image skills are visible as an externally owned source.
+
+OpenClaw and Hermes seed the Anthropic-route HyperCLI aliases into their
+runtime config and boot with `default-anthropic`. That default is a stable
+container contract: the backend can retarget it without breaking existing
+containers. Today the image aliases resolve as:
+
+| Alias | Current target | Notes |
+| --- | --- | --- |
+| `default-anthropic` | `kimi-k3-anthropic` | Image default, Anthropic Messages route |
+| `coding-anthropic` | `kimi-k3-anthropic` | Stable coding alias, Anthropic Messages route |
+| `kimi-k3-anthropic` | `kimi-k3-anthropic` | Pinned Kimi K3 Anthropic Messages route |
+| `kimi-k2.6-anthropic` | `kimi-k2.6-anthropic` | Pinned Kimi K2.6 Anthropic Messages route |
+| `kimi-k2.5-anthropic` | `kimi-k2.6-anthropic` | Legacy compatibility alias |
+
+The authoritative alias map lives in
+[`pulumi-api-k8s/gpus.yaml`](/home/ubuntu/dev/hyperclaw-backend/pulumi-api-k8s/gpus.yaml).
+Image configs duplicate the public names so runtime UIs can list and select
+them before the first model request.
+
+For agent runtimes and tool-calling workloads, prefer `-anthropic` aliases.
+They use the Anthropic Messages route and are the expected surface for the best
+tool-calling behavior.
+
+OpenCode boots with `coding-anthropic`, and its seeded config includes
+both route families: `default`, `coding`, `kimi-k3`, `kimi-k2.6`, `kimi-k2.5`,
+and the matching `-anthropic` aliases. Keep the `-anthropic` aliases as the
+default path for hosted coding work; the non-suffixed names remain available
+for OpenCode flows that expect the OpenAI-compatible model names.
+
+OpenClaw exposes vector-backed memory search as `memorySearch`, using the
+HyperCLI embeddings route `qwen3-embedding-4b` at
+`${HYPER_AGENTS_API_BASE}/v1`. Hermes uses its native external memory provider
+slot and boots with `memory.provider: mem0`. The image bakes `mem0ai` and
+`qdrant-client` into the Hermes venv, so the default memory provider does not
+depend on runtime lazy installs. The Hermes entrypoint seeds
+`/opt/data/mem0.json` only when missing, in Mem0 OSS mode, with an OpenAI-style
+LLM provider set to `default-anthropic`, an OpenAI-style embedder set to
+`qwen3-embedding-4b` with 2560-dimensional vectors, and local Qdrant storage
+under `/opt/data/mem0_qdrant`. Launch credentials are projected through the
+managed runtime environment, not written into the durable Mem0 config.
+
 ## Security boundary
 
 Coding images intentionally grant passwordless sudo to the `node` user and

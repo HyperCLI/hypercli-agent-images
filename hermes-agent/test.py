@@ -248,6 +248,13 @@ def main() -> None:
     )
     assert package_managers.stdout.splitlines() == ["0.35.0", "11.2.2", "1.22.22"]
 
+    memory_deps = run(
+        "docker", "run", "--rm", IMAGE,
+        "/opt/hermes/.venv/bin/python", "-c",
+        "import mem0, qdrant_client; print('mem0/qdrant ok')",
+    )
+    assert memory_deps.stdout.strip() == "mem0/qdrant ok"
+
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout
 
@@ -379,6 +386,11 @@ def main() -> None:
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
         assert "api: ${env:HYPER_AGENTS_API_BASE}" in seeded
         assert "provider: custom:hypercli" in seeded
+        assert "memory:" in seeded
+        assert "provider: mem0" in seeded
+        assert "skills:" in seeded
+        assert "external_dirs:" in seeded
+        assert "- /opt/hypercli/skills" in seeded
         assert f"default: {MODEL}" in seeded
         assert "transport: anthropic_messages" in seeded
         assert f"model_name: {MODEL}" in seeded
@@ -386,6 +398,31 @@ def main() -> None:
         assert f"model: {MODEL}" in seeded
         assert "_config_version: 33" in seeded
         assert MODEL_KEY not in seeded
+
+        mem0_seeded = run(
+            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "python", "-c",
+            "from pathlib import Path; print(Path('/opt/data/mem0.json').read_text())",
+        ).stdout
+        mem0_config = json.loads(mem0_seeded)
+        assert mem0_config["mode"] == "oss"
+        assert mem0_config["agent_id"] == "hermes"
+        assert mem0_config["oss"]["llm"]["provider"] == "openai"
+        assert mem0_config["oss"]["llm"]["config"]["model"] == MODEL
+        assert mem0_config["oss"]["llm"]["config"]["openai_base_url"] == (
+            f"http://host.docker.internal:{model_port}/v1"
+        )
+        assert mem0_config["oss"]["embedder"]["provider"] == "openai"
+        assert mem0_config["oss"]["embedder"]["config"]["model"] == "qwen3-embedding-4b"
+        assert mem0_config["oss"]["embedder"]["config"]["embedding_dims"] == 2560
+        assert mem0_config["oss"]["embedder"]["config"]["openai_base_url"] == (
+            f"http://host.docker.internal:{model_port}/v1"
+        )
+        assert mem0_config["oss"]["vector_store"] == {
+            "provider": "qdrant",
+            "config": {"path": "/opt/data/mem0_qdrant"},
+        }
+        assert MODEL_KEY not in mem0_seeded
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
@@ -411,10 +448,17 @@ def main() -> None:
             "-v", f"{volume}:/opt/data", IMAGE,
             "sh", "-c",
             "stat -c '%u:%g' /opt/data/skills/hypercli/SKILL.md "
-            "/opt/data/config.yaml /opt/data/skills/hypercli/user-extra.txt",
+            "/opt/data/config.yaml /opt/data/mem0.json /opt/data/mem0_qdrant "
+            "/opt/data/skills/hypercli/user-extra.txt",
         ).stdout.splitlines()
         repaired = [line for line in repaired_output if re.fullmatch(r"\d+:\d+", line)]
-        assert repaired == ["12345:12346", "12345:12346", "0:0"]
+        assert repaired == [
+            "12345:12346",
+            "12345:12346",
+            "12345:12346",
+            "12345:12346",
+            "0:0",
+        ]
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
@@ -450,6 +494,20 @@ def main() -> None:
             "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
         ).stdout
         assert marker in preserved
+
+        mem0_marker = '"preserve_existing_mem0"'
+        run(
+            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "python", "-c",
+            "from pathlib import Path; p=Path('/opt/data/mem0.json'); "
+            f"p.write_text('{{{mem0_marker}: true}}\\n')",
+        )
+        mem0_preserved = run(
+            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "python", "-c",
+            "from pathlib import Path; print(Path('/opt/data/mem0.json').read_text())",
+        ).stdout
+        assert mem0_preserved == f"{{{mem0_marker}: true}}\n"
     finally:
         server.shutdown()
         run("docker", "rm", "-f", container, check=False)

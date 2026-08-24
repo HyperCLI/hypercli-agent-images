@@ -9,15 +9,127 @@
         "apiKey": "{env:HYPER_AGENTS_API_KEY}"
       },
       "models": {
-        "coding-anthropic": {
+        "default": {
+          "name": "default",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "default-anthropic": {
+          "name": "default-anthropic",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "coding": {
           "name": "coding",
           "limit": {
             "context": 262144,
             "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "coding-anthropic": {
+          "name": "coding-anthropic",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k3": {
+          "name": "kimi-k3",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k3-anthropic": {
+          "name": "kimi-k3-anthropic",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k2.5": {
+          "name": "kimi-k2.5",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k2.5-anthropic": {
+          "name": "kimi-k2.5-anthropic",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k2.6": {
+          "name": "kimi-k2.6",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "kimi-k2.6-anthropic": {
+          "name": "kimi-k2.6-anthropic",
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
           }
         }
       }
     }
   },
-  "model": "hypercli/coding-anthropic"
+  "model": "hypercli/coding-anthropic",
+  "skills": {
+    "paths": ["/opt/hypercli/skills"]
+  },
+  "permission": {
+    "skill": {
+      "*": "allow"
+    },
+    "webfetch": "allow"
+  }
 }
