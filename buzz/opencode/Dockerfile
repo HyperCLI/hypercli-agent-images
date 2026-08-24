@@ -20,7 +20,8 @@ LABEL org.opencontainers.image.title="HyperCLI Buzz OpenCode Agent" \
       org.hypercli.coding_runtime_version="${OPENCODE_VERSION}"
 
 ENV BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/opencode \
-    BUZZ_ACP_AGENT_ARGS=acp
+    BUZZ_ACP_AGENT_ARGS=acp \
+    BUZZ_MODEL_PREFIX=hypercli/
 
 USER node
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-opencode-entrypoint"]

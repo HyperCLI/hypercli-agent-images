@@ -70,4 +70,10 @@ runtime_env = run(
 )
 assert runtime_env.stdout == "runtime-injected-key"
 
+model_prefix = run(
+    image,
+    ["sh", "-c", "printf '%s' \"${BUZZ_MODEL_PREFIX}\""],
+)
+assert model_prefix.stdout == "hypercli/"
+
 print(f"{image}: OpenCode contract passed")
