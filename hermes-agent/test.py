@@ -537,7 +537,7 @@ def main() -> None:
             "python", "-c",
             "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout
-        assert mem0_preserved == f"{{{mem0_marker}: true}}\n"
+        assert parse_stdout_json(mem0_preserved) == {"preserve_existing_mem0": True}
     finally:
         server.shutdown()
         run("docker", "rm", "-f", container, check=False)
