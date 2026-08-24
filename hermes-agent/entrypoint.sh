@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HERMES_HOME="${HERMES_HOME:-/opt/data}"
+HOME="${HOME:-/home/hermes}"
+HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
+HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${HOME}/shared}"
+export HOME HERMES_HOME HYPER_WORKSPACES_DIR
 CONFIG_PATH="${HERMES_HOME}/config.yaml"
 CONFIG_TEMPLATE="${HERMES_CONFIG_TEMPLATE:-/opt/hypercli-hermes/config.yaml}"
 MEM0_CONFIG_PATH="${HERMES_MEM0_CONFIG_PATH:-${HERMES_HOME}/mem0.json}"
@@ -46,7 +49,7 @@ if ! path_ancestors_are_safe "${HERMES_HOME}/."; then
   exit 1
 fi
 
-mkdir -p "${HERMES_HOME}" "${HERMES_SKILLS_DIR}" "${HYPER_WORKSPACES_DIR:-${HERMES_HOME}/workspaces}"
+mkdir -p "${HOME}" "${HERMES_HOME}" "${HERMES_SKILLS_DIR}" "${HYPER_WORKSPACES_DIR}"
 
 if [[ -L "${MEM0_CONFIG_PATH}" ]]; then
   echo "[hermes-agent] skipping mem0 config seed through symlink: ${MEM0_CONFIG_PATH}" >&2
@@ -86,7 +89,7 @@ config = {
         "vector_store": {
             "provider": "qdrant",
             "config": {
-                "path": os.environ.get("HERMES_MEM0_QDRANT_PATH", "/opt/data/mem0_qdrant"),
+                "path": os.environ.get("HERMES_MEM0_QDRANT_PATH", f"{os.environ.get('HERMES_HOME', '/home/hermes/.hermes')}/mem0_qdrant"),
             },
         },
     },
@@ -181,5 +184,7 @@ fi
 if [[ -d "${HERMES_HOME}/mem0_qdrant" ]]; then
   chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HERMES_HOME}/mem0_qdrant"
 fi
+chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HOME}" "${HERMES_HOME}" "${HERMES_SKILLS_DIR}"
+chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HYPER_WORKSPACES_DIR}"
 
 exec /opt/hermes/docker/entrypoint-dispatch.sh "$@"

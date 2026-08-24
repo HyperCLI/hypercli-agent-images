@@ -85,9 +85,17 @@ actual runtime users. Runtime-specific applications and plugins remain separate.
 
 Both runtimes clone HyperCLI into `/opt/hypercli`, including the bundled
 `/opt/hypercli/skills` library. OpenClaw synchronizes those skills into its
-state directory on launch. Hermes seeds missing skills into `/opt/data/skills`
-and also registers `/opt/hypercli/skills` as `skills.external_dirs`, so the
-immutable image skills are visible as an externally owned source.
+state directory on launch. Hermes seeds missing skills into
+`/home/hermes/.hermes/skills` and also registers `/opt/hypercli/skills` as
+`skills.external_dirs`, so the immutable image skills are visible as an
+externally owned source.
+
+Coding images keep their retained runtime root mounted as the runtime user's
+home directory and reserve `$HOME/shared` for HyperCLI Workspace projections.
+`shared/` lives on the retained PVC, so restarted containers can still see it,
+but SDK launch defaults exclude `shared/**` from Reef/S3 backup. Workspaces
+are boot-materialized and can drift during sessions; backing them up as normal
+home state makes restores stale and unnecessarily large.
 
 OpenClaw and Hermes seed the Anthropic-route HyperCLI aliases into their
 runtime config and boot with `default-anthropic`. That default is a stable
@@ -117,17 +125,27 @@ and the matching `-anthropic` aliases. Keep the `-anthropic` aliases as the
 default path for hosted coding work; the non-suffixed names remain available
 for OpenCode flows that expect the OpenAI-compatible model names.
 
+OpenCode also seeds remote MCP servers for HyperCLI product tools and
+Mintlify docs search. The image entrypoint sets `HYPER_MCP_API_KEY` from
+`HYPER_API_KEY` when a user supplies a long-term key, otherwise from the
+backend-injected `HYPER_AGENTS_API_KEY`. The OpenCode config uses
+`HYPER_MCP_API_KEY` only for MCP headers; model inference remains explicitly
+keyed by `HYPER_AGENTS_API_KEY`. The product MCP URL defaults to
+`${HYPER_API_BASE}/api/mcp` and can be overridden with
+`HYPER_OPENCODE_MCP_URL`.
+
 OpenClaw exposes vector-backed memory search as `memorySearch`, using the
 HyperCLI embeddings route `qwen3-embedding-4b` at
 `${HYPER_AGENTS_API_BASE}/v1`. Hermes uses its native external memory provider
 slot and boots with `memory.provider: mem0`. The image bakes `mem0ai` and
 `qdrant-client` into the Hermes venv, so the default memory provider does not
 depend on runtime lazy installs. The Hermes entrypoint seeds
-`/opt/data/mem0.json` only when missing, in Mem0 OSS mode, with an OpenAI-style
-LLM provider set to `default-anthropic`, an OpenAI-style embedder set to
-`qwen3-embedding-4b` with 2560-dimensional vectors, and local Qdrant storage
-under `/opt/data/mem0_qdrant`. Launch credentials are projected through the
-managed runtime environment, not written into the durable Mem0 config.
+`/home/hermes/.hermes/mem0.json` only when missing, in Mem0 OSS mode, with an
+OpenAI-style LLM provider set to `default-anthropic`, an OpenAI-style embedder
+set to `qwen3-embedding-4b` with 2560-dimensional vectors, and local Qdrant
+storage under `/home/hermes/.hermes/mem0_qdrant`. Launch credentials are
+projected through the managed runtime environment, not written into the durable
+Mem0 config.
 
 ## Security boundary
 

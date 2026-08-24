@@ -49,8 +49,25 @@ assert_models(
 assert_user_config_preserved(
     image,
     relative_path=".config/opencode/opencode.json",
-    generated_contains="coding-anthropic",
+    generated_contains="https://docs.hypercli.com/mcp",
     user_content=json.dumps({"userManaged": True}) + "\n",
 )
+
+entrypoint_env = run(
+    image,
+    ["sh", "-c", "printf '%s' \"${HYPER_MCP_API_KEY}\""],
+    env={
+        "HYPER_API_KEY": "long-term-user-key",
+        "HYPER_AGENTS_API_KEY": "runtime-injected-key",
+    },
+)
+assert entrypoint_env.stdout == "long-term-user-key"
+
+runtime_env = run(
+    image,
+    ["sh", "-c", "printf '%s' \"${HYPER_MCP_API_KEY}\""],
+    env={"HYPER_AGENTS_API_KEY": "runtime-injected-key"},
+)
+assert runtime_env.stdout == "runtime-injected-key"
 
 print(f"{image}: OpenCode contract passed")

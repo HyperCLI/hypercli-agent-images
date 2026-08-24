@@ -68,13 +68,26 @@ RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
 COPY --chmod=0755 entrypoint.sh /opt/hypercli-hermes/entrypoint.sh
 
-ENV HERMES_HOME=/opt/data
-ENV HERMES_WRITE_SAFE_ROOT=/opt/data
-ENV HYPER_WORKSPACES_DIR=/opt/data/workspaces
+RUN usermod -d /home/hermes hermes \
+    && mkdir -p /home/hermes/.hermes /home/hermes/shared \
+    && sed -i \
+      -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
+      -e 's#cd /opt/data#cd /home/hermes#g' \
+      /opt/hermes/docker/main-wrapper.sh \
+    && sed -i \
+      -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
+      /opt/hermes/bin/hermes \
+    && chown -R hermes:hermes /home/hermes
+
+ENV HOME=/home/hermes
+ENV HERMES_HOME=/home/hermes/.hermes
+ENV HERMES_WRITE_SAFE_ROOT=/home/hermes
+ENV HYPER_WORKSPACES_DIR=/home/hermes/shared
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV API_SERVER_ENABLED=true
 ENV API_SERVER_HOST=0.0.0.0
 ENV API_SERVER_PORT=8642
+WORKDIR /home/hermes
 
 EXPOSE 8642
 

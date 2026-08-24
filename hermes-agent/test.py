@@ -200,7 +200,7 @@ def start_container(
         "--label", f"{TEST_RUN_LABEL}={TEST_RUN_ID}",
         "--add-host", "host.docker.internal:host-gateway",
         "-p", "127.0.0.1::8642",
-        "-v", f"{volume}:/opt/data",
+        "-v", f"{volume}:/home/hermes",
         "-e", f"API_SERVER_KEY={api_key}",
         "-e", f"API_SERVER_CORS_ORIGINS={ALLOWED_ORIGIN}",
         "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
@@ -227,6 +227,24 @@ def main() -> None:
     assert not any(value.startswith("HERMES_DEFAULT_MODEL=") for value in inspect["Env"])
     assert not any(value.startswith("HERMES_MODEL_TRANSPORT=") for value in inspect["Env"])
     assert not any(value.startswith("HERMES_INFERENCE_API_BASE=") for value in inspect["Env"])
+    assert "HOME=/home/hermes" in inspect["Env"]
+    assert "HERMES_HOME=/home/hermes/.hermes" in inspect["Env"]
+    assert "HERMES_WRITE_SAFE_ROOT=/home/hermes" in inspect["Env"]
+    assert "HYPER_WORKSPACES_DIR=/home/hermes/shared" in inspect["Env"]
+
+    home_contract = run(
+        "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
+        "-c",
+        "printf '%s\n' \"$HOME\" \"$HERMES_HOME\" \"$HYPER_WORKSPACES_DIR\" "
+        "$(getent passwd hermes | cut -d: -f6) \"$PWD\"",
+    ).stdout.splitlines()
+    assert home_contract == [
+        "/home/hermes",
+        "/home/hermes/.hermes",
+        "/home/hermes/shared",
+        "/home/hermes",
+        "/home/hermes",
+    ]
 
     sudo = run(
         "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
@@ -249,11 +267,14 @@ def main() -> None:
     assert package_managers.stdout.splitlines() == ["0.35.0", "11.2.2", "1.22.22"]
 
     memory_deps = run(
-        "docker", "run", "--rm", IMAGE,
-        "/opt/hermes/.venv/bin/python", "-c",
+        "docker", "run", "--rm", "--entrypoint", "/opt/hermes/.venv/bin/python", IMAGE,
+        "-c",
         "import mem0, qdrant_client; print('mem0/qdrant ok')",
     )
-    assert memory_deps.stdout.strip() == "mem0/qdrant ok"
+    assert memory_deps.stdout.strip() == "mem0/qdrant ok", (
+        memory_deps.stdout,
+        memory_deps.stderr,
+    )
 
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout
@@ -340,14 +361,14 @@ def main() -> None:
         run("docker", "rm", "-f", container)
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
-            "-v", f"{volume}:/opt/data", IMAGE,
+            "-v", f"{volume}:/home/hermes", IMAGE,
             "-c",
             "printf '%s\\n' "
             "'API_SERVER_KEY=stale-retained-api-key-32-characters' "
             "'HYPER_AGENTS_API_KEY=stale-retained-model-key' "
             "'HYPER_AGENTS_API_BASE=http://127.0.0.1:9' "
             "'API_SERVER_CORS_ORIGINS=https://stale.example' "
-            "> /opt/data/.env",
+            "> /home/hermes/.hermes/.env",
         )
         base = start_container(container, volume, model_port, ROTATED_API_KEY)
         assert request_status(
@@ -379,9 +400,9 @@ def main() -> None:
         assert rotated_model["choices"][0]["message"]["content"] == REPLY
 
         seeded = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/config.yaml').read_text())",
         ).stdout
         assert "key_env: HYPER_AGENTS_API_KEY" in seeded
         assert "api: ${env:HYPER_AGENTS_API_BASE}" in seeded
@@ -400,9 +421,9 @@ def main() -> None:
         assert MODEL_KEY not in seeded
 
         mem0_seeded = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            "from pathlib import Path; print(Path('/opt/data/mem0.json').read_text())",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout
         mem0_config = json.loads(mem0_seeded)
         assert mem0_config["mode"] == "oss"
@@ -420,36 +441,36 @@ def main() -> None:
         )
         assert mem0_config["oss"]["vector_store"] == {
             "provider": "qdrant",
-            "config": {"path": "/opt/data/mem0_qdrant"},
+            "config": {"path": "/home/hermes/.hermes/mem0_qdrant"},
         }
         assert MODEL_KEY not in mem0_seeded
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
-            "-v", f"{volume}:/opt/data", IMAGE,
-            "-c", "chown -R 12345:12346 /opt/data && rm -rf /opt/data/skills/hypercli",
+            "-v", f"{volume}:/home/hermes", IMAGE,
+            "-c", "chown -R 12345:12346 /home/hermes && rm -rf /home/hermes/.hermes/skills/hypercli",
         )
         ownership = run(
             "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
-            "-v", f"{volume}:/opt/data", IMAGE,
-            "stat", "-c", "%u:%g", "/opt/data/skills/hypercli",
+            "-v", f"{volume}:/home/hermes", IMAGE,
+            "stat", "-c", "%u:%g", "/home/hermes/.hermes/skills/hypercli",
         ).stdout
         assert ownership.rstrip().endswith("12345:12346")
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
-            "-v", f"{volume}:/opt/data", IMAGE,
+            "-v", f"{volume}:/home/hermes", IMAGE,
             "-c",
-            "touch /opt/data/skills/hypercli/user-extra.txt && "
-            "chown -R 0:0 /opt/data/skills /opt/data/config.yaml",
+            "touch /home/hermes/.hermes/skills/hypercli/user-extra.txt && "
+            "chown -R 0:0 /home/hermes/.hermes/skills /home/hermes/.hermes/config.yaml",
         )
         repaired_output = run(
             "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
-            "-v", f"{volume}:/opt/data", IMAGE,
+            "-v", f"{volume}:/home/hermes", IMAGE,
             "sh", "-c",
-            "stat -c '%u:%g' /opt/data/skills/hypercli/SKILL.md "
-            "/opt/data/config.yaml /opt/data/mem0.json /opt/data/mem0_qdrant "
-            "/opt/data/skills/hypercli/user-extra.txt",
+            "stat -c '%u:%g' /home/hermes/.hermes/skills/hypercli/SKILL.md "
+            "/home/hermes/.hermes/config.yaml /home/hermes/.hermes/mem0.json /home/hermes/.hermes/mem0_qdrant "
+            "/home/hermes/.hermes/skills/hypercli/user-extra.txt /home/hermes/shared",
         ).stdout.splitlines()
         repaired = [line for line in repaired_output if re.fullmatch(r"\d+:\d+", line)]
         assert repaired == [
@@ -458,54 +479,55 @@ def main() -> None:
             "12345:12346",
             "12345:12346",
             "0:0",
+            "12345:12346",
         ]
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
-            "-v", f"{volume}:/opt/data", IMAGE,
+            "-v", f"{volume}:/home/hermes", IMAGE,
             "-c",
-            "mkdir -p /opt/data/ownership-escape && "
-            "touch /opt/data/ownership-escape/SKILL.md && "
-            "chown 0:0 /opt/data/ownership-escape/SKILL.md && "
-            "rm -rf /opt/data/skills/hypercli && "
-            "ln -s /opt/data/ownership-escape /opt/data/skills/hypercli",
+            "mkdir -p /home/hermes/ownership-escape && "
+            "touch /home/hermes/ownership-escape/SKILL.md && "
+            "chown 0:0 /home/hermes/ownership-escape/SKILL.md && "
+            "rm -rf /home/hermes/.hermes/skills/hypercli && "
+            "ln -s /home/hermes/ownership-escape /home/hermes/.hermes/skills/hypercli",
         )
         escaped_ownership = run(
             "docker", "run", "--rm", "-e", "PUID=12345", "-e", "PGID=12346",
-            "-v", f"{volume}:/opt/data", IMAGE,
-            "stat", "-c", "%u:%g", "/opt/data/ownership-escape/SKILL.md",
+            "-v", f"{volume}:/home/hermes", IMAGE,
+            "stat", "-c", "%u:%g", "/home/hermes/ownership-escape/SKILL.md",
         ).stdout
         assert escaped_ownership.rstrip().endswith("0:0")
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",
-            "-v", f"{volume}:/opt/data", IMAGE,
-            "-c", "rm /opt/data/skills/hypercli",
+            "-v", f"{volume}:/home/hermes", IMAGE,
+            "-c", "rm /home/hermes/.hermes/skills/hypercli",
         )
 
         marker = "# preserve-existing-config"
         run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            f"from pathlib import Path; p=Path('/opt/data/config.yaml'); p.write_text(p.read_text() + {marker!r} + '\\n')",
+            f"from pathlib import Path; p=Path('/home/hermes/.hermes/config.yaml'); p.write_text(p.read_text() + {marker!r} + '\\n')",
         )
         preserved = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            "from pathlib import Path; print(Path('/opt/data/config.yaml').read_text())",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/config.yaml').read_text())",
         ).stdout
         assert marker in preserved
 
         mem0_marker = '"preserve_existing_mem0"'
         run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            "from pathlib import Path; p=Path('/opt/data/mem0.json'); "
+            "from pathlib import Path; p=Path('/home/hermes/.hermes/mem0.json'); "
             f"p.write_text('{{{mem0_marker}: true}}\\n')",
         )
         mem0_preserved = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/opt/data", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
-            "from pathlib import Path; print(Path('/opt/data/mem0.json').read_text())",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout
         assert mem0_preserved == f"{{{mem0_marker}: true}}\n"
     finally:
