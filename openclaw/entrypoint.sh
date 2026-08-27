@@ -373,6 +373,20 @@ cleanup_desktop() {
   done
 }
 
+configure_desktop_background() {
+  local color="${OPENCLAW_DESKTOP_BACKGROUND_COLOR:-#071A2F}"
+  if ! command -v xfconf-query >/dev/null 2>&1; then
+    return 0
+  fi
+  xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/color-style -n -t int -s 0 >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/rgba1 -n -t double -t double -t double -t double -s 0.027 -s 0.102 -s 0.184 -s 1 >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/image-style -n -t int -s 0 >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/last-image -n -t string -s "" >/dev/null 2>&1 || true
+  if command -v xsetroot >/dev/null 2>&1; then
+    xsetroot -solid "${color}" >/dev/null 2>&1 || true
+  fi
+}
+
 if desktop_enabled; then
   if ! command -v Xvfb >/dev/null 2>&1 || ! command -v x11vnc >/dev/null 2>&1 || ! command -v websockify >/dev/null 2>&1 || ! command -v dbus-launch >/dev/null 2>&1 || ! command -v xfwm4 >/dev/null 2>&1 || ! command -v xfce4-panel >/dev/null 2>&1 || ! command -v xfce4-terminal >/dev/null 2>&1; then
     echo "[openclaw] desktop requested but desktop runtime packages are not installed" >&2
@@ -386,6 +400,7 @@ if desktop_enabled; then
   sleep 1
   eval "$(dbus-launch --sh-syntax)"
   export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+  configure_desktop_background
   xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
   XFWM_PID="$!"
   xfce4-panel >/tmp/xfce4-panel.log 2>&1 &
