@@ -77,6 +77,7 @@ RUN set -eux; \
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
+COPY enable_slack_relay.ts /opt/hypercli-openclaw/enable_slack_relay.ts
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version

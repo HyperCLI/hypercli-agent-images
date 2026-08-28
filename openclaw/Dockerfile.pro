@@ -53,6 +53,7 @@ ENV OPENCLAW_CONFIG_TEMPLATE=/opt/hypercli-openclaw/openclaw.json.pro
 
 COPY --chown=node:node openclaw.json.pro /opt/hypercli-openclaw/openclaw.json.pro
 COPY --chown=node:node entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
+COPY --chown=node:node enable_slack_relay.ts /opt/hypercli-openclaw/enable_slack_relay.ts
 COPY --chown=root:root chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY --chown=root:root google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY --chown=root:root google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop

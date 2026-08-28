@@ -91,6 +91,8 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
   cp "${CONFIG_TEMPLATE}" "${CONFIG_PATH}"
 fi
 
+CONFIG_PATH="${CONFIG_PATH}" node /opt/hypercli-openclaw/enable_slack_relay.ts
+
 CONFIG_PATH="${CONFIG_PATH}" node <<'NODE'
 const fs = require("fs");
 
@@ -128,35 +130,6 @@ function parseNonNegativeInteger(name) {
   return Number.parseInt(raw.trim(), 10);
 }
 
-function parseCsv(name) {
-  const raw = env[name];
-  if (raw === undefined || raw === "") return [];
-  const seen = new Set();
-  const values = [];
-  for (const value of raw.split(",")) {
-    const trimmed = value.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    values.push(trimmed);
-  }
-  return values;
-}
-
-function parseJsonObject(name) {
-  const raw = env[name];
-  if (raw === undefined || raw === "") return undefined;
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`${name} must contain valid JSON`, { cause: error });
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`${name} must contain a JSON object`);
-  }
-  return parsed;
-}
-
 const defaults = (((config.agents ||= {}).defaults ||= {}));
 const memorySearch = ((defaults.memorySearch ||= {}));
 const sync = ((memorySearch.sync ||= {}));
@@ -182,68 +155,6 @@ if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs;
 
 const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES");
 if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes;
-
-const hostedSlackEnabled = parseBoolean("HYPER_SLACK_APP_ENABLED");
-if (hostedSlackEnabled === true) {
-  const relayUrl = (env.HYPER_SLACK_RELAY_URL || "").trim();
-  const gatewayId = (env.HYPER_SLACK_GATEWAY_ID || "").trim();
-  if (!relayUrl) throw new Error("HYPER_SLACK_RELAY_URL is required when HYPER_SLACK_APP_ENABLED is true");
-  if (!gatewayId) throw new Error("HYPER_SLACK_GATEWAY_ID is required when HYPER_SLACK_APP_ENABLED is true");
-  const channels = (config.channels ||= {});
-  const messages = (config.messages ||= {});
-  const statusReactions = (messages.statusReactions && typeof messages.statusReactions === "object" && !Array.isArray(messages.statusReactions))
-    ? messages.statusReactions
-    : {};
-  const entries = (((config.plugins ||= {}).entries ||= {}));
-  const existingSlack = channels.slack && typeof channels.slack === "object" && !Array.isArray(channels.slack)
-    ? channels.slack
-    : {};
-  const existingRelay = existingSlack.relay && typeof existingSlack.relay === "object" && !Array.isArray(existingSlack.relay)
-    ? existingSlack.relay
-    : {};
-  const slackAllowFrom = parseCsv("HYPER_SLACK_ALLOW_FROM");
-  const existingAllowFrom = Array.isArray(existingSlack.allowFrom)
-    ? existingSlack.allowFrom.filter((entry) => typeof entry === "string" && entry.trim()).map((entry) => entry.trim())
-    : [];
-  const mergedAllowFrom = Array.from(new Set([...existingAllowFrom, ...slackAllowFrom]));
-  const hostedSlackGroupPolicy = (env.HYPER_SLACK_GROUP_POLICY || "").trim();
-  if (hostedSlackGroupPolicy && !["open", "allowlist", "disabled"].includes(hostedSlackGroupPolicy)) {
-    throw new Error("HYPER_SLACK_GROUP_POLICY must be open, allowlist, or disabled");
-  }
-  const hostedSlackChannels = parseJsonObject("HYPER_SLACK_CHANNELS_JSON");
-  channels.slack = {
-    ...existingSlack,
-    enabled: true,
-    mode: "relay",
-    ...(mergedAllowFrom.length > 0 ? { dmPolicy: "allowlist", allowFrom: mergedAllowFrom } : {}),
-    ...(hostedSlackGroupPolicy ? { groupPolicy: hostedSlackGroupPolicy } : {}),
-    ...(hostedSlackChannels ? { channels: hostedSlackChannels } : {}),
-    replyToMode: "all",
-    replyToModeByChatType: {
-      direct: "off",
-      ...(existingSlack.replyToModeByChatType && typeof existingSlack.replyToModeByChatType === "object" && !Array.isArray(existingSlack.replyToModeByChatType)
-        ? existingSlack.replyToModeByChatType
-        : {}),
-    },
-    botToken: { source: "env", provider: "default", id: "SLACK_BOT_TOKEN" },
-    relay: {
-      ...existingRelay,
-      url: relayUrl,
-      authToken: { source: "env", provider: "default", id: "HYPER_AGENTS_API_KEY" },
-      gatewayId,
-    },
-  };
-  messages.statusReactions = {
-    ...statusReactions,
-    enabled: true,
-  };
-  ((entries.slack ||= {})).enabled = true;
-} else if (hostedSlackEnabled === false) {
-  const channels = config.channels;
-  if (channels && typeof channels === "object" && channels.slack && typeof channels.slack === "object" && channels.slack.mode === "relay") {
-    channels.slack.enabled = false;
-  }
-}
 
 const desktopEnabled = parseBoolean("OPENCLAW_DESKTOP_ENABLED");
 if (desktopEnabled === true) {
