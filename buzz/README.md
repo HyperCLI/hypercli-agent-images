@@ -128,7 +128,7 @@ All hosted Buzz coding runtimes use:
 | Property | Value |
 | --- | --- |
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
-| Entrypoint command | `/usr/local/bin/hypercli-acp` |
+| Entrypoint command | `/usr/local/bin/hypercli-acp buzz` |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
