@@ -9,6 +9,7 @@ FROM ${RUST_IMAGE} AS source-builder
 ARG BUZZ_REPO=https://github.com/block/buzz.git
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 ARG HYPERCLI_REF
+ARG HYPERCLI_CACHE_BUST=local
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 RUN set -eux; \
+    printf '%s\n' "${HYPERCLI_CACHE_BUST}" >/dev/null; \
     if printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; then \
       git init /build/hypercli; \
       git -C /build/hypercli remote add origin "${HYPERCLI_REPO}"; \

@@ -64,6 +64,7 @@ print(json.dumps({
         text=True,
     ).strip(),
     "tools": {tool: shutil.which(tool) for tool in tools},
+    "removed_tools": {"buzz-acp": shutil.which("buzz-acp")},
     "buzz_commit": Path(
         "/opt/hypercli-buzz/.buzz-commit"
     ).read_text().strip(),
@@ -89,6 +90,7 @@ payload = json.loads(result.stdout)
 assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
+assert payload["removed_tools"] == {"buzz-acp": None}
 assert len(payload["buzz_commit"]) == 40
 assert "--trace-db" in payload["hypercli_acp_help"]
 assert payload["openclaw_binary"] is None
