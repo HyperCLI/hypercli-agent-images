@@ -14,6 +14,9 @@ providers:
 memory:
   provider: mem0
 
+cron:
+  enabled: ${env:HERMES_CRON_ENABLED}
+
 skills:
   external_dirs:
     - /opt/hypercli/skills
