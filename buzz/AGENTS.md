@@ -11,9 +11,10 @@ workspace initialization.
 - `nest/AGENTS.md` is shipped runtime content. It must remain byte-for-byte
   equal to Buzz Desktop's pinned `nest_agents.md`.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
-- `hypercli/buzz-acp` owns hosted ACP framing, relay behavior, prompt transport,
-  mention matching, and the shared reply guard. Its Cargo manifest pins the
-  unmodified upstream Buzz crates it consumes.
+- `hypercli/hypercli-acp` owns hosted startup. Its Buzz-compatible mode uses
+  the `hypercli/buzz-acp` library for ACP framing, relay behavior, prompt
+  transport, mention matching, and the shared reply guard. The Buzz library
+  manifest pins the unmodified upstream Buzz crates it consumes.
 - The HyperCLI provider owns translation from Buzz's portable launch request to
   the HyperCLI deployments API.
 - HyperClaw/Lagoon owns remote scheduling and container lifecycle.
@@ -33,7 +34,7 @@ and the executable tests together when the contract changes.
 - Keep runtime commands and prompt transports explicit in the runtime matrix.
 - Keep provider-owned identity, relay, authorization, reply, mention, and
   workspace variables non-overridable by user environment.
-- Keep hosted deployments `restart: false`; normal `buzz-acp` exit must remain
+- Keep hosted deployments `restart: false`; normal `hypercli-acp` exit must remain
   terminal for the pod.
 - Do not convert ACP activity or thinking output into a final Buzz message.
 - Do not replace user-managed files or links under `/home/node/.buzz`.

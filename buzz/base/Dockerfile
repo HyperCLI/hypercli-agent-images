@@ -68,11 +68,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --manifest-path /build/hypercli/Cargo.toml \
       --release \
       --locked \
-      -p hypercli-buzz-acp \
       -p hypercli-acp; \
-    install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/buzz-acp; \
     install -D -m 0755 /build/hypercli/target/release/hypercli-acp /out/hypercli-acp; \
-    strip /out/buzz-acp; \
     strip /out/hypercli-acp
 
 FROM ${NODE_IMAGE}
@@ -132,7 +129,6 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
 
 COPY --from=source-builder /out/sprig /usr/local/bin/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-buzz/nest
-COPY --from=source-builder /out/buzz-acp /usr/local/bin/buzz-acp
 COPY --from=source-builder /out/hypercli-acp /usr/local/bin/hypercli-acp
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-buzz/.buzz-commit
 COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
@@ -144,7 +140,6 @@ COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
 
 RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
-    buzz-acp --help >/dev/null && \
     hypercli-acp --help >/dev/null && \
     buzz --help >/dev/null
 

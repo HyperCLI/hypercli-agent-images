@@ -54,7 +54,6 @@ tools = [
     "sudo",
     "tini",
     "buzz",
-    "buzz-acp",
     "hypercli-acp",
     "buzz-dev-mcp",
 ]
@@ -68,12 +67,6 @@ print(json.dumps({
     "buzz_commit": Path(
         "/opt/hypercli-buzz/.buzz-commit"
     ).read_text().strip(),
-    "buzz_acp_is_symlink": Path("/usr/local/bin/buzz-acp").is_symlink(),
-    "buzz_acp_help": subprocess.check_output(
-        ["buzz-acp", "--help"],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ),
     "hypercli_acp_help": subprocess.check_output(
         ["hypercli-acp", "--help"],
         text=True,
@@ -97,9 +90,6 @@ assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
 assert len(payload["buzz_commit"]) == 40
-assert payload["buzz_acp_is_symlink"] is False
-assert "--text-mentions" in payload["buzz_acp_help"]
-assert "--require-reply" in payload["buzz_acp_help"]
 assert "--trace-db" in payload["hypercli_acp_help"]
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False

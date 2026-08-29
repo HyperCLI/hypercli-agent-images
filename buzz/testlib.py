@@ -137,7 +137,7 @@ def acp_command(
     agent_args: str,
 ) -> list[str]:
     command = [
-        "buzz-acp",
+        "hypercli-acp",
         operation,
         "--agent-command",
         agent_command,
@@ -321,7 +321,7 @@ payload = {
             "sudo",
             "tini",
             "buzz",
-            "buzz-acp",
+            "hypercli-acp",
             "buzz-dev-mcp",
         ]
     },

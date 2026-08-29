@@ -18,7 +18,7 @@ Buzz Desktop
   -> HyperCLI deployments API
   -> HyperClaw/Lagoon
   -> hypercli-buzz-<runtime> image
-  -> buzz-acp
+  -> hypercli-acp
   -> runtime ACP child
   -> Buzz relay
 ```
@@ -113,7 +113,7 @@ The reusable upstream boundaries are:
 - provider request, response, and portable launch wire types;
 - environment validation, precedence, and provider-owned key rules;
 - sanitized provider-wire golden fixtures;
-- setup payload types parsed by `buzz-acp`;
+- setup payload types parsed by the Buzz-compatible mode in `hypercli-acp`;
 - naming, error classification, and reconciliation invariants as references.
 
 The preferred future extraction is small shared crates such as
@@ -128,7 +128,7 @@ All hosted Buzz coding runtimes use:
 | Property | Value |
 | --- | --- |
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
-| Entrypoint command | `/usr/local/bin/buzz-acp` |
+| Entrypoint command | `/usr/local/bin/hypercli-acp` |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
@@ -164,8 +164,8 @@ error without upstream response bodies or secrets.
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
 ACP runtime. The upstream Sprig multicall binary still supplies `buzz`,
-`buzz-agent`, and `buzz-dev-mcp`; the stable `buzz-acp` executable is built
-from HyperCLI's `hypercli-buzz-acp` package and is not a Sprig symlink.
+`buzz-agent`, and `buzz-dev-mcp`; the stable hosted wrapper executable is
+`hypercli-acp`, which includes the Buzz-compatible implementation.
 
 Goose ships a HyperCLI custom provider and advertises both OpenAI-compatible
 aliases (`default`, `coding`, `kimi-k3`, `kimi-k2.6`, `kimi-k2.5`) and the
@@ -181,7 +181,7 @@ does not use OpenCode's `BUZZ_MODEL_PREFIX` qualification.
 
 The image must provide:
 
-- `/usr/local/bin/buzz-acp`, built from the exact pinned HyperCLI commit;
+- `/usr/local/bin/hypercli-acp`, built from the exact pinned HyperCLI commit;
 - the runtime CLI and any required ACP adapter from the matrix above;
 - `/opt/hypercli` at a pinned HyperCLI commit;
 - `/opt/hypercli-buzz/nest/AGENTS.md`, copied from `nest/AGENTS.md`;
@@ -196,8 +196,8 @@ user-managed file, directory, or symlink.
 
 Every runtime entrypoint performs its compatibility setup and then `exec`s the
 shared entrypoint, which in turn `exec`s the provider-supplied command through
-`tini`. Hosted launches supply `/usr/local/bin/buzz-acp`; that command replaces
-the image's fallback `sleep infinity`, and its exit status becomes the
+`tini`. Hosted launches supply `/usr/local/bin/hypercli-acp`; that command
+replaces the image's fallback `sleep infinity`, and its exit status becomes the
 container exit status.
 
 `nest/AGENTS.md` must remain byte-for-byte equal to the pinned Buzz Desktop
@@ -286,10 +286,10 @@ The provider also projects validated non-reserved `launch.env` values. It must
 not allow user environment to override identity, relay, authorization,
 runtime command, text mentions, reply guard, or workspace bootstrap fields.
 
-`BUZZ_ACP_SYSTEM_PROMPT` contains only Desktop's composed prompt. `buzz-acp`
-selects the runtime-specific transport and sends the prompt exactly once. An
-image must not append its own response policy or duplicate the prompt in a
-runtime-specific instruction file.
+`BUZZ_ACP_SYSTEM_PROMPT` contains only Desktop's composed prompt. `hypercli-acp`
+selects the runtime-specific transport and sends the prompt exactly once in
+hosted Buzz mode. An image must not append its own response policy or duplicate
+the prompt in a runtime-specific instruction file.
 
 ## Messages, Mentions, And Replies
 
@@ -299,7 +299,7 @@ runtime must publish with `buzz messages send`, `buzz reactions add`, or the
 equivalent registered MCP command.
 
 Hosted images enable Buzz's shared reply guard. If a genuine ACP `end_turn`
-occurs without an attempted publish, `buzz-acp` sends the canonical reminder
+occurs without an attempted publish, `hypercli-acp` sends the canonical reminder
 in the same session. The guard is adapter-neutral, shares the original hard
 deadline, retries at most twice, and then accepts silence. Do not replace it
 with runtime-specific prompt text or automatic publication of streamed output.
@@ -333,7 +333,7 @@ even after the remote deployment has stopped. Provider idempotency makes a
 future explicit `deploy` safe but cannot repair Desktop's local status without
 a new Desktop lifecycle operation.
 
-Hosted `buzz-acp` exits after an authorized exact `!shutdown`. With
+Hosted `hypercli-acp` exits after an authorized exact `!shutdown`. With
 `restart: false`, that process exit must terminate the pod. HyperCLI lifecycle
 operations remain available through the authenticated agents API and CLI; they
 are not provider protocol operations.
@@ -419,7 +419,8 @@ Pinned upstream Buzz dependencies:
 
 HyperCLI:
 
-- hosted ACP source and upstream pin: `buzz-acp`;
+- hosted ACP startup: `hypercli-acp`;
+- Buzz-compatible relay library and upstream pin: `buzz-acp`;
 - provider translation: `buzz-backend-provider/src/lib.rs`;
 - typed launch rendering: `rs-sdk/src/types.rs`;
 - golden contract: `tests/fixtures/buzz-launch-contract.json`;

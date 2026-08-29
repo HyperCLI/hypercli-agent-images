@@ -62,12 +62,13 @@ preserved.
 
 The nest contains the canonical Buzz `AGENTS.md`, standard directories, the
 Buzz CLI skill, and the standard runtime skill links. Claude additionally gets
-`CLAUDE.md -> AGENTS.md`. `base_prompt.md` remains compiled into `buzz-acp` and
-is not copied into the image or nest.
+`CLAUDE.md -> AGENTS.md`. `base_prompt.md` remains compiled into the
+Buzz-compatible path inside `hypercli-acp` and is not copied into the image or
+nest.
 
 The launch control plane injects the agent identity, relay URL, and owner-signed
 authorization tag. It overrides the default `sleep infinity` command with
-`buzz-acp`; shell launches retain the same image and persistent home.
+`hypercli-acp`; shell launches retain the same image and persistent home.
 
 CI publishes the common carrier once, resolves it to an immutable digest, then
 builds and tests each provider independently. The OpenCode job also runs the
@@ -150,7 +151,8 @@ Mem0 config.
 ## Security boundary
 
 Coding images intentionally grant passwordless sudo to the `node` user and
-`buzz-acp` currently auto-approves ACP permission requests. The effective
+`hypercli-acp` currently auto-approves ACP permission requests in hosted Buzz
+mode. The effective
 boundary is therefore the per-agent namespace, filesystem/persistence scope,
 resource limits, and scoped runtime credentials. The current per-agent
 NetworkPolicy restricts ingress but does not restrict egress.
