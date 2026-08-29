@@ -140,6 +140,13 @@ temporary.write_text(content, encoding="utf-8")
 os.chmod(temporary, 0o600)
 os.replace(temporary, target)
 PY
+if [[ -n "${HERMES_CRON_ENABLED:-}" ]]; then
+  install -m 0600 /dev/null "${HERMES_MANAGED_DIR}/config.yaml"
+  printf '%s\n' \
+    "cron:" \
+    "  enabled: \${env:HERMES_CRON_ENABLED}" \
+    > "${HERMES_MANAGED_DIR}/config.yaml"
+fi
 chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HERMES_MANAGED_DIR}"
 
 if [[ -L "${HERMES_SKILLS_DIR}" ]]; then
