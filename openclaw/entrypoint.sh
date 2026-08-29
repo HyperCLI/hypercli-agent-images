@@ -156,6 +156,12 @@ if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs;
 const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES");
 if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes;
 
+const cronEnabled = parseBoolean("OPENCLAW_CRON_ENABLED");
+if (cronEnabled !== undefined) {
+  const cron = ((config.cron ||= {}));
+  cron.enabled = cronEnabled;
+}
+
 const desktopEnabled = parseBoolean("OPENCLAW_DESKTOP_ENABLED");
 if (desktopEnabled === true) {
   const chromePath = env.CHROME_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable";
