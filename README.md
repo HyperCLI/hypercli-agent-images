@@ -23,11 +23,11 @@ docker build \
   --build-context "buzz-source=${BUZZ_SOURCE}" \
   --build-arg "BUZZ_COMMIT=$(git -C "${BUZZ_SOURCE}" rev-parse HEAD)" \
   --build-arg HYPERCLI_REF=<full-hypercli-commit> \
-  -t hypercli-buzz-base \
+  -t hypercli-acp-base \
   -f buzz/base/Dockerfile buzz
 
 docker build \
-  --build-arg BUZZ_BASE_IMAGE=hypercli-buzz-base \
+  --build-arg HYPERCLI_ACP_BASE_IMAGE=hypercli-acp-base \
   -t hypercli-buzz-opencode \
   -f buzz/opencode/Dockerfile buzz
 ```
@@ -35,7 +35,7 @@ docker build \
 Run the matching Python contracts:
 
 ```bash
-python3 buzz/base/test.py hypercli-buzz-base
+python3 buzz/base/test.py hypercli-acp-base
 python3 buzz/opencode/test.py hypercli-buzz-opencode
 ```
 

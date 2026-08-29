@@ -55,6 +55,7 @@ tools = [
     "tini",
     "buzz",
     "buzz-acp",
+    "hypercli-acp",
     "buzz-dev-mcp",
 ]
 print(json.dumps({
@@ -70,6 +71,11 @@ print(json.dumps({
     "buzz_acp_is_symlink": Path("/usr/local/bin/buzz-acp").is_symlink(),
     "buzz_acp_help": subprocess.check_output(
         ["buzz-acp", "--help"],
+        text=True,
+        stderr=subprocess.STDOUT,
+    ),
+    "hypercli_acp_help": subprocess.check_output(
+        ["hypercli-acp", "--help"],
         text=True,
         stderr=subprocess.STDOUT,
     ),
@@ -94,7 +100,8 @@ assert len(payload["buzz_commit"]) == 40
 assert payload["buzz_acp_is_symlink"] is False
 assert "--text-mentions" in payload["buzz_acp_help"]
 assert "--require-reply" in payload["buzz_acp_help"]
+assert "--trace-db" in payload["hypercli_acp_help"]
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
 
-print(f"{image}: Buzz base contract passed")
+print(f"{image}: HyperCLI ACP base contract passed")

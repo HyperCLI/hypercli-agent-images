@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
-ARG BUZZ_BASE_IMAGE=hypercli-buzz-base:local
+ARG HYPERCLI_ACP_BASE_IMAGE=hypercli-acp-base:local
+ARG BUZZ_BASE_IMAGE=${HYPERCLI_ACP_BASE_IMAGE}
 FROM ${BUZZ_BASE_IMAGE}
 
 ARG CLAUDE_CODE_VERSION=2.1.207
