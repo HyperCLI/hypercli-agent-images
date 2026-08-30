@@ -138,6 +138,7 @@ def acp_command(
 ) -> list[str]:
     command = [
         "hyper-acp",
+        "plugin",
         operation,
         "--agent-command",
         agent_command,
