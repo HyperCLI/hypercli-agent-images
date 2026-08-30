@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
-ARG HYPERCLI_ACP_BASE_IMAGE=hypercli-acp-base:local
-ARG BUZZ_BASE_IMAGE=${HYPERCLI_ACP_BASE_IMAGE}
+ARG HYPER_ACP_BASE_IMAGE=hyper-acp-base:local
+ARG BUZZ_BASE_IMAGE=${HYPER_ACP_BASE_IMAGE}
 ARG GOOSE_FETCH_IMAGE=debian:bookworm-slim
 
 FROM ${GOOSE_FETCH_IMAGE} AS goose-fetch

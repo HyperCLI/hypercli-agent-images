@@ -23,11 +23,11 @@ docker build \
   --build-context "buzz-source=${BUZZ_SOURCE}" \
   --build-arg "BUZZ_COMMIT=$(git -C "${BUZZ_SOURCE}" rev-parse HEAD)" \
   --build-arg HYPERCLI_REF=<full-hypercli-commit> \
-  -t hypercli-acp-base \
+  -t hyper-acp-base \
   -f buzz/base/Dockerfile buzz
 
 docker build \
-  --build-arg HYPERCLI_ACP_BASE_IMAGE=hypercli-acp-base \
+  --build-arg HYPER_ACP_BASE_IMAGE=hyper-acp-base \
   -t hypercli-buzz-opencode \
   -f buzz/opencode/Dockerfile buzz
 ```
@@ -35,7 +35,7 @@ docker build \
 Run the matching Python contracts:
 
 ```bash
-python3 buzz/base/test.py hypercli-acp-base
+python3 buzz/base/test.py hyper-acp-base
 python3 buzz/opencode/test.py hypercli-buzz-opencode
 ```
 
@@ -63,12 +63,12 @@ preserved.
 The nest contains the canonical Buzz `AGENTS.md`, standard directories, the
 Buzz CLI skill, and the standard runtime skill links. Claude additionally gets
 `CLAUDE.md -> AGENTS.md`. `base_prompt.md` remains compiled into the
-Buzz-compatible path inside `hypercli-acp` and is not copied into the image or
+Buzz-compatible path inside `hyper-acp` and is not copied into the image or
 nest.
 
 The launch control plane injects the agent identity, relay URL, and owner-signed
 authorization tag. It overrides the default `sleep infinity` command with
-`hypercli-acp`; shell launches retain the same image and persistent home.
+`hyper-acp`; shell launches retain the same image and persistent home.
 
 CI publishes the common carrier once, resolves it to an immutable digest, then
 builds and tests each provider independently. The OpenCode job also runs the
@@ -151,7 +151,7 @@ Mem0 config.
 ## Security boundary
 
 Coding images intentionally grant passwordless sudo to the `node` user and
-`hypercli-acp` currently auto-approves ACP permission requests in hosted Buzz
+`hyper-acp` currently auto-approves ACP permission requests in hosted Buzz
 mode. The effective
 boundary is therefore the per-agent namespace, filesystem/persistence scope,
 resource limits, and scoped runtime credentials. The current per-agent

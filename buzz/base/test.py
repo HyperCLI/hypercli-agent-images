@@ -54,7 +54,7 @@ tools = [
     "sudo",
     "tini",
     "buzz",
-    "hypercli-acp",
+    "hyper-acp",
     "buzz-dev-mcp",
 ]
 print(json.dumps({
@@ -64,15 +64,31 @@ print(json.dumps({
         text=True,
     ).strip(),
     "tools": {tool: shutil.which(tool) for tool in tools},
-    "removed_tools": {"buzz-acp": shutil.which("buzz-acp")},
+    "removed_tools": {
+        "buzz": shutil.which("buzz" + "-acp"),
+        "host": shutil.which("hypercli" + "-acp"),
+    },
     "buzz_commit": Path(
         "/opt/hypercli-buzz/.buzz-commit"
     ).read_text().strip(),
-    "hypercli_acp_help": subprocess.check_output(
-        ["hypercli-acp", "--help"],
+    "hyper_acp_help": subprocess.check_output(
+        ["hyper-acp", "--help"],
         text=True,
         stderr=subprocess.STDOUT,
     ),
+    "hyper_acp_plugin_help": subprocess.check_output(
+        ["hyper-acp", "plugin", "--help"],
+        text=True,
+        stderr=subprocess.STDOUT,
+    ),
+    "buzz_plugin_help": subprocess.check_output(
+        ["hyper-acp", "plugin", "buzz", "--help"],
+        text=True,
+        stderr=subprocess.STDOUT,
+    ),
+    "hidden_buzz_plugin": Path(
+        "/usr/local/lib/hyper-acp/plugins/buzz-acp"
+    ).is_file(),
     "openclaw_binary": shutil.which("openclaw"),
     "openclaw_app": Path("/app/openclaw.mjs").exists(),
 }))
@@ -90,10 +106,13 @@ payload = json.loads(result.stdout)
 assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
-assert payload["removed_tools"] == {"buzz-acp": None}
+assert payload["removed_tools"] == {"buzz": None, "host": None}
 assert len(payload["buzz_commit"]) == 40
-assert "--trace-db" in payload["hypercli_acp_help"]
+assert "--trace-db" in payload["hyper_acp_help"]
+assert "Run the full Buzz ACP plugin" in payload["hyper_acp_plugin_help"]
+assert "buzz-acp" in payload["buzz_plugin_help"]
+assert payload["hidden_buzz_plugin"] is True
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
 
-print(f"{image}: HyperCLI ACP base contract passed")
+print(f"{image}: Hyper ACP base contract passed")

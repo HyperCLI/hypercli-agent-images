@@ -32,33 +32,33 @@ RUN set -eux; \
       git clone --no-tags --depth 1 --branch "${HYPERCLI_REF}" \
         "${HYPERCLI_REPO}" /build/hypercli; \
     fi; \
-    BUZZ_REF="$(sed -n 's/^upstream-buzz-ref = "\([0-9a-f]\{40\}\)"$/\1/p' /build/hypercli/buzz-acp/Cargo.toml)"; \
+    BUZZ_REF="$(sed -n 's/^Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz-acp/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
     printf '%s\n' "${BUZZ_REF}" > /out/buzz-ref; \
-    git init /build/buzz; \
-    git -C /build/buzz remote add origin "${BUZZ_REPO}"; \
-    git -C /build/buzz fetch --depth 1 origin "${BUZZ_REF}"; \
-    test "$(git -C /build/buzz rev-parse FETCH_HEAD)" = "${BUZZ_REF}"; \
-    git -C /build/buzz checkout --detach FETCH_HEAD
+    git init /build/buzz-git; \
+    git -C /build/buzz-git remote add origin "${BUZZ_REPO}"; \
+    git -C /build/buzz-git fetch --depth 1 origin "${BUZZ_REF}"; \
+    test "$(git -C /build/buzz-git rev-parse FETCH_HEAD)" = "${BUZZ_REF}"; \
+    git -C /build/buzz-git checkout --detach FETCH_HEAD
 
 COPY nest/AGENTS.md /expected/AGENTS.md
 RUN cmp \
     /expected/AGENTS.md \
-    /build/buzz/desktop/src-tauri/src/managed_agents/nest_agents.md
+    /build/buzz-git/desktop/src-tauri/src/managed_agents/nest_agents.md
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
-    --mount=type=cache,target=/build/buzz/target,sharing=locked \
+    --mount=type=cache,target=/build/buzz-git/target,sharing=locked \
     set -eux; \
     cargo build \
-      --manifest-path /build/buzz/Cargo.toml \
+      --manifest-path /build/buzz-git/Cargo.toml \
       --profile sprig \
       --locked \
       -p sprig; \
-    install -D -m 0755 /build/buzz/target/sprig/sprig /out/sprig; \
+    install -D -m 0755 /build/buzz-git/target/sprig/sprig /out/sprig; \
     install -D -m 0644 \
-      /build/buzz/desktop/src-tauri/src/managed_agents/nest_skill.md \
+      /build/buzz-git/desktop/src-tauri/src/managed_agents/nest_skill.md \
       /out/nest/.agents/skills/buzz-cli/SKILL.md; \
     strip /out/sprig
 
@@ -70,9 +70,12 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --manifest-path /build/hypercli/Cargo.toml \
       --release \
       --locked \
-      -p hypercli-acp; \
-    install -D -m 0755 /build/hypercli/target/release/hypercli-acp /out/hypercli-acp; \
-    strip /out/hypercli-acp
+      -p hyper-acp \
+      -p buzz-acp \
+      -p hyper-acp-slack-relay; \
+    install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/hyper-acp; \
+    install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
+    strip /out/hyper-acp /out/plugins/buzz-acp
 
 FROM ${NODE_IMAGE}
 
@@ -131,7 +134,8 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
 
 COPY --from=source-builder /out/sprig /usr/local/bin/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-buzz/nest
-COPY --from=source-builder /out/hypercli-acp /usr/local/bin/hypercli-acp
+COPY --from=source-builder /out/hyper-acp /usr/local/bin/hyper-acp
+COPY --from=source-builder /out/plugins/buzz-acp /usr/local/lib/hyper-acp/plugins/buzz-acp
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-buzz/.buzz-commit
 COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
 COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
@@ -142,7 +146,8 @@ COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
 
 RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
-    hypercli-acp --help >/dev/null && \
+    hyper-acp --help >/dev/null && \
+    hyper-acp plugin buzz --help >/dev/null && \
     buzz --help >/dev/null
 
 ENV HOME=/home/node \

@@ -11,10 +11,10 @@ workspace initialization.
 - `nest/AGENTS.md` is shipped runtime content. It must remain byte-for-byte
   equal to Buzz Desktop's pinned `nest_agents.md`.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
-- `hypercli/hypercli-acp` owns hosted startup. Its Buzz-compatible mode uses
-  the `hypercli/buzz-acp` library for ACP framing, relay behavior, prompt
-  transport, mention matching, and the shared reply guard. The Buzz library
-  manifest pins the unmodified upstream Buzz crates it consumes.
+- `hypercli/hyper-acp` owns hosted startup. It launches the copied
+  `hypercli/hyper-acp/plugins/buzz-acp` plugin for ACP framing, relay
+  behavior, prompt transport, mention matching, and the shared reply guard.
+  The Buzz plugin manifest pins the unmodified upstream Buzz crates it consumes.
 - The HyperCLI provider owns translation from Buzz's portable launch request to
   the HyperCLI deployments API.
 - HyperClaw/Lagoon owns remote scheduling and container lifecycle.
@@ -25,8 +25,9 @@ and the executable tests together when the contract changes.
 ## Change Rules
 
 - Track upstream Buzz behavior and keep the hosted delta in
-  `hypercli/buzz-acp` minimal. Advance its single documented upstream pin only
-  after reviewing the complete upstream `buzz-acp` diff and running its tests.
+  `hypercli/hyper-acp/plugins/buzz-acp` minimal. Advance its documented
+  upstream pin only after reviewing the complete upstream `buzz-acp` diff and
+  running its tests.
 - Never invent a Desktop provider operation. Protocol v1 supports only `info`
   and `deploy`.
 - Preserve the resolved `launch` block. Do not reconstruct prompt, access,
@@ -34,7 +35,7 @@ and the executable tests together when the contract changes.
 - Keep runtime commands and prompt transports explicit in the runtime matrix.
 - Keep provider-owned identity, relay, authorization, reply, mention, and
   workspace variables non-overridable by user environment.
-- Keep hosted deployments `restart: false`; normal `hypercli-acp` exit must remain
+- Keep hosted deployments `restart: false`; normal `hyper-acp` exit must remain
   terminal for the pod.
 - Do not convert ACP activity or thinking output into a final Buzz message.
 - Do not replace user-managed files or links under `/home/node/.buzz`.
