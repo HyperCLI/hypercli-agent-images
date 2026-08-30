@@ -89,6 +89,9 @@ print(json.dumps({
     "hidden_buzz_plugin": Path(
         "/usr/local/lib/hyper-acp/plugins/buzz-acp"
     ).is_file(),
+    "auth_tag_helper": Path(
+        "/usr/local/lib/hyper-acp/tools/compute_auth_tag"
+    ).is_file(),
     "openclaw_binary": shutil.which("openclaw"),
     "openclaw_app": Path("/app/openclaw.mjs").exists(),
 }))
@@ -112,6 +115,7 @@ assert "--trace-db" in payload["hyper_acp_help"]
 assert "Run the full Buzz ACP plugin" in payload["hyper_acp_plugin_help"]
 assert "buzz-acp" in payload["buzz_plugin_help"]
 assert payload["hidden_buzz_plugin"] is True
+assert payload["auth_tag_helper"] is True
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
 

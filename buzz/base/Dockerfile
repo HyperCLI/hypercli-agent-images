@@ -56,11 +56,20 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --profile sprig \
       --locked \
       -p sprig; \
+    cargo build \
+      --manifest-path /build/buzz-git/Cargo.toml \
+      --profile sprig \
+      --locked \
+      -p buzz-sdk \
+      --example compute_auth_tag; \
     install -D -m 0755 /build/buzz-git/target/sprig/sprig /out/sprig; \
+    install -D -m 0755 \
+      /build/buzz-git/target/sprig/examples/compute_auth_tag \
+      /out/tools/compute_auth_tag; \
     install -D -m 0644 \
       /build/buzz-git/desktop/src-tauri/src/managed_agents/nest_skill.md \
       /out/nest/.agents/skills/buzz-cli/SKILL.md; \
-    strip /out/sprig
+    strip /out/sprig /out/tools/compute_auth_tag
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
@@ -136,6 +145,7 @@ COPY --from=source-builder /out/sprig /usr/local/bin/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-buzz/nest
 COPY --from=source-builder /out/hyper-acp /usr/local/bin/hyper-acp
 COPY --from=source-builder /out/plugins/buzz-acp /usr/local/lib/hyper-acp/plugins/buzz-acp
+COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/hyper-acp/tools/compute_auth_tag
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-buzz/.buzz-commit
 COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
 COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
