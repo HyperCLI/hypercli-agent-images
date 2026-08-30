@@ -119,4 +119,15 @@ assert payload["auth_tag_helper"] is True
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
 
+entrypoint_text = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/local/bin/hypercli-buzz-entrypoint",
+).stdout
+assert ': "${BUZZ_ACP_RELAY_OBSERVER:=false}"' in entrypoint_text
+assert "\n  BUZZ_ACP_RELAY_OBSERVER=false\n" not in entrypoint_text
+
 print(f"{image}: Hyper ACP base contract passed")
