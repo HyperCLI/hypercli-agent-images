@@ -124,12 +124,31 @@ with tempfile.TemporaryDirectory() as home_name:
     assert json.loads(corrupt_status.stdout)["authenticated"] is False
 
 run(image, ["kimi", "doctor"], env=runtime_env)
-assert_models(
-    image,
-    agent_command="/usr/local/bin/kimi",
-    agent_args="acp",
-    env={**runtime_env, "HYPERCLI_RUNTIME_INFERENCE": "hypercli"},
-)
+with tempfile.TemporaryDirectory() as home_name:
+    home = Path(home_name)
+    home.chmod(0o777)
+    credentials = home / ".kimi-code/credentials"
+    credentials.mkdir(parents=True)
+    credential = credentials / "kimi-code.json"
+    credential.write_text(
+        json.dumps(
+            {
+                "access_token": "runtime-model-token",
+                "refresh_token": "runtime-model-refresh",
+                "expires_at": 4_102_444_800,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    credential.chmod(0o600)
+    assert_models(
+        image,
+        agent_command="/usr/local/bin/kimi",
+        agent_args="acp",
+        env={**runtime_env, "HYPERCLI_RUNTIME_INFERENCE": "hypercli"},
+        mounts=[(home, "/home/node")],
+    )
 assert_user_config_preserved(
     image,
     relative_path=".kimi-code/tui.toml",
