@@ -229,7 +229,7 @@ and Kimi Code are native-first: missing `HYPERCLI_RUNTIME_INFERENCE` means the
 child receives no implicit HyperCLI model, URL, or credential overlay.
 
 Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks
-the `/usr/local/lib/hyper-acp/plugins/buzz-acp` ACP child to perform runtime-specific compatibility translation
+the `hyper-acp plugin buzz` runtime to perform runtime-specific compatibility translation
 immediately before each native-runtime child spawn and respawn:
 
 - Claude Code: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_MODEL`;

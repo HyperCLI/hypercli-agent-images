@@ -4,9 +4,6 @@ set -eu
 /usr/local/bin/hypercli-buzz-init
 
 if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
-  : "${HYPER_ACP_AGENT_COMMAND:=/usr/local/lib/hyper-acp/plugins/buzz-acp}"
-  export HYPER_ACP_AGENT_COMMAND
-
   if [ -z "${HYPER_ACP_WS_URL:-}" ]; then
     base=${HYPER_AGENTS_API_BASE:-${HYPER_API_BASE:-https://api.agents.hypercli.com}}
     base=${base%/}

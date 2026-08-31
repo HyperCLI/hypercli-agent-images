@@ -32,7 +32,7 @@ RUN set -eux; \
       git clone --no-tags --depth 1 --branch "${HYPERCLI_REF}" \
         "${HYPERCLI_REPO}" /build/hypercli; \
     fi; \
-    BUZZ_REF="$(sed -n 's/^Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz-acp/PROVENANCE.md)"; \
+    BUZZ_REF="$(sed -n 's/^Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
     printf '%s\n' "${BUZZ_REF}" > /out/buzz-ref; \

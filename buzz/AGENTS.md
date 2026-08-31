@@ -11,9 +11,11 @@ workspace initialization.
 - `nest/AGENTS.md` is shipped runtime content. It must remain byte-for-byte
   equal to Buzz Desktop's pinned `nest_agents.md`.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
-- `hypercli/hyper-acp` owns hosted startup. It launches the copied
-  `hypercli/hyper-acp/plugins/buzz-acp` plugin for ACP framing, relay
+- `hypercli/hyper-acp` owns hosted startup. Hosted launches run
+  `hyper-acp plugin buzz`, which links the copied
+  `hypercli/hyper-acp/plugins/buzz` implementation for ACP framing, relay
   behavior, prompt transport, mention matching, and the shared reply guard.
+  `hypercli/hyper-acp/plugins/buzz-acp` is only a compatibility executable.
   The Buzz plugin manifest pins the unmodified upstream Buzz crates it consumes.
 - The HyperCLI provider owns translation from Buzz's portable launch request to
   the HyperCLI deployments API.
@@ -25,7 +27,7 @@ and the executable tests together when the contract changes.
 ## Change Rules
 
 - Track upstream Buzz behavior and keep the hosted delta in
-  `hypercli/hyper-acp/plugins/buzz-acp` minimal. Advance its documented
+  `hypercli/hyper-acp/plugins/buzz` minimal. Advance its documented
   upstream pin only after reviewing the complete upstream `buzz-acp` diff and
   running its tests.
 - Never invent a Desktop provider operation. Protocol v1 supports only `info`
