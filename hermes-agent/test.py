@@ -429,7 +429,7 @@ def main() -> None:
         assert MODEL_KEY not in seeded
 
         mem0_seeded = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
+            "docker", "run", "--rm", IMAGE,
             "python", "-c",
             "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout
@@ -439,13 +439,13 @@ def main() -> None:
         assert mem0_config["oss"]["llm"]["provider"] == "openai"
         assert mem0_config["oss"]["llm"]["config"]["model"] == MODEL
         assert mem0_config["oss"]["llm"]["config"]["openai_base_url"] == (
-            f"http://host.docker.internal:{model_port}/v1"
+            "https://api.agents.hypercli.com/v1"
         )
         assert mem0_config["oss"]["embedder"]["provider"] == "openai"
         assert mem0_config["oss"]["embedder"]["config"]["model"] == "qwen3-embedding-4b"
         assert mem0_config["oss"]["embedder"]["config"]["embedding_dims"] == 2560
         assert mem0_config["oss"]["embedder"]["config"]["openai_base_url"] == (
-            f"http://host.docker.internal:{model_port}/v1"
+            "https://api.agents.hypercli.com/v1"
         )
         assert mem0_config["oss"]["vector_store"] == {
             "provider": "qdrant",
@@ -477,13 +477,11 @@ def main() -> None:
             "-v", f"{volume}:/home/hermes", IMAGE,
             "sh", "-c",
             "stat -c '%u:%g' /home/hermes/.hermes/skills/hypercli/SKILL.md "
-            "/home/hermes/.hermes/config.yaml /home/hermes/.hermes/mem0.json /home/hermes/.hermes/mem0_qdrant "
+            "/home/hermes/.hermes/config.yaml "
             "/home/hermes/.hermes/skills/hypercli/user-extra.txt /home/hermes/shared",
         ).stdout.splitlines()
         repaired = [line for line in repaired_output if re.fullmatch(r"\d+:\d+", line)]
         assert repaired == [
-            "12345:12346",
-            "12345:12346",
             "12345:12346",
             "12345:12346",
             "0:0",
@@ -524,20 +522,6 @@ def main() -> None:
             "from pathlib import Path; print(Path('/home/hermes/.hermes/config.yaml').read_text())",
         ).stdout
         assert marker in preserved
-
-        mem0_marker = '"preserve_existing_mem0"'
-        run(
-            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
-            "python", "-c",
-            "from pathlib import Path; p=Path('/home/hermes/.hermes/mem0.json'); "
-            f"p.write_text('{{{mem0_marker}: true}}\\n')",
-        )
-        mem0_preserved = run(
-            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
-            "python", "-c",
-            "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
-        ).stdout
-        assert parse_stdout_json(mem0_preserved) == {"preserve_existing_mem0": True}
     finally:
         server.shutdown()
         run("docker", "rm", "-f", container, check=False)

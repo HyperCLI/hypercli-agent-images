@@ -79,6 +79,8 @@ RUN usermod -d /home/hermes hermes \
       /opt/hermes/bin/hermes \
     && chown -R hermes:hermes /home/hermes
 
+COPY --chmod=0600 --chown=hermes:hermes mem0.json /home/hermes/.hermes/mem0.json
+
 ENV HOME=/home/hermes
 ENV HERMES_HOME=/home/hermes/.hermes
 ENV HERMES_WRITE_SAFE_ROOT=/home/hermes

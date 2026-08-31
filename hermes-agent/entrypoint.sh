@@ -7,7 +7,6 @@ HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${HOME}/shared}"
 export HOME HERMES_HOME HYPER_WORKSPACES_DIR
 CONFIG_PATH="${HERMES_HOME}/config.yaml"
 CONFIG_TEMPLATE="${HERMES_CONFIG_TEMPLATE:-/opt/hypercli-hermes/config.yaml}"
-MEM0_CONFIG_PATH="${HERMES_MEM0_CONFIG_PATH:-${HERMES_HOME}/mem0.json}"
 HYPERCLI_SKILLS_DIR="${HYPERCLI_SKILLS_DIR:-/opt/hypercli/skills}"
 HERMES_SKILLS_DIR="${HERMES_SKILLS_DIR:-${HERMES_HOME}/skills}"
 HERMES_PLATFORM_MANAGED_DIR="/run/hypercli-hermes-managed"
@@ -50,59 +49,6 @@ if ! path_ancestors_are_safe "${HERMES_HOME}/."; then
 fi
 
 mkdir -p "${HOME}" "${HERMES_HOME}" "${HERMES_SKILLS_DIR}" "${HYPER_WORKSPACES_DIR}"
-
-if [[ -L "${MEM0_CONFIG_PATH}" ]]; then
-  echo "[hermes-agent] skipping mem0 config seed through symlink: ${MEM0_CONFIG_PATH}" >&2
-elif [[ ! -e "${MEM0_CONFIG_PATH}" ]]; then
-  mkdir -p "$(dirname -- "${MEM0_CONFIG_PATH}")" "${HERMES_HOME}/mem0_qdrant"
-  python3 - "${MEM0_CONFIG_PATH}" <<'PY'
-import json
-import os
-from pathlib import Path
-import sys
-
-target = Path(sys.argv[1])
-base_url = os.environ.get("HYPER_AGENTS_API_BASE", "https://api.agents.hypercli.com").rstrip("/")
-llm_config = {
-    "model": os.environ.get("HERMES_MEM0_LLM_MODEL", "default-anthropic"),
-    "openai_base_url": f"{base_url}/v1",
-}
-embedder_config = {
-    "model": os.environ.get("HERMES_MEM0_EMBEDDING_MODEL", "qwen3-embedding-4b"),
-    "openai_base_url": f"{base_url}/v1",
-}
-embedding_dims = os.environ.get("HERMES_MEM0_EMBEDDING_DIMS", "2560").strip()
-if embedding_dims:
-    embedder_config["embedding_dims"] = int(embedding_dims)
-config = {
-    "mode": "oss",
-    "agent_id": os.environ.get("MEM0_AGENT_ID", "hermes"),
-    "oss": {
-        "llm": {
-            "provider": "openai",
-            "config": llm_config,
-        },
-        "embedder": {
-            "provider": "openai",
-            "config": embedder_config,
-        },
-        "vector_store": {
-            "provider": "qdrant",
-            "config": {
-                "path": os.environ.get("HERMES_MEM0_QDRANT_PATH", f"{os.environ.get('HERMES_HOME', '/home/hermes/.hermes')}/mem0_qdrant"),
-            },
-        },
-    },
-}
-temporary = target.with_suffix(".tmp")
-temporary.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-os.chmod(temporary, 0o600)
-os.replace(temporary, target)
-PY
-  echo "[hermes-agent] seeded mem0 OSS config at ${MEM0_CONFIG_PATH}"
-else
-  echo "[hermes-agent] preserving existing mem0 config at ${MEM0_CONFIG_PATH}"
-fi
 
 # Hermes intentionally lets a retained ~/.hermes/.env override the inherited
 # process environment. Hosted launch credentials are different: Backend mints
@@ -178,12 +124,6 @@ else
   echo "[hermes-agent] preserving existing config at ${CONFIG_PATH}"
 fi
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
-if [[ -e "${MEM0_CONFIG_PATH}" || -L "${MEM0_CONFIG_PATH}" ]]; then
-  chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${MEM0_CONFIG_PATH}"
-fi
-if [[ -d "${HERMES_HOME}/mem0_qdrant" ]]; then
-  chown -R -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HERMES_HOME}/mem0_qdrant"
-fi
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HOME}" "${HERMES_HOME}" "${HERMES_SKILLS_DIR}"
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HYPER_WORKSPACES_DIR}"
 

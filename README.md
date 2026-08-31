@@ -140,13 +140,13 @@ HyperCLI embeddings route `qwen3-embedding-4b` at
 `${HYPER_AGENTS_API_BASE}/v1`. Hermes uses its native external memory provider
 slot and boots with `memory.provider: mem0`. The image bakes `mem0ai` and
 `qdrant-client` into the Hermes venv, so the default memory provider does not
-depend on runtime lazy installs. The Hermes entrypoint seeds
-`/home/hermes/.hermes/mem0.json` only when missing, in Mem0 OSS mode, with an
-OpenAI-style LLM provider set to `default-anthropic`, an OpenAI-style embedder
-set to `qwen3-embedding-4b` with 2560-dimensional vectors, and local Qdrant
-storage under `/home/hermes/.hermes/mem0_qdrant`. Launch credentials are
-projected through the managed runtime environment, not written into the durable
-Mem0 config.
+depend on runtime lazy installs. The image ships a checked-in Mem0 config at
+`/home/hermes/.hermes/mem0.json`: Mem0 OSS mode, an OpenAI-style LLM provider
+set to `default-anthropic`, an OpenAI-style embedder set to
+`qwen3-embedding-4b` with 2560-dimensional vectors, and local Qdrant storage
+under `/home/hermes/.hermes/mem0_qdrant`. Launch credentials are projected
+through the managed runtime environment, not written into the durable Mem0
+config.
 
 ## Security boundary
 
