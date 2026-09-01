@@ -132,6 +132,7 @@ if [[ ! -e "${MEM0_CONFIG_PATH}" && -e "${MEM0_CONFIG_TEMPLATE}" ]]; then
 else
   echo "[hermes-agent] preserving existing Mem0 config at ${MEM0_CONFIG_PATH}"
 fi
+python3 /opt/hypercli-hermes/configure_mem0.py "${MEM0_CONFIG_PATH}"
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
 if [[ -e "${MEM0_CONFIG_PATH}" || -L "${MEM0_CONFIG_PATH}" ]]; then
   chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${MEM0_CONFIG_PATH}"

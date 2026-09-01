@@ -284,6 +284,34 @@ def main() -> None:
         memory_deps.stderr,
     )
 
+    mem0_backend_contract = run(
+        "docker", "run", "--rm", "--entrypoint", "/opt/hermes/.venv/bin/python", IMAGE,
+        "-c",
+        "\n".join(
+            [
+                "import json, sys, types",
+                "captured = {}",
+                "class Memory:",
+                "    @staticmethod",
+                "    def from_config(config):",
+                "        captured.update(config)",
+                "        return object()",
+                "sys.modules['mem0'] = types.SimpleNamespace(Memory=Memory)",
+                "from plugins.memory.mem0._backend import OSSBackend",
+                "OSSBackend({",
+                "    'llm': {'provider': 'openai', 'config': {'model': 'default-anthropic'}},",
+                "    'embedder': {'provider': 'openai', 'config': {'model': 'unknown'}},",
+                "    'vector_store': {'provider': 'qdrant', 'config': {'path': '/tmp/mem0-qdrant'}},",
+                "    'custom_instructions': 'Remember stable facts only.',",
+                "})",
+                "print(json.dumps(captured, sort_keys=True))",
+            ]
+        ),
+    )
+    assert parse_stdout_json(mem0_backend_contract.stdout)["custom_instructions"] == (
+        "Remember stable facts only."
+    )
+
     version = run("docker", "run", "--rm", IMAGE, "--version")
     assert "Hermes Agent v" in version.stdout
 
@@ -451,7 +479,29 @@ def main() -> None:
             "provider": "qdrant",
             "config": {"path": "/home/hermes/.hermes/mem0_qdrant"},
         }
+        assert "custom_instructions" not in mem0_config["oss"]
         assert MODEL_KEY not in mem0_seeded
+
+        memory_instructions = "Only store durable user preferences."
+        mem0_with_instructions = run(
+            "docker", "run", "--rm",
+            "-v", f"{volume}:/home/hermes",
+            "-e", f"HERMES_MEMORY_CUSTOM_INSTRUCTIONS={memory_instructions}",
+            IMAGE,
+            "python", "-c",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
+        ).stdout
+        assert parse_stdout_json(mem0_with_instructions)["oss"]["custom_instructions"] == (
+            memory_instructions
+        )
+
+        mem0_without_instructions = run(
+            "docker", "run", "--rm",
+            "-v", f"{volume}:/home/hermes", IMAGE,
+            "python", "-c",
+            "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
+        ).stdout
+        assert "custom_instructions" not in parse_stdout_json(mem0_without_instructions)["oss"]
 
         run(
             "docker", "run", "--rm", "--entrypoint", "/bin/sh",

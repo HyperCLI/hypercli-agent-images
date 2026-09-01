@@ -70,6 +70,10 @@ RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
 COPY --chmod=0644 mem0.json /opt/hypercli-hermes/mem0.json
 COPY --chmod=0755 entrypoint.sh /opt/hypercli-hermes/entrypoint.sh
+COPY --chmod=0755 configure_mem0.py /opt/hypercli-hermes/configure_mem0.py
+COPY --chmod=0755 patch_hermes_mem0_custom_instructions.py /opt/hypercli-hermes/patch_hermes_mem0_custom_instructions.py
+
+RUN /opt/hypercli-hermes/patch_hermes_mem0_custom_instructions.py
 
 RUN usermod -d /home/hermes hermes \
     && mkdir -p /home/hermes/.hermes /home/hermes/shared \
