@@ -276,7 +276,7 @@ The provider must inject and protect these categories:
 | ACP child | `BUZZ_ACP_AGENT_COMMAND`, `BUZZ_ACP_AGENT_ARGS`, `BUZZ_ACP_MCP_COMMAND` |
 | Owner and access | `BUZZ_ACP_AGENT_OWNER`, `BUZZ_ACP_RESPOND_TO`, `BUZZ_ACP_RESPOND_TO_ALLOWLIST` |
 | Display and mentions | `BUZZ_ACP_DISPLAY_NAME`, `BUZZ_ACP_TEXT_MENTIONS` for compatible names |
-| Reply behavior | `BUZZ_ACP_REQUIRE_REPLY=true`, `BUZZ_AGENT_REQUIRE_REPLY=1` |
+| Reply behavior | `BUZZ_ACP_REQUIRE_REPLY=true`; native Buzz Agent also receives `BUZZ_AGENT_REQUIRE_REPLY=1` |
 | Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
@@ -298,11 +298,11 @@ publish an ACP `agent_message_chunk` as the agent's final Buzz message. The
 runtime must publish with `buzz messages send`, `buzz reactions add`, or the
 equivalent registered MCP command.
 
-Hosted images enable Buzz's shared reply guard. If a genuine ACP `end_turn`
-occurs without an attempted publish, `hyper-acp` sends the canonical reminder
-in the same session. The guard is adapter-neutral, shares the original hard
-deadline, retries at most twice, and then accepts silence. Do not replace it
-with runtime-specific prompt text or automatic publication of streamed output.
+Hosted images receive `BUZZ_ACP_REQUIRE_REPLY=true` as the shared launcher
+reply-policy marker and rely on the shared Buzz prompt to require
+human-facing replies. Native `buzz-agent` launches also receive upstream's
+process-level `BUZZ_AGENT_REQUIRE_REPLY=1`. Do not replace this with
+runtime-specific prompt text or automatic publication of streamed output.
 
 `respond_to` authorizes who may instruct the agent. Text mention fallback is a
 separate routing compatibility feature. The provider always supplies the
