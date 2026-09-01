@@ -276,7 +276,7 @@ The provider must inject and protect these categories:
 | ACP child | `BUZZ_ACP_AGENT_COMMAND`, `BUZZ_ACP_AGENT_ARGS`, `BUZZ_ACP_MCP_COMMAND` |
 | Owner and access | `BUZZ_ACP_AGENT_OWNER`, `BUZZ_ACP_RESPOND_TO`, `BUZZ_ACP_RESPOND_TO_ALLOWLIST` |
 | Display and mentions | `BUZZ_ACP_DISPLAY_NAME`, `BUZZ_ACP_TEXT_MENTIONS` for compatible names |
-| Reply behavior | `BUZZ_ACP_REQUIRE_REPLY=true` |
+| Reply behavior | `BUZZ_ACP_REQUIRE_REPLY=true`, `BUZZ_AGENT_REQUIRE_REPLY=1` |
 | Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
