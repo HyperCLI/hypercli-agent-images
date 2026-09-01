@@ -429,7 +429,7 @@ def main() -> None:
         assert MODEL_KEY not in seeded
 
         mem0_seeded = run(
-            "docker", "run", "--rm", IMAGE,
+            "docker", "run", "--rm", "-v", f"{volume}:/home/hermes", IMAGE,
             "python", "-c",
             "from pathlib import Path; print(Path('/home/hermes/.hermes/mem0.json').read_text())",
         ).stdout

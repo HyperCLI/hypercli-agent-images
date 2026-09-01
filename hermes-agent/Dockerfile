@@ -68,6 +68,7 @@ RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
     hyper --help >/dev/null
 
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
+COPY --chmod=0644 mem0.json /opt/hypercli-hermes/mem0.json
 COPY --chmod=0755 entrypoint.sh /opt/hypercli-hermes/entrypoint.sh
 
 RUN usermod -d /home/hermes hermes \
@@ -80,8 +81,6 @@ RUN usermod -d /home/hermes hermes \
       -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
       /opt/hermes/bin/hermes \
     && chown -R hermes:hermes /home/hermes
-
-COPY --chmod=0600 --chown=hermes:hermes mem0.json /home/hermes/.hermes/mem0.json
 
 ENV HOME=/home/hermes
 ENV HERMES_HOME=/home/hermes/.hermes

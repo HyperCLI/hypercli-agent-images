@@ -7,6 +7,8 @@ HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${HOME}/shared}"
 export HOME HERMES_HOME HYPER_WORKSPACES_DIR
 CONFIG_PATH="${HERMES_HOME}/config.yaml"
 CONFIG_TEMPLATE="${HERMES_CONFIG_TEMPLATE:-/opt/hypercli-hermes/config.yaml}"
+MEM0_CONFIG_PATH="${HERMES_HOME}/mem0.json"
+MEM0_CONFIG_TEMPLATE="${MEM0_CONFIG_TEMPLATE:-/opt/hypercli-hermes/mem0.json}"
 HYPERCLI_SKILLS_DIR="${HYPERCLI_SKILLS_DIR:-/opt/hypercli/skills}"
 HERMES_SKILLS_DIR="${HERMES_SKILLS_DIR:-${HERMES_HOME}/skills}"
 HERMES_PLATFORM_MANAGED_DIR="/run/hypercli-hermes-managed"
@@ -123,7 +125,17 @@ if [[ ! -e "${CONFIG_PATH}" ]]; then
 else
   echo "[hermes-agent] preserving existing config at ${CONFIG_PATH}"
 fi
+
+if [[ ! -e "${MEM0_CONFIG_PATH}" && -e "${MEM0_CONFIG_TEMPLATE}" ]]; then
+  cp "${MEM0_CONFIG_TEMPLATE}" "${MEM0_CONFIG_PATH}"
+  echo "[hermes-agent] seeded default Mem0 config at ${MEM0_CONFIG_PATH}"
+else
+  echo "[hermes-agent] preserving existing Mem0 config at ${MEM0_CONFIG_PATH}"
+fi
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${CONFIG_PATH}"
+if [[ -e "${MEM0_CONFIG_PATH}" || -L "${MEM0_CONFIG_PATH}" ]]; then
+  chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${MEM0_CONFIG_PATH}"
+fi
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HOME}" "${HERMES_HOME}" "${HERMES_SKILLS_DIR}"
 chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${HYPER_WORKSPACES_DIR}"
 
