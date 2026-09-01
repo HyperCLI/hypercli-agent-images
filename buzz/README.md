@@ -155,7 +155,7 @@ error without upstream response bodies or secrets.
 
 | Hosted runtime | Canonical image | Portable command | Injected ACP child | Child args | MCP command | Prompt transport | Runtime state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted Anthropic auth |
+| Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted OpenAI-compatible chat auth |
 | OpenCode | `ghcr.io/hypercli/hypercli-buzz-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
 | Codex | `ghcr.io/hypercli/hypercli-buzz-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.codex` |
 | Claude Code | `ghcr.io/hypercli/hypercli-buzz-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
@@ -171,9 +171,10 @@ Goose ships a HyperCLI custom provider and advertises both OpenAI-compatible
 aliases (`default`, `coding`, `kimi-k3`, `kimi-k2.6`, `kimi-k2.5`) and the
 matching Anthropic Messages aliases. It boots on `coding-anthropic`, enables
 Goose's built-in `developer` and `memory` extensions, and enables the native
-platform `skills` extension. Buzz Agent remains native Sprig: it uses the
-Anthropic provider by default, receives a single bare `BUZZ_AGENT_MODEL`, and
-does not use OpenCode's `BUZZ_MODEL_PREFIX` qualification.
+platform `skills` extension. Buzz Agent remains native Sprig: it uses
+upstream's OpenAI-compatible Chat Completions provider, receives a single bare
+`BUZZ_AGENT_MODEL`, and does not use OpenCode's `BUZZ_MODEL_PREFIX`
+qualification.
 
 ## Container Injection
 
@@ -222,11 +223,13 @@ images. Any extra key or different value is preserved as user-owned config.
 
 ### Runtime inference environment
 
-Lagoon injects `HYPER_AGENTS_API_KEY` and `HYPER_API_BASE` into the container.
-The image entrypoints do not translate or persist that credential. Buzz Agent,
-OpenCode, and Goose are the zero-login HyperCLI runtimes. Claude Code, Codex,
-and Kimi Code are native-first: missing `HYPERCLI_RUNTIME_INFERENCE` means the
-child receives no implicit HyperCLI model, URL, or credential overlay.
+Lagoon injects `HYPER_AGENTS_API_KEY`, `HYPER_AGENTS_API_BASE`, and
+`HYPER_API_BASE` into the container. Buzz Agent, OpenCode, and Goose are the
+zero-login HyperCLI runtimes. Buzz Agent's image wrapper maps those values to
+upstream's OpenAI-compatible Chat Completions env (`OPENAI_COMPAT_*`) without
+persisting the credential. Claude Code, Codex, and Kimi Code are native-first:
+missing `HYPERCLI_RUNTIME_INFERENCE` means the child receives no implicit
+HyperCLI model, URL, or credential overlay.
 
 Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks
 the `hyper-acp plugin buzz` runtime to perform runtime-specific compatibility translation

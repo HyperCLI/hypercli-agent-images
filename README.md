@@ -43,7 +43,7 @@ The six public runtime images are:
 
 | Directory | Image | ACP child | Authentication |
 | --- | --- | --- | --- |
-| `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI Anthropic-compatible inference plus Buzz MCP/skills |
+| `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI OpenAI-compatible chat inference plus Buzz MCP/skills |
 | `opencode` | `hypercli-buzz-opencode` | `opencode acp` | OpenCode login or seeded HyperCLI Anthropic provider |
 | `codex` | `hypercli-buzz-codex` | `codex-acp` | Codex API key or device login |
 | `claude` | `hypercli-buzz-claude` | `claude-agent-acp` | Claude subscription, Console, or SSO |

@@ -20,6 +20,7 @@ image = require_image_argument()
 runtime_env = {
     "HYPER_AGENTS_API_KEY": "image-sanity-placeholder",
     "HYPER_API_BASE": "https://api.example.invalid",
+    "HYPER_AGENTS_API_BASE": "https://api.example.invalid/agents",
 }
 assert_common_contract(
     image,
@@ -54,8 +55,9 @@ env = {
     for key in (
         "BUZZ_AGENT_PROVIDER",
         "BUZZ_AGENT_MODEL",
-        "ANTHROPIC_BASE_URL",
-        "ANTHROPIC_API_KEY",
+        "OPENAI_COMPAT_BASE_URL",
+        "OPENAI_COMPAT_API",
+        "OPENAI_COMPAT_API_KEY",
         "BUZZ_ACP_MCP_COMMAND",
         "BUZZ_MODEL_PREFIX",
     )
@@ -68,10 +70,11 @@ print(json.dumps(env))
 """
 defaults = run_python(image, env_probe, env=runtime_env)
 assert defaults == {
-    "BUZZ_AGENT_PROVIDER": "anthropic",
+    "BUZZ_AGENT_PROVIDER": "openai",
     "BUZZ_AGENT_MODEL": "coding-anthropic",
-    "ANTHROPIC_BASE_URL": "https://api.example.invalid",
-    "ANTHROPIC_API_KEY": "image-sanity-placeholder",
+    "OPENAI_COMPAT_BASE_URL": "https://api.example.invalid/v1",
+    "OPENAI_COMPAT_API": "chat",
+    "OPENAI_COMPAT_API_KEY": "image-sanity-placeholder",
     "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
     "BUZZ_MODEL_PREFIX": None,
     "hypercli_skill_exists": True,
@@ -80,17 +83,19 @@ assert defaults == {
 
 overrides = {
     **runtime_env,
-    "BUZZ_AGENT_PROVIDER": "openai",
+    "BUZZ_AGENT_PROVIDER": "anthropic",
     "BUZZ_AGENT_MODEL": "user-model",
-    "ANTHROPIC_BASE_URL": "",
-    "ANTHROPIC_API_KEY": "user-key",
+    "OPENAI_COMPAT_BASE_URL": "",
+    "OPENAI_COMPAT_API": "responses",
+    "OPENAI_COMPAT_API_KEY": "user-key",
 }
 preserved = run_python(image, env_probe, env=overrides)
 assert preserved == {
-    "BUZZ_AGENT_PROVIDER": "openai",
+    "BUZZ_AGENT_PROVIDER": "anthropic",
     "BUZZ_AGENT_MODEL": "user-model",
-    "ANTHROPIC_BASE_URL": "",
-    "ANTHROPIC_API_KEY": "user-key",
+    "OPENAI_COMPAT_BASE_URL": "",
+    "OPENAI_COMPAT_API": "responses",
+    "OPENAI_COMPAT_API_KEY": "user-key",
     "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
     "BUZZ_MODEL_PREFIX": None,
     "hypercli_skill_exists": True,
