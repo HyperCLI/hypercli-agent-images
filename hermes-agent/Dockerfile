@@ -59,11 +59,11 @@ RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
     { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    uv pip install --python /opt/hermes/.venv/bin/python \
-      --exclude-newer-package x402=false \
+    uv venv --python python3 /opt/hypercli/venv && \
+    UV_NO_CONFIG=1 uv pip install --python /opt/hypercli/venv/bin/python \
       /opt/hypercli/sdk "/opt/hypercli/cli[all]" \
       "mem0ai>=2.0.10,<3" qdrant-client && \
-    ln -sf /opt/hermes/.venv/bin/hyper /usr/local/bin/hyper && \
+    ln -sf /opt/hypercli/venv/bin/hyper /usr/local/bin/hyper && \
     hyper --help >/dev/null
 
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
