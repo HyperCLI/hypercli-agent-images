@@ -105,7 +105,7 @@ containers. Today the image aliases resolve as:
 
 | Alias | Current target | Notes |
 | --- | --- | --- |
-| `default-anthropic` | `kimi-k3-anthropic` | Image default, Anthropic Messages route |
+| `default-anthropic` | `kimi-k2.6-anthropic` | Image default, Anthropic Messages route |
 | `coding-anthropic` | `kimi-k3-anthropic` | Stable coding alias, Anthropic Messages route |
 | `kimi-k3-anthropic` | `kimi-k3-anthropic` | Pinned Kimi K3 Anthropic Messages route |
 | `kimi-k2.6-anthropic` | `kimi-k2.6-anthropic` | Pinned Kimi K2.6 Anthropic Messages route |
