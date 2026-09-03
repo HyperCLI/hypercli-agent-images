@@ -22,7 +22,7 @@ if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
   fi
 
   unset HYPER_ACP_WS_LISTEN HYPER_ACP_LOG
-  : "${BUZZ_ACP_RELAY_OBSERVER:=false}"
+  : "${BUZZ_ACP_RELAY_OBSERVER:=true}"
   export BUZZ_ACP_RELAY_OBSERVER
 fi
 

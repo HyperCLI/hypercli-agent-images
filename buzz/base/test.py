@@ -111,7 +111,7 @@ assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
 assert payload["removed_tools"] == {"buzz": None, "host": None}
 assert len(payload["buzz_commit"]) == 40
-assert "--trace-db" in payload["hyper_acp_help"]
+assert "--ws-url" in payload["hyper_acp_help"]
 assert "Run the full Buzz ACP plugin" in payload["hyper_acp_plugin_help"]
 assert "buzz-acp" in payload["buzz_plugin_help"]
 assert payload["hidden_buzz_plugin"] is True
@@ -127,7 +127,7 @@ entrypoint_text = docker(
     image,
     "/usr/local/bin/hypercli-buzz-entrypoint",
 ).stdout
-assert ': "${BUZZ_ACP_RELAY_OBSERVER:=false}"' in entrypoint_text
+assert ': "${BUZZ_ACP_RELAY_OBSERVER:=true}"' in entrypoint_text
 assert "\n  BUZZ_ACP_RELAY_OBSERVER=false\n" not in entrypoint_text
 
 print(f"{image}: Hyper ACP base contract passed")
