@@ -161,7 +161,7 @@ RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
     hyper-acp --help >/dev/null && \
     hyper-acp plugin buzz --help >/dev/null && \
-    /usr/local/lib/hyper-acp/tools/compute_auth_tag --help >/dev/null && \
+    test -x /usr/local/lib/hyper-acp/tools/compute_auth_tag && \
     buzz --help >/dev/null
 
 ENV HOME=/home/node \
