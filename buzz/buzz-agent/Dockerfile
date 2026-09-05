@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 ARG HYPER_ACP_BASE_IMAGE=hyper-acp-base:local
-ARG BUZZ_BASE_IMAGE=${HYPER_ACP_BASE_IMAGE}
-FROM ${BUZZ_BASE_IMAGE}
+FROM ${HYPER_ACP_BASE_IMAGE}
 
 USER root
 COPY --chmod=0755 buzz-agent/entrypoint.sh /usr/local/bin/hypercli-buzz-agent-entrypoint

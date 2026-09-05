@@ -31,6 +31,7 @@ env = dict(
     if "=" in item
 )
 assert env.get("HOME") == "/home/node"
+assert env.get("CODING_AGENT_STATE_DIR") == "/home/node/.coding-agent"
 assert env.get("BUZZ_ACP_MCP_COMMAND", "") == ""
 assert_entrypoint_exit_passthrough(image)
 
@@ -38,6 +39,7 @@ probe = r"""
 import json
 import os
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 
@@ -71,6 +73,7 @@ print(json.dumps({
     "buzz_commit": Path(
         "/opt/hypercli-buzz/.buzz-commit"
     ).read_text().strip(),
+    "buzz_acp_binary_exists": Path("/usr/local/bin/buzz-acp").exists(),
     "hyper_acp_help": subprocess.check_output(
         ["hyper-acp", "--help"],
         text=True,
@@ -94,6 +97,11 @@ print(json.dumps({
     ).is_file(),
     "openclaw_binary": shutil.which("openclaw"),
     "openclaw_app": Path("/app/openclaw.mjs").exists(),
+    "state_dir_is_dir": Path("/home/node/.coding-agent").is_dir(),
+    "state_dir_uid": Path("/home/node/.coding-agent").stat().st_uid,
+    "state_dir_mode": stat.S_IMODE(
+        Path("/home/node/.coding-agent").stat().st_mode
+    ),
 }))
 """
 result = docker(
@@ -111,6 +119,7 @@ assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
 assert payload["removed_tools"] == {"buzz": None, "host": None}
 assert len(payload["buzz_commit"]) == 40
+assert payload["buzz_acp_binary_exists"] is False
 assert "--ws-url" in payload["hyper_acp_help"]
 assert "Run the full Buzz ACP plugin" in payload["hyper_acp_plugin_help"]
 assert "buzz-acp" in payload["buzz_plugin_help"]
@@ -118,6 +127,9 @@ assert payload["hidden_buzz_plugin"] is True
 assert payload["auth_tag_helper"] is True
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
+assert payload["state_dir_is_dir"] is True
+assert payload["state_dir_uid"] == 1000
+assert payload["state_dir_mode"] == 0o700
 
 entrypoint_text = docker(
     "run",

@@ -3,6 +3,7 @@
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
 ARG HYPERCLI_REF=main
+ARG HYPERCLI_CACHE_BUST=local
 
 FROM ${RUST_IMAGE} AS source-builder
 
@@ -90,11 +91,13 @@ FROM ${NODE_IMAGE}
 
 ARG NODE_IMAGE
 ARG HYPERCLI_REF
+ARG HYPERCLI_CACHE_BUST
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
       org.opencontainers.image.title="HyperCLI ACP Agent Base" \
       org.opencontainers.image.base.name="${NODE_IMAGE}" \
       org.hypercli.hypercli_ref="${HYPERCLI_REF}" \
+      org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}" \
       org.hypercli.coding_runtime="base"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
@@ -158,6 +161,7 @@ RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
     hyper-acp --help >/dev/null && \
     hyper-acp plugin buzz --help >/dev/null && \
+    /usr/local/lib/hyper-acp/tools/compute_auth_tag --help >/dev/null && \
     buzz --help >/dev/null
 
 ENV HOME=/home/node \

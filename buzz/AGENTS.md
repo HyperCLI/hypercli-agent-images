@@ -37,7 +37,7 @@ and the executable tests together when the contract changes.
 - Keep runtime commands and prompt transports explicit in the runtime matrix.
 - Keep provider-owned identity, relay, authorization, reply, mention, and
   workspace variables non-overridable by user environment.
-- Keep hosted deployments `restart: false`; normal `hyper-acp` exit must remain
+- Keep hosted deployments `restart: false`; normal `hyper-acp plugin buzz` exit must remain
   terminal for the pod.
 - Do not convert ACP activity or thinking output into a final Buzz message.
 - Do not replace user-managed files or links under `/home/node/.buzz`.

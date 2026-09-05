@@ -18,7 +18,7 @@ Buzz Desktop
   -> HyperCLI deployments API
   -> HyperClaw/Lagoon
   -> hypercli-buzz-<runtime> image
-  -> hyper-acp
+  -> hyper-acp plugin buzz
   -> runtime ACP child
   -> Buzz relay
 ```
@@ -113,7 +113,7 @@ The reusable upstream boundaries are:
 - provider request, response, and portable launch wire types;
 - environment validation, precedence, and provider-owned key rules;
 - sanitized provider-wire golden fixtures;
-- setup payload types parsed by the Buzz-compatible mode in `hyper-acp`;
+- setup payload types parsed by `hyper-acp plugin buzz`;
 - naming, error classification, and reconciliation invariants as references.
 
 The preferred future extraction is small shared crates such as
@@ -128,7 +128,7 @@ All hosted Buzz coding runtimes use:
 | Property | Value |
 | --- | --- |
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
-| Entrypoint command | `/usr/local/bin/hyper-acp` |
+| Entrypoint command | `/usr/local/bin/hyper-acp plugin buzz` |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
@@ -164,8 +164,9 @@ error without upstream response bodies or secrets.
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
 ACP runtime. The upstream Sprig multicall binary still supplies `buzz`,
-`buzz-agent`, and `buzz-dev-mcp`; the stable hosted wrapper executable is
-`hyper-acp`, which includes the Buzz-compatible implementation.
+`buzz-agent`, and `buzz-dev-mcp`; the stable hosted ACP launcher is
+`/usr/local/bin/hyper-acp plugin buzz`, built from HyperCLI's `hyper-acp`
+package and not a Sprig symlink.
 
 Goose ships a HyperCLI custom provider and advertises both OpenAI-compatible
 aliases (`default`, `coding`, `kimi-k3`, `kimi-k2.6`, `kimi-k2.5`) and the
@@ -183,13 +184,15 @@ qualification.
 The image must provide:
 
 - `/usr/local/bin/hyper-acp`, built from the exact pinned HyperCLI commit;
+- `/usr/local/lib/hyper-acp/plugins/buzz-acp`, the compatibility plugin binary;
 - the runtime CLI and any required ACP adapter from the matrix above;
 - `/opt/hypercli` at a pinned HyperCLI commit;
 - `/opt/hypercli-buzz/nest/AGENTS.md`, copied from `nest/AGENTS.md`;
 - `/opt/hypercli-buzz/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
   pinned Buzz `nest_skill.md`;
 - `/opt/hypercli-buzz/SKILLS.md`, the installed-skill index;
-- `/home/node/shared` and `/home/node/.buzz`, owned by UID/GID 1000.
+- `/home/node/shared`, `/home/node/.buzz`, and `/home/node/.coding-agent`,
+  owned by UID/GID 1000.
 
 Initialization creates the standard Buzz nest directories and copies template
 files only when the destination does not exist. It must not overwrite a
@@ -197,9 +200,9 @@ user-managed file, directory, or symlink.
 
 Every runtime entrypoint performs its compatibility setup and then `exec`s the
 shared entrypoint, which in turn `exec`s the provider-supplied command through
-`tini`. Hosted launches supply `/usr/local/bin/hyper-acp`; that command
-replaces the image's fallback `sleep infinity`, and its exit status becomes the
-container exit status.
+`tini`. Hosted launches supply `/usr/local/bin/hyper-acp plugin buzz`; that
+command replaces the image's fallback `sleep infinity`, and its exit status
+becomes the container exit status.
 
 `nest/AGENTS.md` must remain byte-for-byte equal to the pinned Buzz Desktop
 `desktop/src-tauri/src/managed_agents/nest_agents.md`. It is installed as
@@ -232,7 +235,7 @@ missing `HYPERCLI_RUNTIME_INFERENCE` means the child receives no implicit
 HyperCLI model, URL, or credential overlay.
 
 Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks
-the `hyper-acp plugin buzz` runtime to perform runtime-specific compatibility translation
+`hyper-acp plugin buzz` to perform runtime-specific compatibility translation
 immediately before each native-runtime child spawn and respawn:
 
 - Claude Code: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_MODEL`;
@@ -284,6 +287,7 @@ The provider must inject and protect these categories:
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
 | Workspaces | `HYPER_WORKSPACES_BOOT_SYNC=1`, `HYPER_WORKSPACES_DIR=/home/node/shared`, `HYPER_WORKSPACES_SYNC_READY_ONLY=1`, optional selected workspace |
+| hyper-acp WebSocket | `HYPER_ACP_WS_LISTEN`, `HYPER_ACP_LOG`, `HYPER_ACP_WS_TOKEN`, optional `HYPER_ACP_CORS_ORIGIN` |
 
 The provider also projects validated non-reserved `launch.env` values. It must
 not allow user environment to override identity, relay, authorization,
@@ -293,6 +297,26 @@ runtime command, text mentions, reply guard, or workspace bootstrap fields.
 selects the runtime-specific transport and sends the prompt exactly once in
 hosted Buzz mode. An image must not append its own response policy or duplicate
 the prompt in a runtime-specific instruction file.
+
+### hyper-acp WebSocket
+
+The deployment environment, not the image, supplies the hyper-acp observer
+surface:
+
+- `HYPER_ACP_WS_LISTEN` (launch env) binds the WebSocket, pinned hosted-side
+  to `0.0.0.0:7799`; unset or empty disables the listener. Without a connect
+  token the listener stays loopback-only.
+- `HYPER_ACP_WS_TOKEN` (deployment secret) is the cookie-less app token
+  required on connect; unset selects the no-auth loopback local mode. It never
+  appears in image env, logs, or fixtures.
+- `HYPER_ACP_CORS_ORIGIN` optionally allowlists browser `Origin` headers.
+- `HYPER_ACP_LOG` (launch env) names the boot-scoped sqlite session log,
+  pinned hosted-side to `/home/node/.coding-agent/hyper-acp.db` inside the
+  node-owned state directory the image provides.
+
+`hypercli/buzz-acp` owns the connect, replay, and auth wire behavior; this
+document does not restate it. Cluster Services reach the pod directly, so the
+image needs no `EXPOSE`, port, or firewall change.
 
 ## Messages, Mentions, And Replies
 

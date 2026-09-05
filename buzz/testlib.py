@@ -12,6 +12,7 @@ from typing import Any
 
 NEST = Path("/home/node/.buzz")
 WORKSPACES = Path("/home/node/shared")
+STATE_DIR = Path("/home/node/.coding-agent")
 ENTRYPOINT_EXIT_CODE = 42
 ENTRYPOINT_EXIT_TIMEOUT_SECONDS = 30
 
@@ -267,6 +268,7 @@ directories = [
     nest / ".agents",
     nest / ".agents/skills",
     nest / ".agents/skills/buzz-cli",
+    Path("/home/node/.coding-agent"),
 ]
 
 hypercli_skills = sorted(
@@ -374,6 +376,7 @@ def assert_common_contract(
     assert labels.get("org.hypercli.buzz_workspace") == str(NEST)
     assert labels.get("org.hypercli.coding_runtime") == runtime
     assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(NEST)
+    assert env.get("CODING_AGENT_STATE_DIR") == str(STATE_DIR)
     assert env.get("HYPER_WORKSPACES_DIR") == str(WORKSPACES)
     assert env.get("HOME") == "/home/node"
     assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
