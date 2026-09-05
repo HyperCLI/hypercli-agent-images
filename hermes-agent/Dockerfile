@@ -1,6 +1,7 @@
 ARG HERMES_BASE_IMAGE=nousresearch/hermes-agent:v2026.8.3@sha256:16788311e2fa3035456bdc1bafb8ec2b1777db64ebf020af9bb7eb73c3712c9e
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_SHA
+ARG HYPERCLI_CACHE_BUST=manual
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
 FROM ${HERMES_BASE_IMAGE}
@@ -8,11 +9,13 @@ FROM ${HERMES_BASE_IMAGE}
 ARG HERMES_BASE_IMAGE
 ARG HYPERCLI_REF
 ARG HYPERCLI_SHA
+ARG HYPERCLI_CACHE_BUST
 ARG HYPERCLI_REPO
 
 LABEL org.opencontainers.image.base.name="${HERMES_BASE_IMAGE}"
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
 LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
+LABEL org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 ENV HYPERCLI_SHA=${HYPERCLI_SHA}
@@ -52,7 +55,8 @@ RUN mkdir -p "${COREPACK_HOME}" \
     && pnpm --version \
     && yarn --version
 
-RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
+RUN : "${HYPERCLI_CACHE_BUST}" && \
+    checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
     test -n "${checkout_ref}" && \
     git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${checkout_ref}" && \

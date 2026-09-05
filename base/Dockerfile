@@ -3,6 +3,7 @@
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_SHA
+ARG HYPERCLI_CACHE_BUST=manual
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
 FROM ${NODE_IMAGE}
@@ -10,13 +11,15 @@ FROM ${NODE_IMAGE}
 ARG NODE_IMAGE
 ARG HYPERCLI_REF
 ARG HYPERCLI_SHA
+ARG HYPERCLI_CACHE_BUST
 ARG HYPERCLI_REPO
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
       org.opencontainers.image.title="HyperCLI Agent Base" \
       org.opencontainers.image.base.name="${NODE_IMAGE}" \
       org.hypercli.hypercli_ref="${HYPERCLI_REF}" \
-      org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
+      org.hypercli.hypercli_sha="${HYPERCLI_SHA}" \
+      org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 ENV HYPERCLI_SHA=${HYPERCLI_SHA}
@@ -83,7 +86,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /usr/local/lib/hypercli /home/node/shared /home/node/Desktop \
     && chown -R node:node /home/node
 
-RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
+RUN : "${HYPERCLI_CACHE_BUST}" && \
+    checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
     test -n "${checkout_ref}" && \
     git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
     git -C /opt/hypercli fetch --depth 1 origin "${checkout_ref}" && \
