@@ -2,6 +2,7 @@
 set -eu
 
 /usr/local/bin/hypercli-buzz-init
+export HYPERCLI_BUZZ_INIT_DONE=1
 
 claude_dir=/home/node/.claude
 settings="${claude_dir}/settings.json"

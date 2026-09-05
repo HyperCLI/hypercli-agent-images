@@ -1,0 +1,41 @@
+hyper_desktop_enabled() {
+  case "$(printf '%s' "${HYPER_DESKTOP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on|enabled) return 0 ;;
+  esac
+  case "$(printf '%s' "${OPENCLAW_DESKTOP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on|enabled) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+hyper_start_desktop() {
+  if ! command -v Xvfb >/dev/null 2>&1 || \
+     ! command -v x11vnc >/dev/null 2>&1 || \
+     ! command -v websockify >/dev/null 2>&1 || \
+     ! command -v dbus-launch >/dev/null 2>&1 || \
+     ! command -v xfwm4 >/dev/null 2>&1 || \
+     ! command -v xfce4-panel >/dev/null 2>&1 || \
+     ! command -v xfce4-terminal >/dev/null 2>&1 || \
+     ! command -v thunar >/dev/null 2>&1; then
+    echo "[desktop] desktop requested but desktop runtime packages are not installed" >&2
+    exit 1
+  fi
+
+  export DISPLAY="${DISPLAY:-:99}"
+  local desktop_port="${HYPER_DESKTOP_PORT:-${OPENCLAW_DESKTOP_PORT:-3000}}"
+  local geometry="${HYPER_DESKTOP_GEOMETRY:-1280x800x24}"
+  local vnc_port="${HYPER_VNC_PORT:-5900}"
+
+  mkdir -p "${HOME:-/home/node}/.config/google-chrome" "${HOME:-/home/node}/Desktop"
+  echo "[desktop] starting ${DISPLAY}, noVNC port ${desktop_port}"
+
+  Xvfb "${DISPLAY}" -screen 0 "${geometry}" -ac +extension RANDR &
+  sleep 1
+  eval "$(dbus-launch --sh-syntax)"
+  export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+  xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+  xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
+  xfce4-panel >/tmp/xfce4-panel.log 2>&1 &
+  x11vnc -display "${DISPLAY}" -rfbport "${vnc_port}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
+  websockify --web /usr/share/novnc/ "${desktop_port}" "localhost:${vnc_port}" >/tmp/novnc.log 2>&1 &
+}

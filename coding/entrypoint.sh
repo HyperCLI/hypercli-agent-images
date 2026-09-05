@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-/usr/local/bin/hypercli-buzz-init
+if [ "${HYPERCLI_BUZZ_INIT_DONE:-0}" != "1" ]; then
+  /usr/local/bin/hypercli-buzz-init
+fi
 
 if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
   if [ -z "${HYPER_ACP_WS_URL:-}" ]; then

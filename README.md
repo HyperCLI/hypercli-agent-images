@@ -2,11 +2,11 @@
 
 ## Buzz coding agents
 
-`buzz/` contains the product-specific images used by hosted Buzz agents. Each
+`coding/` contains the product-specific images used by hosted coding agents. Each
 provider has its own Dockerfile and test:
 
 ```text
-buzz/
+coding/
 ├── base/
 ├── opencode/
 ├── codex/
@@ -24,19 +24,19 @@ docker build \
   --build-arg "BUZZ_COMMIT=$(git -C "${BUZZ_SOURCE}" rev-parse HEAD)" \
   --build-arg HYPERCLI_REF=<full-hypercli-commit> \
   -t hyper-acp-base \
-  -f buzz/base/Dockerfile buzz
+  -f coding/base/Dockerfile coding
 
 docker build \
   --build-arg HYPER_ACP_BASE_IMAGE=hyper-acp-base \
   -t hypercli-buzz-opencode \
-  -f buzz/opencode/Dockerfile buzz
+  -f coding/opencode/Dockerfile coding
 ```
 
 Run the matching Python contracts:
 
 ```bash
-python3 buzz/base/test.py hyper-acp-base
-python3 buzz/opencode/test.py hypercli-buzz-opencode
+python3 coding/base/test.py hyper-acp-base
+python3 coding/opencode/test.py hypercli-buzz-opencode
 ```
 
 The six public runtime images are:

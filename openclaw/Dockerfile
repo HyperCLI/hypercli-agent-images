@@ -1,61 +1,32 @@
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
+ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
 ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1-2
 
-FROM ${OPENCLAW_BASE_IMAGE}
+FROM ${OPENCLAW_BASE_IMAGE} AS upstream-openclaw
+
+FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
 ARG HYPERCLI_REF
 ARG HYPERCLI_SHA
 ARG HYPERCLI_REPO
+ARG HYPERCLI_AGENT_BASE_IMAGE
 ARG OPENCLAW_BASE_IMAGE
 
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
 LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
-LABEL org.opencontainers.image.base.name="${OPENCLAW_BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${HYPERCLI_AGENT_BASE_IMAGE}"
+LABEL org.opencontainers.image.upstream.name="${OPENCLAW_BASE_IMAGE}"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 ENV HYPERCLI_SHA=${HYPERCLI_SHA}
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    git \
-    jq \
-    ffmpeg \
-    poppler-utils \
-    lsof \
-    python3 \
-    python3-dev \
-    python3-pip \
-    ripgrep \
-    build-essential \
-    sudo \
-    vim \
-    xxd \
-    nano \
-    zip \
-    unzip \
-    && printf '%s\n' 'node ALL=(ALL) NOPASSWD:ALL' \
-      > /etc/sudoers.d/90-node-nopasswd \
-    && chmod 0440 /etc/sudoers.d/90-node-nopasswd \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /opt/hypercli-openclaw /opt/hypercli /home/node/.openclaw && \
-    chown -R node:node /home/node /opt/hypercli-openclaw
-
-RUN checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
-    test -n "${checkout_ref}" && \
-    git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
-    git -C /opt/hypercli fetch --depth 1 origin "${checkout_ref}" && \
-    git -C /opt/hypercli checkout FETCH_HEAD && \
-    { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
-    test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    pip3 install --break-system-packages --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
-    hyper --help >/dev/null
+COPY --from=upstream-openclaw /app /app
+RUN mkdir -p /opt/hypercli-openclaw /home/node/.openclaw && \
+    ln -sf /app/openclaw.mjs /usr/local/bin/openclaw && \
+    chown -R node:node /home/node /opt/hypercli-openclaw /app
 
 RUN set -eux; \
     openclaw_version="$(node -e 'console.log(require("/app/package.json").version)')"; \
@@ -77,8 +48,11 @@ RUN set -eux; \
 
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
-COPY enable_slack_relay.ts /opt/hypercli-openclaw/enable_slack_relay.ts
-RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh && \
+COPY init.sh /opt/hypercli-openclaw/init.sh
+COPY config.js /opt/hypercli-openclaw/config.js
+COPY slack.sh /opt/hypercli-openclaw/slack.sh
+COPY enable_slack_relay.ts /opt/hypercli-openclaw/slack.js
+RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/init.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version
 
@@ -92,7 +66,10 @@ ENV OPENCLAW_INSTALL_PLUGINS=
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
 ENV OPENCLAW_DESKTOP_ENABLED=0
+ENV HYPER_DESKTOP_ENABLED=0
 ENV OPENCLAW_DESKTOP_PORT=3000
+ENV HYPER_DESKTOP_PORT=3000
+ENV HYPER_DESKTOP_GEOMETRY=1280x800x24
 ENV OPENCLAW_CRON_ENABLED=
 ENV OPENCLAW_MEMORY_SEARCH_ENABLED=
 ENV OPENCLAW_MEMORY_SEARCH_SYNC_ON_SESSION_START=
@@ -105,5 +82,5 @@ ENV DISPLAY=:99
 WORKDIR /app
 USER node
 
-EXPOSE 18789
+EXPOSE 18789 3000
 ENTRYPOINT ["/opt/hypercli-openclaw/entrypoint.sh"]

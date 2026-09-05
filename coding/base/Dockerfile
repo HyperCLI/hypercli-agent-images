@@ -2,6 +2,7 @@
 
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
+ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_CACHE_BUST=local
 
@@ -87,55 +88,23 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
     strip /out/hyper-acp /out/plugins/buzz-acp
 
-FROM ${NODE_IMAGE}
+FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
 ARG NODE_IMAGE
+ARG HYPERCLI_AGENT_BASE_IMAGE
 ARG HYPERCLI_REF
 ARG HYPERCLI_CACHE_BUST
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
       org.opencontainers.image.title="HyperCLI ACP Agent Base" \
-      org.opencontainers.image.base.name="${NODE_IMAGE}" \
+      org.opencontainers.image.base.name="${HYPERCLI_AGENT_BASE_IMAGE}" \
       org.hypercli.hypercli_ref="${HYPERCLI_REF}" \
       org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}" \
       org.hypercli.coding_runtime="base"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    git \
-    jq \
-    ffmpeg \
-    poppler-utils \
-    lsof \
-    openssh-client \
-    procps \
-    python3 \
-    python3-dev \
-    python3-pip \
-    ripgrep \
-    build-essential \
-    sudo \
-    tini \
-    vim \
-    xxd \
-    nano \
-    zip \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=source-builder /build/hypercli /opt/hypercli
-RUN set -eux; \
-    pip3 install --break-system-packages --no-cache-dir \
-      /opt/hypercli/sdk \
-      "/opt/hypercli/cli[all]"; \
-    hyper --help >/dev/null
-
 RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
     install -d -m 0700 -o node -g node \
       /home/node/.coding-agent \

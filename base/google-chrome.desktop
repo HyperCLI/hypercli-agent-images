@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Google Chrome
+GenericName=Web Browser
+Comment=Access the Internet
+Exec=google-chrome-stable --no-sandbox --disable-dev-shm-usage --no-first-run --no-default-browser-check --disable-default-apps --remote-debugging-address=127.0.0.1 --remote-debugging-port=18800 --user-data-dir=/home/node/.config/google-chrome %U
+Terminal=false
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
