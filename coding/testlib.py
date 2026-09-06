@@ -276,6 +276,7 @@ hypercli_skills = sorted(
     for path in Path("/opt/hypercli/skills").glob("*/SKILL.md")
 )
 skills_index = Path("/home/node/SKILLS.md").read_text(encoding="utf-8")
+agents_path = nest / "AGENTS.md"
 
 payload = {
     "uid": os.getuid(),
@@ -285,9 +286,10 @@ payload = {
         text=True,
     ).strip(),
     "runtime": Path("/opt/hypercli-coding/runtime").read_text().strip(),
-    "agents_heading": (
-        nest / "AGENTS.md"
-    ).read_text(encoding="utf-8").splitlines()[0],
+    "agents_exists": agents_path.exists() or agents_path.is_symlink(),
+    "agents_heading": agents_path.read_text(encoding="utf-8").splitlines()[0]
+    if agents_path.exists()
+    else None,
     "skill_has_name": "name: buzz-cli" in (
         nest / ".agents/skills/buzz-cli/SKILL.md"
     ).read_text(encoding="utf-8"),
@@ -385,12 +387,15 @@ def assert_common_contract(
         assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
         assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
         assert env.get("BUZZ_ACP_MCP_COMMAND", "") == mcp_command
+        assert "BUZZ_ACP_BASE_PROMPT_FILE" not in env
     else:
         assert env.get("HYPER_ACP_AGENT_COMMAND") == agent_command
         assert env.get("HYPER_ACP_AGENT_ARGS", "") == agent_args
+        assert "HYPER_ACP_BASE_PROMPT_FILE" not in env
         assert "BUZZ_ACP_AGENT_COMMAND" not in env
         assert "BUZZ_ACP_AGENT_ARGS" not in env
         assert "BUZZ_ACP_MCP_COMMAND" not in env
+        assert "BUZZ_ACP_BASE_PROMPT_FILE" not in env
 
     assert_entrypoint_exit_passthrough(image)
     payload = run_python(image, COMMON_PROBE)
@@ -398,7 +403,8 @@ def assert_common_contract(
     assert payload["cwd"] == str(NEST)
     assert payload["sudo_user"] == "root"
     assert payload["runtime"] == runtime
-    assert payload["agents_heading"].startswith("You are an agent operating inside Buzz")
+    assert payload["agents_exists"] is False
+    assert payload["agents_heading"] is None
     assert payload["skill_has_name"] is True
     assert all(payload["hypercli_skill_names"].values())
     assert all(payload["skills_index_mentions"].values())
@@ -460,9 +466,6 @@ def assert_nest_persistence(image: str) -> None:
             )
 
         claude = persisted / ".buzz/CLAUDE.md"
-        assert claude.is_symlink()
-        assert os.readlink(claude) == "AGENTS.md"
-        claude.unlink()
         claude.write_text(
             "user-managed Claude instructions\n",
             encoding="utf-8",

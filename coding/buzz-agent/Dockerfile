@@ -17,8 +17,7 @@ LABEL org.opencontainers.image.title="HyperCLI Buzz Native Agent" \
 
 ENV BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/buzz-agent \
     BUZZ_ACP_AGENT_ARGS= \
-    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp \
-    BUZZ_ACP_BASE_PROMPT_FILE=/home/node/.buzz/AGENTS.md
+    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
 
 USER node
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-coding-buzz-agent-entrypoint"]

@@ -52,8 +52,6 @@ link_if_missing() {
   fi
 }
 
-copy_if_missing "${template}/AGENTS.md" "${nest}/AGENTS.md"
-link_if_missing "${nest}/CLAUDE.md" "AGENTS.md"
 copy_if_missing \
   "${template}/.agents/skills/buzz-cli/SKILL.md" \
   "${nest}/.agents/skills/buzz-cli/SKILL.md"

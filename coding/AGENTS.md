@@ -8,8 +8,11 @@ workspace initialization.
 
 - `README.md` is the human architecture and lifecycle reference for these
   images.
-- The installed runtime `AGENTS.md` is shipped runtime content and the
-  filesystem source of truth for the base prompt.
+- Plain ACP base prompt delivery is owned by `hypercli/hyper-acp` and injected
+  into `session/new` from the compiled generic prompt unless `HYPER_ACP_*`
+  env/file overrides say otherwise. Buzz provider launches keep their
+  Buzz-specific `BUZZ_ACP_*` prompt contract and use the Buzz plugin's compiled
+  base prompt unless the caller explicitly supplies a Buzz base-prompt file.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
 - `hypercli/hyper-acp` owns hosted ACP startup. Plain ACP launches run
   `hyper-acp` with `HYPER_ACP_AGENT_COMMAND` and `HYPER_ACP_AGENT_ARGS`.

@@ -81,9 +81,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       -p hyper-acp-slack-relay; \
     install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/hyper-acp; \
     install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
-    install -D -m 0644 \
-      /build/hypercli/hyper-acp/plugins/buzz/src/base_prompt.md \
-      /out/nest/AGENTS.md; \
     strip /out/hyper-acp /out/plugins/buzz-acp
 
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}

@@ -5,8 +5,8 @@ runtimes. The same images can also be launched by the Buzz provider when the
 agent is intentionally a Buzz/Nostr agent.
 
 This is the canonical human architecture document for these images. `AGENTS.md`
-contains maintainer guardrails. The runtime `AGENTS.md` and `SKILLS.md` are
-copied into an agent container.
+contains maintainer guardrails. `SKILLS.md` is copied into an agent container;
+prompt Markdown is not materialized into the runtime workspace.
 
 ## System Boundary
 
@@ -135,6 +135,7 @@ Plain hosted ACP launches use:
 | --- | --- |
 | Entrypoint command | `/usr/local/bin/hyper-acp` |
 | ACP child | `HYPER_ACP_AGENT_COMMAND`, `HYPER_ACP_AGENT_ARGS` |
+| Prompt transport | compiled `hyper-acp` base prompt plus optional `HYPER_ACP_*` prompt env/file layers on `session/new` |
 | Restart | runtime-specific caller choice |
 | Home and sync root | `/home/node` |
 | Working directory | `/home/node/.buzz` |
@@ -175,9 +176,9 @@ error without upstream response bodies or secrets.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted OpenAI-compatible chat auth |
 | OpenCode | `ghcr.io/hypercli/hypercli-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
-| Codex | `ghcr.io/hypercli/hypercli-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | filesystem `AGENTS.md`; Buzz provider also frames prompt through plugin | `.codex` |
+| Codex | `ghcr.io/hypercli/hypercli-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | plain `hyper-acp` session injection; Buzz provider frames prompt through plugin | `.codex` |
 | Claude Code | `ghcr.io/hypercli/hypercli-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
-| Goose | `ghcr.io/hypercli/hypercli-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | filesystem `AGENTS.md`; Buzz provider also frames prompt through plugin | `.goose` |
+| Goose | `ghcr.io/hypercli/hypercli-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | plain `hyper-acp` session injection; Buzz provider frames prompt through plugin | `.goose` |
 | Kimi Code | `ghcr.io/hypercli/hypercli-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
@@ -204,14 +205,13 @@ The image must provide:
 - `/usr/local/lib/hyper-acp/plugins/buzz-acp`, the compatibility plugin binary;
 - the runtime CLI and any required ACP adapter from the matrix above;
 - `/opt/hypercli` at a pinned HyperCLI commit;
-- `/opt/hypercli-coding/nest/AGENTS.md`, copied from HyperACP's base prompt;
 - `/opt/hypercli-coding/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
   pinned Buzz `nest_skill.md`;
 - `/opt/hypercli-coding/SKILLS.md`, the installed-skill index;
 - `/home/node/shared`, `/home/node/.buzz`, and `/home/node/.coding-agent`,
   owned by UID/GID 1000.
 
-Initialization creates the standard Buzz nest directories and copies template
+Initialization creates the standard workspace directories and copies template
 files only when the destination does not exist. It must not overwrite a
 user-managed file, directory, or symlink.
 
@@ -221,9 +221,14 @@ shared entrypoint, which in turn `exec`s the caller-supplied command through
 `/usr/local/bin/hyper-acp plugin buzz` replaces the image's fallback
 `sleep infinity`, and its exit status becomes the container exit status.
 
-Runtime `AGENTS.md` is the filesystem source of truth for the base prompt and is
-installed as `/home/node/.buzz/AGENTS.md`. Maintainer guidance belongs in this
-directory's top-level `AGENTS.md`, not in the runtime prompt.
+Plain ACP runtimes do not receive their base prompt from a materialized
+Markdown file under `/home/node`; vanilla `hyper-acp` injects its compiled base
+prompt into `session/new`. `HYPER_ACP_BASE_PROMPT_FILE` overrides that compiled
+default and `HYPER_ACP_NO_BASE_PROMPT` disables it. `HYPER_ACP_SYSTEM_PROMPT` or
+`HYPER_ACP_SYSTEM_PROMPT_FILE` layers after the base prompt as agent-specific
+instructions or dynamic context. Buzz provider launches keep their existing
+Buzz-specific prompt contract and use the Buzz plugin's compiled base prompt
+unless the caller explicitly supplies `BUZZ_ACP_BASE_PROMPT_FILE`.
 
 HyperCLI skills are linked into `.buzz/.agents/skills`. Compatibility links
 also expose them through:
@@ -232,7 +237,8 @@ also expose them through:
 - `.buzz/.codex/skills`;
 - `.buzz/.goose/skills`.
 
-Claude additionally receives `.buzz/CLAUDE.md -> AGENTS.md`. Existing
+Images do not create prompt aliases such as `.buzz/AGENTS.md` or
+`.buzz/CLAUDE.md`; prompt delivery is an ACP launcher concern. Existing
 user-managed paths always win. Native mode does not create
 `.claude/settings.json`. Explicit HyperCLI compatibility mode may create a
 three-key model catalog plus `.claude/.hypercli-settings.json` ownership
@@ -299,7 +305,7 @@ The provider must inject and protect these categories:
 | Owner and access | `BUZZ_ACP_AGENT_OWNER`, `BUZZ_ACP_RESPOND_TO`, `BUZZ_ACP_RESPOND_TO_ALLOWLIST` |
 | Display and mentions | `BUZZ_ACP_DISPLAY_NAME`, `BUZZ_ACP_TEXT_MENTIONS` for compatible names |
 | Reply behavior | `BUZZ_ACP_REQUIRE_REPLY=true`; native Buzz Agent also receives `BUZZ_AGENT_REQUIRE_REPLY=1` |
-| Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
+| Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, optional explicit `BUZZ_ACP_BASE_PROMPT_FILE`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
 | Workspaces | `HYPER_WORKSPACES_BOOT_SYNC=1`, `HYPER_WORKSPACES_DIR=/home/node/shared`, `HYPER_WORKSPACES_SYNC_READY_ONLY=1`, optional selected workspace |
@@ -428,8 +434,8 @@ Provider, SDK, ACP, or image changes must verify:
    overridden.
 5. Every image contains the exact child command, args, MCP command, runtime
    state paths, and skill links in the matrix.
-6. Runtime `AGENTS.md` is installed from the pinned HyperACP base prompt and
-   survives repeated initialization.
+6. Prompt Markdown is not materialized into `/home/node`; base prompt delivery
+   is verified through ACP session prompt injection.
 7. The real `tini` and setup entrypoint chain terminates promptly and preserves
    the launched command's nonzero exit status.
 8. A real Nostr keypair and owner-signed, agent-mentioned `!shutdown` drives
