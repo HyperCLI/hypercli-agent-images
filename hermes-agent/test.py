@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 
 
-IMAGE = sys.argv[1] if len(sys.argv) > 1 else "hypercli-hermes-agent:local"
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "hypercli-hermes:local"
 API_KEY = "hermes-image-test-api-key-32-chars"
 ROTATED_API_KEY = "hermes-image-test-rotated-api-key-32-chars"
 MODEL_KEY = "hermes-image-test-model-key"

@@ -156,11 +156,11 @@ error without upstream response bodies or secrets.
 | Hosted runtime | Canonical image | Portable command | Injected ACP child | Child args | MCP command | Prompt transport | Runtime state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted OpenAI-compatible chat auth |
-| OpenCode | `ghcr.io/hypercli/hypercli-buzz-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
-| Codex | `ghcr.io/hypercli/hypercli-buzz-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.codex` |
-| Claude Code | `ghcr.io/hypercli/hypercli-buzz-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
-| Goose | `ghcr.io/hypercli/hypercli-buzz-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | `/usr/local/bin/buzz-dev-mcp` | `_goose/unstable/session/system-prompt/set`, then ACP fallback | `.goose` |
-| Kimi Code | `ghcr.io/hypercli/hypercli-buzz-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
+| OpenCode | `ghcr.io/hypercli/hypercli-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
+| Codex | `ghcr.io/hypercli/hypercli-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.codex` |
+| Claude Code | `ghcr.io/hypercli/hypercli-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
+| Goose | `ghcr.io/hypercli/hypercli-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | `/usr/local/bin/buzz-dev-mcp` | `_goose/unstable/session/system-prompt/set`, then ACP fallback | `.goose` |
+| Kimi Code | `ghcr.io/hypercli/hypercli-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
 ACP runtime. The upstream Sprig multicall binary still supplies `buzz`,

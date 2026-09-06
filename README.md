@@ -28,7 +28,7 @@ docker build \
 
 docker build \
   --build-arg HYPER_ACP_BASE_IMAGE=hyper-acp-base \
-  -t hypercli-buzz-opencode \
+  -t hypercli-opencode \
   -f coding/opencode/Dockerfile coding
 ```
 
@@ -36,7 +36,7 @@ Run the matching Python contracts:
 
 ```bash
 python3 coding/base/test.py hyper-acp-base
-python3 coding/opencode/test.py hypercli-buzz-opencode
+python3 coding/opencode/test.py hypercli-opencode
 ```
 
 The six public runtime images are:
@@ -44,11 +44,11 @@ The six public runtime images are:
 | Directory | Image | ACP child | Authentication |
 | --- | --- | --- | --- |
 | `buzz-agent` | `hypercli-buzz-agent` | `buzz-agent` | Scoped HyperCLI OpenAI-compatible chat inference plus Buzz MCP/skills |
-| `opencode` | `hypercli-buzz-opencode` | `opencode acp` | OpenCode login or seeded HyperCLI Anthropic provider |
-| `codex` | `hypercli-buzz-codex` | `codex-acp` | Codex API key or device login |
-| `claude` | `hypercli-buzz-claude` | `claude-agent-acp` | Claude subscription, Console, or SSO |
-| `goose` | `hypercli-buzz-goose` | `goose acp` | Seeded HyperCLI provider with OpenAI and Anthropic aliases plus Goose MCP/skills |
-| `kimi-code` | `hypercli-buzz-kimi-code` | `kimi acp` | Upstream Moonshot login |
+| `opencode` | `hypercli-opencode` | `opencode acp` | OpenCode login or seeded HyperCLI Anthropic provider |
+| `codex` | `hypercli-codex` | `codex-acp` | Codex API key or device login |
+| `claude` | `hypercli-claude` | `claude-agent-acp` | Claude subscription, Console, or SSO |
+| `goose` | `hypercli-goose` | `goose acp` | Seeded HyperCLI provider with OpenAI and Anthropic aliases plus Goose MCP/skills |
+| `kimi-code` | `hypercli-kimi-code` | `kimi acp` | Upstream Moonshot login |
 
 The common carrier installs Python, `hyper` with all CLI extras, build tools,
 `jq`, `rg` (ripgrep), passwordless sudo for `node`, and Buzz's pinned Sprig
