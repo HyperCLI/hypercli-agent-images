@@ -103,7 +103,8 @@ LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-bac
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 
 USER root
-RUN install -d -m 0755 /opt/hypercli-coding/nest && \
+RUN rm -rf /home/node/.buzz && \
+    install -d -m 0755 /opt/hypercli-coding/nest && \
     install -d -m 0700 -o node -g node \
       /home/node/.coding-agent \
       /home/node/shared && \

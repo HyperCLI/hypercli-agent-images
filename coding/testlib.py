@@ -355,7 +355,6 @@ def assert_common_contract(
     agent_args: str,
     mcp_command: str,
     entrypoint: str,
-    claude_compatibility: bool = False,
 ) -> None:
     config = image_config(image)
     labels = config.get("Labels") or {}
@@ -424,17 +423,10 @@ def assert_common_contract(
     assert len(payload["skill_links"]) == 3 * (
         len(payload["hypercli_skill_names"]) + 1
     )
-    assert_nest_persistence(
-        image,
-        claude_compatibility=claude_compatibility,
-    )
+    assert_nest_persistence(image)
 
 
-def assert_nest_persistence(
-    image: str,
-    *,
-    claude_compatibility: bool,
-) -> None:
+def assert_nest_persistence(image: str) -> None:
     with tempfile.TemporaryDirectory() as persisted_name:
         persisted = Path(persisted_name)
         persisted.chmod(0o777)
@@ -468,14 +460,13 @@ def assert_nest_persistence(
             )
 
         claude = persisted / ".buzz/CLAUDE.md"
-        if claude_compatibility:
-            assert claude.is_symlink()
-            assert os.readlink(claude) == "AGENTS.md"
-            claude.unlink()
-            claude.write_text(
-                "user-managed Claude instructions\n",
-                encoding="utf-8",
-            )
+        assert claude.is_symlink()
+        assert os.readlink(claude) == "AGENTS.md"
+        claude.unlink()
+        claude.write_text(
+            "user-managed Claude instructions\n",
+            encoding="utf-8",
+        )
 
         run(image, ["true"], mounts=[(persisted, "/home/node")])
         agents_content = agents.read_text(encoding="utf-8")
@@ -493,14 +484,11 @@ def assert_nest_persistence(
             assert harness_skill_link.read_text(encoding="utf-8") == (
                 "user-managed harness skill replacement\n"
             )
-        if claude_compatibility:
-            assert not claude.is_symlink()
-            assert (
-                claude.read_text(encoding="utf-8")
-                == "user-managed Claude instructions\n"
-            )
-        else:
-            assert not claude.exists()
+        assert not claude.is_symlink()
+        assert (
+            claude.read_text(encoding="utf-8")
+            == "user-managed Claude instructions\n"
+        )
 
     with tempfile.TemporaryDirectory() as bad_name:
         bad_home = Path(bad_name)
