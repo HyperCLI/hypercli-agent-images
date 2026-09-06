@@ -27,8 +27,8 @@ assert_common_contract(
     runtime="goose",
     agent_command="/usr/local/bin/goose",
     agent_args="acp",
-    mcp_command="/usr/local/bin/buzz-dev-mcp",
-    entrypoint="/usr/local/bin/hypercli-buzz-goose-entrypoint",
+    mcp_command="",
+    entrypoint="/usr/local/bin/hypercli-coding-goose-entrypoint",
 )
 assert_auth_methods(
     image,
@@ -48,15 +48,15 @@ import json
 import os
 from pathlib import Path
 
-provider = json.loads(Path('/opt/hypercli-buzz/goose-provider.json').read_text())
+provider = json.loads(Path('/opt/hypercli-coding/goose-provider.json').read_text())
 models = {model['name']: model for model in provider['models']}
-config_text = Path('/opt/hypercli-buzz/goose-config.yaml').read_text()
+config_text = Path('/opt/hypercli-coding/goose-config.yaml').read_text()
 print(json.dumps({
     'model_names': sorted(models),
     'context_limits': {name: model.get('context_limit') for name, model in models.items()},
     'reasoning': {name: model.get('reasoning') for name, model in models.items()},
     'config_text': config_text,
-    'mcp_command': os.environ.get('BUZZ_ACP_MCP_COMMAND'),
+    'agent_command': os.environ.get('HYPER_ACP_AGENT_COMMAND'),
     'model_prefix': os.environ.get('BUZZ_MODEL_PREFIX'),
     'goose_skill_link': os.readlink('/home/node/.buzz/.goose/skills/hypercli'),
 }))
@@ -87,7 +87,7 @@ for expected_config in [
     "    type: platform",
 ]:
     assert expected_config in config_text, config_text
-assert provider_contract["mcp_command"] == "/usr/local/bin/buzz-dev-mcp"
+assert provider_contract["agent_command"] == "/usr/local/bin/goose"
 assert provider_contract["model_prefix"] is None
 assert provider_contract["goose_skill_link"] == "../../.agents/skills/hypercli"
 assert_user_config_preserved(

@@ -27,7 +27,7 @@ assert_common_contract(
     agent_command="/usr/local/bin/kimi",
     agent_args="acp",
     mcp_command="",
-    entrypoint="/usr/local/bin/hypercli-buzz-kimi-entrypoint",
+    entrypoint="/usr/local/bin/hypercli-coding-kimi-entrypoint",
 )
 assert_auth_methods(
     image,

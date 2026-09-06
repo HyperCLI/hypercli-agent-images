@@ -37,27 +37,26 @@ ARG GOOSE_VERSION=1.45.0
 
 USER root
 COPY --from=goose-fetch /out/goose /usr/local/bin/goose
-COPY --chown=node:node goose/config.yaml /opt/hypercli-buzz/goose-config.yaml
-COPY --chown=node:node goose/provider.json /opt/hypercli-buzz/goose-provider.json
-COPY --chmod=0755 goose/entrypoint.sh /usr/local/bin/hypercli-buzz-goose-entrypoint
+COPY --chown=node:node goose/config.yaml /opt/hypercli-coding/goose-config.yaml
+COPY --chown=node:node goose/provider.json /opt/hypercli-coding/goose-provider.json
+COPY --chmod=0755 goose/entrypoint.sh /usr/local/bin/hypercli-coding-goose-entrypoint
 RUN export HOME=/root && \
     goose --version && \
     goose acp --help >/dev/null && \
-    printf '%s\n' goose > /opt/hypercli-buzz/runtime
+    printf '%s\n' goose > /opt/hypercli-coding/runtime && \
+    ln -s hypercli-coding-goose-entrypoint /usr/local/bin/hypercli-buzz-goose-entrypoint
 
-LABEL org.opencontainers.image.title="HyperCLI Buzz Goose Agent" \
-      org.hypercli.buzz_runtime="true" \
-      org.hypercli.buzz_workspace="/home/node/.buzz" \
+LABEL org.opencontainers.image.title="HyperCLI Goose Agent" \
+      org.hypercli.coding_workspace="/home/node/.buzz" \
       org.hypercli.coding_runtime="goose" \
       org.hypercli.coding_runtime_version="${GOOSE_VERSION}"
 
 ENV GOOSE_PATH_ROOT=/home/node/.goose \
     GOOSE_DISABLE_KEYRING=1 \
     GOOSE_TELEMETRY_ENABLED=false \
-    BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/goose \
-    BUZZ_ACP_AGENT_ARGS=acp \
-    BUZZ_ACP_MCP_COMMAND=/usr/local/bin/buzz-dev-mcp
+    HYPER_ACP_AGENT_COMMAND=/usr/local/bin/goose \
+    HYPER_ACP_AGENT_ARGS=acp
 
 USER node
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-goose-entrypoint"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-coding-goose-entrypoint"]
 CMD ["sleep", "infinity"]

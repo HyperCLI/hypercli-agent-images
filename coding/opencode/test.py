@@ -25,7 +25,7 @@ assert_common_contract(
     agent_command="/usr/local/bin/opencode",
     agent_args="acp",
     mcp_command="",
-    entrypoint="/usr/local/bin/hypercli-buzz-opencode-entrypoint",
+    entrypoint="/usr/local/bin/hypercli-coding-opencode-entrypoint",
 )
 assert_auth_methods(
     image,

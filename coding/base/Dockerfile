@@ -44,11 +44,6 @@ RUN set -eux; \
     test "$(git -C /build/buzz-git rev-parse FETCH_HEAD)" = "${BUZZ_REF}"; \
     git -C /build/buzz-git checkout --detach FETCH_HEAD
 
-COPY nest/AGENTS.md /expected/AGENTS.md
-RUN cmp \
-    /expected/AGENTS.md \
-    /build/buzz-git/desktop/src-tauri/src/managed_agents/nest_agents.md
-
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/build/buzz-git/target,sharing=locked \
@@ -86,6 +81,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       -p hyper-acp-slack-relay; \
     install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/hyper-acp; \
     install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
+    install -D -m 0644 \
+      /build/hypercli/hyper-acp/plugins/buzz/src/base_prompt.md \
+      /out/nest/AGENTS.md; \
     strip /out/hyper-acp /out/plugins/buzz-acp
 
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}
@@ -105,7 +103,7 @@ LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-bac
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 
 USER root
-RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
+RUN install -d -m 0755 /opt/hypercli-coding/nest && \
     install -d -m 0700 -o node -g node \
       /home/node/.coding-agent \
       /home/node/shared && \
@@ -114,20 +112,22 @@ RUN install -d -m 0755 /opt/hypercli-buzz/nest && \
     chmod 0440 /etc/sudoers.d/90-node-nopasswd
 
 COPY --from=source-builder /out/sprig /usr/local/bin/sprig
-COPY --from=source-builder /out/nest /opt/hypercli-buzz/nest
+COPY --from=source-builder /out/nest /opt/hypercli-coding/nest
 COPY --from=source-builder /out/hyper-acp /usr/local/bin/hyper-acp
 COPY --from=source-builder /out/plugins/buzz-acp /usr/local/lib/hyper-acp/plugins/buzz-acp
 COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/hyper-acp/tools/compute_auth_tag
-COPY --from=source-builder /out/buzz-ref /opt/hypercli-buzz/.buzz-commit
-COPY nest/AGENTS.md /opt/hypercli-buzz/nest/AGENTS.md
-COPY SKILLS.md /opt/hypercli-buzz/SKILLS.md
+COPY --from=source-builder /out/buzz-ref /opt/hypercli-coding/.buzz-commit
+COPY SKILLS.md /opt/hypercli-coding/SKILLS.md
 RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
       -name SKILL.md -type f -print -quit | grep -q .
-COPY --chmod=0755 init.sh /usr/local/bin/hypercli-buzz-init
-COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-buzz-entrypoint
+COPY --chmod=0755 init.sh /usr/local/bin/hypercli-coding-init
+COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-coding-entrypoint
 
 RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
+    ln -s /opt/hypercli-coding /opt/hypercli-buzz && \
+    ln -s hypercli-coding-init /usr/local/bin/hypercli-buzz-init && \
+    ln -s hypercli-coding-entrypoint /usr/local/bin/hypercli-buzz-entrypoint && \
     hyper-acp --help >/dev/null && \
     hyper-acp plugin buzz --help >/dev/null && \
     test -x /usr/local/lib/hyper-acp/tools/compute_auth_tag && \
@@ -139,11 +139,10 @@ ENV HOME=/home/node \
     HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave \
     HYPER_WORKSPACES_DIR=/home/node/shared \
     CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
-    CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz \
-    BUZZ_ACP_MCP_COMMAND=
+    CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz
 
 WORKDIR /home/node
 USER node
 HEALTHCHECK NONE
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-buzz-entrypoint"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/hypercli-coding-entrypoint"]
 CMD ["sleep", "infinity"]

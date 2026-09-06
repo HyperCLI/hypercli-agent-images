@@ -47,7 +47,7 @@ def image_config(image: str) -> dict[str, Any]:
 
 def assert_entrypoint_exit_passthrough(image: str) -> None:
     """Prove the real image entrypoint terminates with its child process."""
-    container_name = f"hypercli-buzz-entrypoint-exit-{uuid.uuid4().hex}"
+    container_name = f"hypercli-coding-entrypoint-exit-{uuid.uuid4().hex}"
     docker(
         "create",
         "--name",
@@ -284,7 +284,7 @@ payload = {
         ["sudo", "-n", "whoami"],
         text=True,
     ).strip(),
-    "runtime": Path("/opt/hypercli-buzz/runtime").read_text().strip(),
+    "runtime": Path("/opt/hypercli-coding/runtime").read_text().strip(),
     "agents_heading": (
         nest / "AGENTS.md"
     ).read_text(encoding="utf-8").splitlines()[0],
@@ -331,7 +331,7 @@ payload = {
     "workspaces_is_dir": Path("/home/node/shared").is_dir(),
     "nested_workspaces_exists": (nest / "workspaces").exists(),
     "base_prompt_in_image": Path(
-        "/opt/hypercli-buzz/nest/base_prompt.md"
+        "/opt/hypercli-coding/nest/base_prompt.md"
     ).exists(),
     "base_prompt_in_nest": (nest / "base_prompt.md").exists(),
     "skill_links": {
@@ -372,16 +372,26 @@ def assert_common_contract(
     ], config.get("Entrypoint")
     assert config.get("WorkingDir") == "/home/node"
     assert config.get("Cmd") == ["sleep", "infinity"]
-    assert labels.get("org.hypercli.buzz_runtime") == "true"
-    assert labels.get("org.hypercli.buzz_workspace") == str(NEST)
+    if runtime == "buzz-agent":
+        assert labels.get("org.hypercli.buzz_runtime") == "true"
+    else:
+        assert "org.hypercli.buzz_runtime" not in labels
+    assert labels.get("org.hypercli.coding_workspace") == str(NEST)
     assert labels.get("org.hypercli.coding_runtime") == runtime
     assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(NEST)
     assert env.get("CODING_AGENT_STATE_DIR") == str(STATE_DIR)
     assert env.get("HYPER_WORKSPACES_DIR") == str(WORKSPACES)
     assert env.get("HOME") == "/home/node"
-    assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
-    assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
-    assert env.get("BUZZ_ACP_MCP_COMMAND", "") == mcp_command
+    if runtime == "buzz-agent":
+        assert env.get("BUZZ_ACP_AGENT_COMMAND") == agent_command
+        assert env.get("BUZZ_ACP_AGENT_ARGS", "") == agent_args
+        assert env.get("BUZZ_ACP_MCP_COMMAND", "") == mcp_command
+    else:
+        assert env.get("HYPER_ACP_AGENT_COMMAND") == agent_command
+        assert env.get("HYPER_ACP_AGENT_ARGS", "") == agent_args
+        assert "BUZZ_ACP_AGENT_COMMAND" not in env
+        assert "BUZZ_ACP_AGENT_ARGS" not in env
+        assert "BUZZ_ACP_MCP_COMMAND" not in env
 
     assert_entrypoint_exit_passthrough(image)
     payload = run_python(image, COMMON_PROBE)
@@ -389,11 +399,11 @@ def assert_common_contract(
     assert payload["cwd"] == str(NEST)
     assert payload["sudo_user"] == "root"
     assert payload["runtime"] == runtime
-    assert payload["agents_heading"] == "# Buzz Nest"
+    assert payload["agents_heading"].startswith("You are an agent operating inside Buzz")
     assert payload["skill_has_name"] is True
     assert all(payload["hypercli_skill_names"].values())
     assert all(payload["skills_index_mentions"].values())
-    assert payload["skills_index_target"] == "/opt/hypercli-buzz/SKILLS.md"
+    assert payload["skills_index_target"] == "/opt/hypercli-coding/SKILLS.md"
     assert payload["canonical_skill_links"] == {
         skill: f"/opt/hypercli/skills/{skill}"
         for skill in payload["hypercli_skill_names"]

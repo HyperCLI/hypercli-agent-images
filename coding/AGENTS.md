@@ -1,22 +1,22 @@
-# Buzz Image Maintainer Guide
+# Coding Image Maintainer Guide
 
-This directory builds the hosted Buzz coding-agent images. Read `README.md`
-before changing the provider contract, image entrypoints, runtime commands, or
+This directory builds hosted coding-agent images. Read `README.md` before
+changing the provider contract, image entrypoints, runtime commands, or
 workspace initialization.
 
 ## Sources Of Truth
 
 - `README.md` is the human architecture and lifecycle reference for these
   images.
-- `nest/AGENTS.md` is shipped runtime content. It must remain byte-for-byte
-  equal to Buzz Desktop's pinned `nest_agents.md`.
+- The installed runtime `AGENTS.md` is shipped runtime content and the
+  filesystem source of truth for the base prompt.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
-- `hypercli/hyper-acp` owns hosted startup. Hosted launches run
-  `hyper-acp plugin buzz`, which links the copied
-  `hypercli/hyper-acp/plugins/buzz` implementation for ACP framing, relay
-  behavior, prompt transport, mention matching, and the shared reply guard.
-  `hypercli/hyper-acp/plugins/buzz-acp` is only a compatibility executable.
-  The Buzz plugin manifest pins the unmodified upstream Buzz crates it consumes.
+- `hypercli/hyper-acp` owns hosted ACP startup. Plain ACP launches run
+  `hyper-acp` with `HYPER_ACP_AGENT_COMMAND` and `HYPER_ACP_AGENT_ARGS`.
+  Buzz/Nostr launches run `hyper-acp plugin buzz`, which links the copied
+  `hypercli/hyper-acp/plugins/buzz` implementation for relay behavior, prompt
+  transport, mention matching, and the shared reply guard. The Buzz plugin
+  manifest pins the unmodified upstream Buzz crates it consumes.
 - The HyperCLI provider owns translation from Buzz's portable launch request to
   the HyperCLI deployments API.
 - HyperClaw/Lagoon owns remote scheduling and container lifecycle.
@@ -37,8 +37,8 @@ and the executable tests together when the contract changes.
 - Keep runtime commands and prompt transports explicit in the runtime matrix.
 - Keep provider-owned identity, relay, authorization, reply, mention, and
   workspace variables non-overridable by user environment.
-- Keep hosted deployments `restart: false`; normal `hyper-acp plugin buzz` exit must remain
-  terminal for the pod.
+- Keep Buzz provider deployments `restart: false`; normal
+  `hyper-acp plugin buzz` exit must remain terminal for the pod.
 - Do not convert ACP activity or thinking output into a final Buzz message.
 - Do not replace user-managed files or links under `/home/node/.buzz`.
 - Do not put secrets, raw provider requests, auth tags, private keys, or
@@ -51,7 +51,7 @@ provider or lifecycle behavior also require the sanitized provider-wire and
 deployment contract tests in the parent repositories. The checks must cover:
 
 1. Exact command, arguments, MCP command, environment, and prompt transport.
-2. Byte equality between `nest/AGENTS.md` and pinned Buzz `nest_agents.md`.
+2. Runtime prompt installation from the pinned HyperACP base prompt.
 3. Prompt delivery exactly once.
 4. Bounded reply-guard behavior.
 5. Independent text-mention matching and author authorization.

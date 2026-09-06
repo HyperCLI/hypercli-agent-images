@@ -21,7 +21,7 @@ config = image_config(image)
 assert config.get("Entrypoint") == [
     "/usr/bin/tini",
     "--",
-    "/usr/local/bin/hypercli-buzz-entrypoint",
+    "/usr/local/bin/hypercli-coding-entrypoint",
 ]
 assert config.get("WorkingDir") == "/home/node"
 assert config.get("Cmd") == ["sleep", "infinity"]
@@ -32,7 +32,7 @@ env = dict(
 )
 assert env.get("HOME") == "/home/node"
 assert env.get("CODING_AGENT_STATE_DIR") == "/home/node/.coding-agent"
-assert env.get("BUZZ_ACP_MCP_COMMAND", "") == ""
+assert "BUZZ_ACP_MCP_COMMAND" not in env
 assert_entrypoint_exit_passthrough(image)
 
 probe = r"""
@@ -71,7 +71,7 @@ print(json.dumps({
         "host": shutil.which("hypercli" + "-acp"),
     },
     "buzz_commit": Path(
-        "/opt/hypercli-buzz/.buzz-commit"
+        "/opt/hypercli-coding/.buzz-commit"
     ).read_text().strip(),
     "buzz_acp_binary_exists": Path("/usr/local/bin/buzz-acp").exists(),
     "hyper_acp_help": subprocess.check_output(
@@ -137,7 +137,7 @@ entrypoint_text = docker(
     "--entrypoint",
     "cat",
     image,
-    "/usr/local/bin/hypercli-buzz-entrypoint",
+    "/usr/local/bin/hypercli-coding-entrypoint",
 ).stdout
 assert ': "${BUZZ_ACP_RELAY_OBSERVER:=true}"' in entrypoint_text
 assert "\n  BUZZ_ACP_RELAY_OBSERVER=false\n" not in entrypoint_text

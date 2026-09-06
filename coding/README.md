@@ -1,23 +1,29 @@
-# HyperCLI Hosted Buzz Runtimes
+# HyperCLI Coding Runtimes
 
-This directory builds the coding-agent images used when Buzz Desktop selects a
-`hypercli-*` backend. It documents the boundary between the unmodified Desktop
-provider protocol, HyperCLI's provider adapter, the HyperCLI deployments API,
-and the runtime-specific ACP child inside the container.
+This directory builds the coding-agent images used by HyperCLI hosted ACP
+runtimes. The same images can also be launched by the Buzz provider when the
+agent is intentionally a Buzz/Nostr agent.
 
-This is the canonical human architecture document for the hosted Buzz images.
-`AGENTS.md` contains maintainer guardrails. `nest/AGENTS.md` and `SKILLS.md` are
-runtime content copied into an agent container.
+This is the canonical human architecture document for these images. `AGENTS.md`
+contains maintainer guardrails. The runtime `AGENTS.md` and `SKILLS.md` are
+copied into an agent container.
 
 ## System Boundary
 
 ```text
+HyperCLI Desktop / SDK
+  -> HyperCLI deployments API
+  -> HyperClaw/Lagoon
+  -> hypercli-<runtime> image
+  -> hyper-acp
+  -> runtime ACP child
+
 Buzz Desktop
-  -> one-shot HyperCLI backend-provider process
+  -> one-shot HyperCLI Buzz provider process
   -> hypercli-sdk
   -> HyperCLI deployments API
   -> HyperClaw/Lagoon
-  -> hypercli-buzz-<runtime> image
+  -> hypercli-<runtime> image
   -> hyper-acp plugin buzz
   -> runtime ACP child
   -> Buzz relay
@@ -45,8 +51,8 @@ HyperClaw and Lagoon own:
 - image scheduling, storage projection, and pod lifecycle;
 - deployment state and authenticated lifecycle operations.
 
-The image owns only process setup, installed runtime binaries, workspace
-initialization, compatibility links, and the runtime-specific ACP command.
+The image owns only process setup, installed runtime binaries, filesystem prompt
+initialization, compatibility links, and the runtime-specific ACP child command.
 
 ## Local And Hosted Installation
 
@@ -121,14 +127,26 @@ The preferred future extraction is small shared crates such as
 Kubernetes provider. Until those exist, upstream wire fixtures and source are
 conformance references and our orchestration remains provider-specific.
 
-## Deployment Contract
+## Deployment Contracts
 
-All hosted Buzz coding runtimes use:
+Plain hosted ACP launches use:
+
+| Property | Value |
+| --- | --- |
+| Entrypoint command | `/usr/local/bin/hyper-acp` |
+| ACP child | `HYPER_ACP_AGENT_COMMAND`, `HYPER_ACP_AGENT_ARGS` |
+| Restart | runtime-specific caller choice |
+| Home and sync root | `/home/node` |
+| Working directory | `/home/node/.buzz` |
+| Sync owner | UID/GID `1000` |
+
+Buzz provider launches use:
 
 | Property | Value |
 | --- | --- |
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
 | Entrypoint command | `/usr/local/bin/hyper-acp plugin buzz` |
+| ACP child | `BUZZ_ACP_AGENT_COMMAND`, `BUZZ_ACP_AGENT_ARGS`, `BUZZ_ACP_MCP_COMMAND` |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
@@ -157,16 +175,15 @@ error without upstream response bodies or secrets.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Buzz Agent | `ghcr.io/hypercli/hypercli-buzz-agent:latest` | `buzz-agent` | `/usr/local/bin/buzz-agent` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | environment-only for hosted OpenAI-compatible chat auth |
 | OpenCode | `ghcr.io/hypercli/hypercli-opencode:latest` | `opencode` | `/usr/local/bin/opencode` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.config/opencode`, `.local/share/opencode`, `.local/state/opencode`, `.cache/opencode` |
-| Codex | `ghcr.io/hypercli/hypercli-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | `/usr/local/bin/buzz-dev-mcp` | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.codex` |
+| Codex | `ghcr.io/hypercli/hypercli-codex:latest` | `codex-acp` | `/usr/local/bin/codex-acp` | none | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | filesystem `AGENTS.md`; Buzz provider also frames prompt through plugin | `.codex` |
 | Claude Code | `ghcr.io/hypercli/hypercli-claude:latest` | `claude-agent-acp` | `/usr/local/bin/claude-agent-acp` | none | none | `_meta.systemPrompt.append` | `.claude`, `.claude.json` |
-| Goose | `ghcr.io/hypercli/hypercli-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | `/usr/local/bin/buzz-dev-mcp` | `_goose/unstable/session/system-prompt/set`, then ACP fallback | `.goose` |
+| Goose | `ghcr.io/hypercli/hypercli-goose:latest` | `goose` | `/usr/local/bin/goose` | `acp` | Buzz provider only: `/usr/local/bin/buzz-dev-mcp` | filesystem `AGENTS.md`; Buzz provider also frames prompt through plugin | `.goose` |
 | Kimi Code | `ghcr.io/hypercli/hypercli-kimi-code:latest` | `kimi` | `/usr/local/bin/kimi` | `acp` | none | ACP v2 `systemPrompt`; ACP v1 prompt framing | `.kimi-code` |
 
 OpenClaw is a separate gateway runtime. `buzz-agent` is upstream Buzz's native
 ACP runtime. The upstream Sprig multicall binary still supplies `buzz`,
-`buzz-agent`, and `buzz-dev-mcp`; the stable hosted ACP launcher is
-`/usr/local/bin/hyper-acp plugin buzz`, built from HyperCLI's `hyper-acp`
-package and not a Sprig symlink.
+`buzz-agent`, and `buzz-dev-mcp`. Plain hosted ACP uses `/usr/local/bin/hyper-acp`;
+Buzz/Nostr launches use `/usr/local/bin/hyper-acp plugin buzz`.
 
 Goose ships a HyperCLI custom provider and advertises both OpenAI-compatible
 aliases (`default`, `coding`, `kimi-k3`, `kimi-k2.6`, `kimi-k2.5`) and the
@@ -187,10 +204,10 @@ The image must provide:
 - `/usr/local/lib/hyper-acp/plugins/buzz-acp`, the compatibility plugin binary;
 - the runtime CLI and any required ACP adapter from the matrix above;
 - `/opt/hypercli` at a pinned HyperCLI commit;
-- `/opt/hypercli-buzz/nest/AGENTS.md`, copied from `nest/AGENTS.md`;
-- `/opt/hypercli-buzz/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
+- `/opt/hypercli-coding/nest/AGENTS.md`, copied from HyperACP's base prompt;
+- `/opt/hypercli-coding/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
   pinned Buzz `nest_skill.md`;
-- `/opt/hypercli-buzz/SKILLS.md`, the installed-skill index;
+- `/opt/hypercli-coding/SKILLS.md`, the installed-skill index;
 - `/home/node/shared`, `/home/node/.buzz`, and `/home/node/.coding-agent`,
   owned by UID/GID 1000.
 
@@ -199,15 +216,14 @@ files only when the destination does not exist. It must not overwrite a
 user-managed file, directory, or symlink.
 
 Every runtime entrypoint performs its compatibility setup and then `exec`s the
-shared entrypoint, which in turn `exec`s the provider-supplied command through
-`tini`. Hosted launches supply `/usr/local/bin/hyper-acp plugin buzz`; that
-command replaces the image's fallback `sleep infinity`, and its exit status
-becomes the container exit status.
+shared entrypoint, which in turn `exec`s the caller-supplied command through
+`tini`. A command such as `/usr/local/bin/hyper-acp` or
+`/usr/local/bin/hyper-acp plugin buzz` replaces the image's fallback
+`sleep infinity`, and its exit status becomes the container exit status.
 
-`nest/AGENTS.md` must remain byte-for-byte equal to the pinned Buzz Desktop
-`desktop/src-tauri/src/managed_agents/nest_agents.md`. It is installed as
-`/home/node/.buzz/AGENTS.md`. Maintainer guidance belongs in this directory's
-top-level `AGENTS.md`, not in the runtime prompt.
+Runtime `AGENTS.md` is the filesystem source of truth for the base prompt and is
+installed as `/home/node/.buzz/AGENTS.md`. Maintainer guidance belongs in this
+directory's top-level `AGENTS.md`, not in the runtime prompt.
 
 HyperCLI skills are linked into `.buzz/.agents/skills`. Compatibility links
 also expose them through:
@@ -234,9 +250,9 @@ persisting the credential. Claude Code, Codex, and Kimi Code are native-first:
 missing `HYPERCLI_RUNTIME_INFERENCE` means the child receives no implicit
 HyperCLI model, URL, or credential overlay.
 
-Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks
-`hyper-acp plugin buzz` to perform runtime-specific compatibility translation
-immediately before each native-runtime child spawn and respawn:
+Only the exact explicit value `HYPERCLI_RUNTIME_INFERENCE=hypercli` asks the
+launcher to perform runtime-specific compatibility translation immediately
+before each native-runtime child spawn and respawn:
 
 - Claude Code: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_MODEL`;
 - Codex: a non-secret `CODEX_CONFIG` custom-provider overlay whose `env_key`
@@ -293,10 +309,10 @@ The provider also projects validated non-reserved `launch.env` values. It must
 not allow user environment to override identity, relay, authorization,
 runtime command, text mentions, reply guard, or workspace bootstrap fields.
 
-`BUZZ_ACP_SYSTEM_PROMPT` contains only Desktop's composed prompt. `hyper-acp`
-selects the runtime-specific transport and sends the prompt exactly once in
-hosted Buzz mode. An image must not append its own response policy or duplicate
-the prompt in a runtime-specific instruction file.
+`BUZZ_ACP_SYSTEM_PROMPT` contains only Desktop's composed prompt. The Buzz
+plugin selects the runtime-specific transport and sends that prompt exactly once
+in hosted Buzz mode. An image must not append its own response policy or
+duplicate the prompt in a runtime-specific instruction file.
 
 ### hyper-acp WebSocket
 
@@ -314,7 +330,7 @@ surface:
   pinned hosted-side to `/home/node/.coding-agent/hyper-acp.db` inside the
   node-owned state directory the image provides.
 
-`hypercli/buzz-acp` owns the connect, replay, and auth wire behavior; this
+`hypercli/hyper-acp` owns the connect, replay, and auth wire behavior; this
 document does not restate it. Cluster Services reach the pod directly, so the
 image needs no `EXPOSE`, port, or firewall change.
 
@@ -412,7 +428,8 @@ Provider, SDK, ACP, or image changes must verify:
    overridden.
 5. Every image contains the exact child command, args, MCP command, runtime
    state paths, and skill links in the matrix.
-6. `nest/AGENTS.md` matches pinned Buzz and survives repeated initialization.
+6. Runtime `AGENTS.md` is installed from the pinned HyperACP base prompt and
+   survives repeated initialization.
 7. The real `tini` and setup entrypoint chain terminates promptly and preserves
    the launched command's nonzero exit status.
 8. A real Nostr keypair and owner-signed, agent-mentioned `!shutdown` drives
@@ -447,7 +464,7 @@ Pinned upstream Buzz dependencies:
 HyperCLI:
 
 - hosted ACP startup: `hyper-acp`;
-- Buzz-compatible relay library and upstream pin: `buzz-acp`;
+- Buzz-compatible relay library and upstream pin: `hyper-acp/plugins/buzz`;
 - provider translation: `buzz-backend-provider/src/lib.rs`;
 - typed launch rendering: `rs-sdk/src/types.rs`;
 - golden contract: `tests/fixtures/buzz-launch-contract.json`;

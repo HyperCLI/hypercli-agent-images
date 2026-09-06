@@ -28,7 +28,7 @@ assert_common_contract(
     agent_command="/usr/local/bin/buzz-agent",
     agent_args="",
     mcp_command="/usr/local/bin/buzz-dev-mcp",
-    entrypoint="/usr/local/bin/hypercli-buzz-agent-entrypoint",
+    entrypoint="/usr/local/bin/hypercli-coding-buzz-agent-entrypoint",
 )
 assert_auth_methods(
     image,

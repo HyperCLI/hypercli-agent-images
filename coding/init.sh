@@ -4,7 +4,7 @@ set -eu
 umask 077
 
 nest=/home/node/.buzz
-template=/opt/hypercli-buzz/nest
+template=/opt/hypercli-coding/nest
 
 if [ -L "${nest}" ]; then
   echo "refusing symlinked Buzz nest: ${nest}" >&2
@@ -53,11 +53,12 @@ link_if_missing() {
 }
 
 copy_if_missing "${template}/AGENTS.md" "${nest}/AGENTS.md"
+link_if_missing "${nest}/CLAUDE.md" "AGENTS.md"
 copy_if_missing \
   "${template}/.agents/skills/buzz-cli/SKILL.md" \
   "${nest}/.agents/skills/buzz-cli/SKILL.md"
 
-link_if_missing "${HOME}/SKILLS.md" "/opt/hypercli-buzz/SKILLS.md"
+link_if_missing "${HOME}/SKILLS.md" "/opt/hypercli-coding/SKILLS.md"
 
 for skill_file in /opt/hypercli/skills/*/SKILL.md; do
   skill_dir=${skill_file%/SKILL.md}

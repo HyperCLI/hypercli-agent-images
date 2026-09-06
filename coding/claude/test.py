@@ -26,7 +26,7 @@ assert_common_contract(
     agent_command="/usr/local/bin/claude-agent-acp",
     agent_args="",
     mcp_command="",
-    entrypoint="/usr/local/bin/hypercli-buzz-claude-entrypoint",
+    entrypoint="/usr/local/bin/hypercli-coding-claude-entrypoint",
     claude_compatibility=True,
 )
 assert_auth_methods(

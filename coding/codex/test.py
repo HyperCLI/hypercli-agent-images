@@ -25,8 +25,8 @@ assert_common_contract(
     runtime="codex",
     agent_command="/usr/local/bin/codex-acp",
     agent_args="",
-    mcp_command="/usr/local/bin/buzz-dev-mcp",
-    entrypoint="/usr/local/bin/hypercli-buzz-codex-entrypoint",
+    mcp_command="",
+    entrypoint="/usr/local/bin/hypercli-coding-codex-entrypoint",
 )
 assert_auth_methods(
     image,

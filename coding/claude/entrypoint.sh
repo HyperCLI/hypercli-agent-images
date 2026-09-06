@@ -1,9 +1,6 @@
 #!/bin/sh
 set -eu
 
-/usr/local/bin/hypercli-buzz-init
-export HYPERCLI_BUZZ_INIT_DONE=1
-
 claude_dir=/home/node/.claude
 settings="${claude_dir}/settings.json"
 settings_marker="${claude_dir}/.hypercli-settings.json"
@@ -96,10 +93,4 @@ case "${inference_mode}" in
     ;;
 esac
 
-instructions=/home/node/.buzz/CLAUDE.md
-if [ ! -e "${instructions}" ] && [ ! -L "${instructions}" ]; then
-  ln -s AGENTS.md "${instructions}"
-fi
-
-cd /home/node/.buzz
-exec /usr/local/bin/hypercli-buzz-entrypoint "$@"
+exec /usr/local/bin/hypercli-coding-entrypoint "$@"

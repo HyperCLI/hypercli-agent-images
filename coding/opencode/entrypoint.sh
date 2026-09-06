@@ -13,7 +13,7 @@ fi
 export HYPER_API_BASE HYPER_OPENCODE_MCP_URL
 mkdir -p "${config_dir}"
 if [ ! -e "${config}" ] && [ ! -L "${config}" ]; then
-  cp /opt/hypercli-buzz/opencode.json "${config}"
+  cp /opt/hypercli-coding/opencode.json "${config}"
 fi
 
-exec /usr/local/bin/hypercli-buzz-entrypoint "$@"
+exec /usr/local/bin/hypercli-coding-entrypoint "$@"
