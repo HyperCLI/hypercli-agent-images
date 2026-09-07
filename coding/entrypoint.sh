@@ -22,8 +22,10 @@ if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
   fi
 
   unset HYPER_ACP_WS_LISTEN HYPER_ACP_LOG
-  : "${BUZZ_ACP_RELAY_OBSERVER:=true}"
-  export BUZZ_ACP_RELAY_OBSERVER
+  if [ "${2:-}" = "plugin" ] && [ "${3:-}" = "buzz" ]; then
+    : "${BUZZ_ACP_RELAY_OBSERVER:=true}"
+    export BUZZ_ACP_RELAY_OBSERVER
+  fi
 fi
 
 cd /home/node/.buzz

@@ -139,6 +139,7 @@ entrypoint_text = docker(
     image,
     "/usr/local/bin/hypercli-coding-entrypoint",
 ).stdout
+assert 'if [ "${2:-}" = "plugin" ] && [ "${3:-}" = "buzz" ]; then' in entrypoint_text
 assert ': "${BUZZ_ACP_RELAY_OBSERVER:=true}"' in entrypoint_text
 assert "\n  BUZZ_ACP_RELAY_OBSERVER=false\n" not in entrypoint_text
 
