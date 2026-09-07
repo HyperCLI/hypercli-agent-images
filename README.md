@@ -7,7 +7,7 @@ provider has its own Dockerfile and test:
 
 ```text
 coding/
-├── base/
+├── acp-base/
 ├── opencode/
 ├── codex/
 ├── claude/
@@ -15,19 +15,21 @@ coding/
 └── kimi-code/
 ```
 
-Build the common Node 24 carrier, then one provider image:
+Build the canonical agent base, the coding ACP base, then one provider image:
 
 ```bash
-BUZZ_SOURCE=/path/to/hyperclaw-backend/buzz
 docker build \
-  --build-context "buzz-source=${BUZZ_SOURCE}" \
-  --build-arg "BUZZ_COMMIT=$(git -C "${BUZZ_SOURCE}" rev-parse HEAD)" \
-  --build-arg HYPERCLI_REF=<full-hypercli-commit> \
-  -t hyper-acp-base \
-  -f coding/base/Dockerfile coding
+  --build-arg HYPERCLI_REF=main \
+  -t hypercli-agent-base \
+  -f base/Dockerfile base
 
 docker build \
-  --build-arg HYPER_ACP_BASE_IMAGE=hyper-acp-base \
+  --build-arg HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base \
+  -t hypercli-acp-base \
+  -f coding/acp-base/Dockerfile coding
+
+docker build \
+  --build-arg HYPER_ACP_BASE_IMAGE=hypercli-acp-base \
   -t hypercli-opencode \
   -f coding/opencode/Dockerfile coding
 ```
@@ -35,7 +37,8 @@ docker build \
 Run the matching Python contracts:
 
 ```bash
-python3 coding/base/test.py hyper-acp-base
+python3 base/test.py hypercli-agent-base
+python3 coding/acp-base/test.py hypercli-acp-base
 python3 coding/opencode/test.py hypercli-opencode
 ```
 
@@ -50,9 +53,15 @@ The six public runtime images are:
 | `goose` | `hypercli-goose` | `goose acp` | Seeded HyperCLI provider with OpenAI and Anthropic aliases plus Goose MCP/skills |
 | `kimi-code` | `hypercli-kimi-code` | `kimi acp` | Upstream Moonshot login |
 
-The common carrier installs Python, `hyper` with all CLI extras, build tools,
-`jq`, `rg` (ripgrep), passwordless sudo for `node`, and Buzz's pinned Sprig
-multicall binary. It does not inherit from or contain OpenClaw.
+The canonical `hypercli-agent-base` installs Python, `hyper` with all CLI
+extras in its own `/opt/hypercli-cli/venv`, build tools, `jq`, `rg`
+(ripgrep), passwordless sudo for `node`, and HyperCLI skills. It does not
+inherit from or contain OpenClaw.
+`HYPERCLI_REF` defaults to `main`; `HYPERCLI_SHA` is an opt-in exact override.
+
+`hypercli-acp-base` adds HyperACP, the Buzz plugin, the pinned Buzz Sprig
+multicall binary, and the shared coding entrypoint. Provider images add only
+their selected runtime CLI and provider-specific configuration.
 
 The persistent sync root remains `/home/node`, and HyperCLI Workspace
 projections remain under `/home/node/shared`. The main process reconciles
@@ -70,9 +79,10 @@ The launch control plane injects the agent identity, relay URL, and owner-signed
 authorization tag. It overrides the default `sleep infinity` command with
 `hyper-acp`; shell launches retain the same image and persistent home.
 
-CI publishes the common carrier once, resolves it to an immutable digest, then
-builds and tests each provider independently. The OpenCode job also runs the
-synthetic offline ACP regression before promotion.
+CI publishes `hypercli-agent-base`, resolves it to an immutable digest, builds
+`hypercli-acp-base` from that digest, then builds and tests each provider from
+the ACP base. The OpenCode job also runs the synthetic offline ACP regression
+before promotion.
 
 ## OpenClaw
 

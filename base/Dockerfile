@@ -94,10 +94,10 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
     { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    python3 -m venv /opt/hypercli/venv && \
-    /opt/hypercli/venv/bin/pip install --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
-    /opt/hypercli/venv/bin/hyper --help >/dev/null && \
-    ln -sf /opt/hypercli/venv/bin/hyper /usr/local/bin/hyper
+    python3 -m venv /opt/hypercli-cli/venv && \
+    /opt/hypercli-cli/venv/bin/pip install --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
+    /opt/hypercli-cli/venv/bin/hyper --help >/dev/null && \
+    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper
 
 COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
@@ -116,7 +116,7 @@ ENV HOME=/home/node \
     DISPLAY=:99 \
     CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
-    PATH=/opt/hypercli/venv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR /home/node
 USER node

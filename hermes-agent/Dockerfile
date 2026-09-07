@@ -65,10 +65,10 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
     uv pip install --python /opt/hermes/.venv/bin/python \
       "mem0ai>=2.0.10,<3" qdrant-client && \
-    uv venv --python python3 /opt/hypercli/venv && \
-    UV_NO_CONFIG=1 uv pip install --python /opt/hypercli/venv/bin/python \
+    uv venv --python python3 /opt/hypercli-cli/venv && \
+    UV_NO_CONFIG=1 uv pip install --python /opt/hypercli-cli/venv/bin/python \
       /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
-    ln -sf /opt/hypercli/venv/bin/hyper /usr/local/bin/hyper && \
+    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper && \
     hyper --help >/dev/null
 
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml

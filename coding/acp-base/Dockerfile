@@ -1,16 +1,14 @@
 # syntax=docker/dockerfile:1.7
 
-ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
 ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
-ARG HYPERCLI_REF=main
 ARG HYPERCLI_CACHE_BUST=local
+
+FROM ${HYPERCLI_AGENT_BASE_IMAGE} AS hypercli-source
 
 FROM ${RUST_IMAGE} AS source-builder
 
 ARG BUZZ_REPO=https://github.com/block/buzz.git
-ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
-ARG HYPERCLI_REF
 ARG HYPERCLI_CACHE_BUST=local
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,18 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
+COPY --from=hypercli-source /opt/hypercli /build/hypercli
 RUN set -eux; \
     printf '%s\n' "${HYPERCLI_CACHE_BUST}" >/dev/null; \
-    if printf '%s' "${HYPERCLI_REF}" | grep -Eq '^[0-9a-f]{40}$'; then \
-      git init /build/hypercli; \
-      git -C /build/hypercli remote add origin "${HYPERCLI_REPO}"; \
-      git -C /build/hypercli fetch --depth 1 origin "${HYPERCLI_REF}"; \
-      test "$(git -C /build/hypercli rev-parse FETCH_HEAD)" = "${HYPERCLI_REF}"; \
-      git -C /build/hypercli checkout --detach FETCH_HEAD; \
-    else \
-      git clone --no-tags --depth 1 --branch "${HYPERCLI_REF}" \
-        "${HYPERCLI_REPO}" /build/hypercli; \
-    fi; \
     BUZZ_REF="$(sed -n 's/^- \{0,1\}Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
@@ -77,37 +66,28 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --release \
       --locked \
       -p hyper-acp \
-      -p buzz-acp \
-      -p hyper-acp-slack-relay; \
+      -p buzz-acp; \
     install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/hyper-acp; \
     install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
     strip /out/hyper-acp /out/plugins/buzz-acp
 
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
-ARG NODE_IMAGE
 ARG HYPERCLI_AGENT_BASE_IMAGE
-ARG HYPERCLI_REF
 ARG HYPERCLI_CACHE_BUST
 
 LABEL org.opencontainers.image.source="https://github.com/HyperCLI/hyperclaw-backend" \
-      org.opencontainers.image.title="HyperCLI ACP Agent Base" \
+      org.opencontainers.image.title="HyperCLI ACP Base" \
       org.opencontainers.image.base.name="${HYPERCLI_AGENT_BASE_IMAGE}" \
-      org.hypercli.hypercli_ref="${HYPERCLI_REF}" \
       org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}" \
-      org.hypercli.coding_runtime="base"
-
-ENV HYPERCLI_REF=${HYPERCLI_REF}
+      org.hypercli.coding_runtime="acp-base"
 
 USER root
 RUN rm -rf /home/node/.buzz && \
     install -d -m 0755 /opt/hypercli-coding/nest && \
     install -d -m 0700 -o node -g node \
       /home/node/.coding-agent \
-      /home/node/shared && \
-    printf '%s\n' 'node ALL=(ALL) NOPASSWD:ALL' \
-      > /etc/sudoers.d/90-node-nopasswd && \
-    chmod 0440 /etc/sudoers.d/90-node-nopasswd
+      /home/node/shared
 
 COPY --from=source-builder /out/sprig /usr/local/bin/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-coding/nest
@@ -116,12 +96,12 @@ COPY --from=source-builder /out/plugins/buzz-acp /usr/local/lib/hyper-acp/plugin
 COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/hyper-acp/tools/compute_auth_tag
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-coding/.buzz-commit
 COPY SKILLS.md /opt/hypercli-coding/SKILLS.md
-RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
-      -name SKILL.md -type f -print -quit | grep -q .
 COPY --chmod=0755 init.sh /usr/local/bin/hypercli-coding-init
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-coding-entrypoint
 
-RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
+RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
+      -name SKILL.md -type f -print -quit | grep -q . && \
+    ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     ln -s sprig /usr/local/bin/buzz && \
     ln -s /opt/hypercli-coding /opt/hypercli-buzz && \
     ln -s hypercli-coding-init /usr/local/bin/hypercli-buzz-init && \
@@ -131,12 +111,7 @@ RUN ln -s sprig /usr/local/bin/buzz-dev-mcp && \
     test -x /usr/local/lib/hyper-acp/tools/compute_auth_tag && \
     buzz --help >/dev/null
 
-ENV HOME=/home/node \
-    HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
-    HYPER_API_BASE=https://api.hypercli.com \
-    HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave \
-    HYPER_WORKSPACES_DIR=/home/node/shared \
-    CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
+ENV CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
     CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz
 
 WORKDIR /home/node

@@ -201,10 +201,10 @@ qualification.
 
 The image must provide:
 
-- `/usr/local/bin/hyper-acp`, built from the exact pinned HyperCLI commit;
+- `/usr/local/bin/hyper-acp`, built from the selected HyperCLI ref or explicit SHA;
 - `/usr/local/lib/hyper-acp/plugins/buzz-acp`, the compatibility plugin binary;
 - the runtime CLI and any required ACP adapter from the matrix above;
-- `/opt/hypercli` at a pinned HyperCLI commit;
+- `/opt/hypercli` at the selected HyperCLI ref or explicit SHA;
 - `/opt/hypercli-coding/nest/.agents/skills/buzz-cli/SKILL.md`, copied from
   pinned Buzz `nest_skill.md`;
 - `/opt/hypercli-coding/SKILLS.md`, the installed-skill index;

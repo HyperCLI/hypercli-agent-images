@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG HYPER_ACP_BASE_IMAGE=hyper-acp-base:local
+ARG HYPER_ACP_BASE_IMAGE=hypercli-acp-base:local
 FROM ${HYPER_ACP_BASE_IMAGE}
 
 ARG KIMI_CODE_VERSION=0.31.0

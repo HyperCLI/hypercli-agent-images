@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG HYPER_ACP_BASE_IMAGE=hyper-acp-base:local
+ARG HYPER_ACP_BASE_IMAGE=hypercli-acp-base:local
 ARG GOOSE_FETCH_IMAGE=debian:bookworm-slim
 
 FROM ${GOOSE_FETCH_IMAGE} AS goose-fetch

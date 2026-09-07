@@ -25,11 +25,7 @@ assert config.get("Entrypoint") == [
 ]
 assert config.get("WorkingDir") == "/home/node"
 assert config.get("Cmd") == ["sleep", "infinity"]
-env = dict(
-    item.split("=", 1)
-    for item in config.get("Env") or []
-    if "=" in item
-)
+env = dict(item.split("=", 1) for item in config.get("Env") or [] if "=" in item)
 assert env.get("HOME") == "/home/node"
 assert env.get("CODING_AGENT_STATE_DIR") == "/home/node/.coding-agent"
 assert "BUZZ_ACP_MCP_COMMAND" not in env
@@ -61,58 +57,27 @@ tools = [
 ]
 print(json.dumps({
     "uid": os.getuid(),
-    "sudo_user": subprocess.check_output(
-        ["sudo", "-n", "whoami"],
-        text=True,
-    ).strip(),
+    "sudo_user": subprocess.check_output(["sudo", "-n", "whoami"], text=True).strip(),
     "tools": {tool: shutil.which(tool) for tool in tools},
     "removed_tools": {
         "buzz": shutil.which("buzz" + "-acp"),
         "host": shutil.which("hypercli" + "-acp"),
     },
-    "buzz_commit": Path(
-        "/opt/hypercli-coding/.buzz-commit"
-    ).read_text().strip(),
+    "buzz_commit": Path("/opt/hypercli-coding/.buzz-commit").read_text().strip(),
     "buzz_acp_binary_exists": Path("/usr/local/bin/buzz-acp").exists(),
-    "hyper_acp_help": subprocess.check_output(
-        ["hyper-acp", "--help"],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ),
-    "hyper_acp_plugin_help": subprocess.check_output(
-        ["hyper-acp", "plugin", "--help"],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ),
-    "buzz_plugin_help": subprocess.check_output(
-        ["hyper-acp", "plugin", "buzz", "--help"],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ),
-    "hidden_buzz_plugin": Path(
-        "/usr/local/lib/hyper-acp/plugins/buzz-acp"
-    ).is_file(),
-    "auth_tag_helper": Path(
-        "/usr/local/lib/hyper-acp/tools/compute_auth_tag"
-    ).is_file(),
+    "hyper_acp_help": subprocess.check_output(["hyper-acp", "--help"], text=True, stderr=subprocess.STDOUT),
+    "hyper_acp_plugin_help": subprocess.check_output(["hyper-acp", "plugin", "--help"], text=True, stderr=subprocess.STDOUT),
+    "buzz_plugin_help": subprocess.check_output(["hyper-acp", "plugin", "buzz", "--help"], text=True, stderr=subprocess.STDOUT),
+    "hidden_buzz_plugin": Path("/usr/local/lib/hyper-acp/plugins/buzz-acp").is_file(),
+    "auth_tag_helper": Path("/usr/local/lib/hyper-acp/tools/compute_auth_tag").is_file(),
     "openclaw_binary": shutil.which("openclaw"),
     "openclaw_app": Path("/app/openclaw.mjs").exists(),
     "state_dir_is_dir": Path("/home/node/.coding-agent").is_dir(),
     "state_dir_uid": Path("/home/node/.coding-agent").stat().st_uid,
-    "state_dir_mode": stat.S_IMODE(
-        Path("/home/node/.coding-agent").stat().st_mode
-    ),
+    "state_dir_mode": stat.S_IMODE(Path("/home/node/.coding-agent").stat().st_mode),
 }))
 """
-result = docker(
-    "run",
-    "--rm",
-    "--entrypoint",
-    "python3",
-    image,
-    "-c",
-    probe,
-)
+result = docker("run", "--rm", "--entrypoint", "python3", image, "-c", probe)
 payload = json.loads(result.stdout)
 assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
