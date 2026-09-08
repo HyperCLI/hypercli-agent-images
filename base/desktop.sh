@@ -65,11 +65,33 @@ hyper_configure_xfce_panel() {
 EOF
 }
 
+hyper_apply_xfce_panel() {
+  case "$(printf '%s' "${HYPER_DESKTOP_MANAGED_PANEL:-1}" | tr '[:upper:]' '[:lower:]')" in
+    0|false|no|off|disabled) return 0 ;;
+  esac
+
+  xfconf-query -c xfce4-panel -p /panels -r -R >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-panel -p /plugins -r -R >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-panel -p /panels -n -a -t int -s 1
+  xfconf-query -c xfce4-panel -p /panels/panel-1/position -n -t string -s "p=10;x=640;y=760"
+  xfconf-query -c xfce4-panel -p /panels/panel-1/position-locked -n -t bool -s true
+  xfconf-query -c xfce4-panel -p /panels/panel-1/length -n -t uint -s 1
+  xfconf-query -c xfce4-panel -p /panels/panel-1/size -n -t uint -s 52
+  xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids -n -a -t int -s 1 -t int -s 2 -t int -s 3
+  xfconf-query -c xfce4-panel -p /plugins/plugin-1 -n -t string -s launcher
+  xfconf-query -c xfce4-panel -p /plugins/plugin-1/items -n -a -t string -s launcher-1/google-chrome.desktop
+  xfconf-query -c xfce4-panel -p /plugins/plugin-2 -n -t string -s launcher
+  xfconf-query -c xfce4-panel -p /plugins/plugin-2/items -n -a -t string -s launcher-2/thunar.desktop
+  xfconf-query -c xfce4-panel -p /plugins/plugin-3 -n -t string -s launcher
+  xfconf-query -c xfce4-panel -p /plugins/plugin-3/items -n -a -t string -s launcher-3/xfce4-terminal.desktop
+}
+
 hyper_start_desktop() {
   if ! command -v Xvfb >/dev/null 2>&1 || \
      ! command -v x11vnc >/dev/null 2>&1 || \
      ! command -v websockify >/dev/null 2>&1 || \
      ! command -v dbus-launch >/dev/null 2>&1 || \
+     ! command -v xfconf-query >/dev/null 2>&1 || \
      ! command -v xfwm4 >/dev/null 2>&1 || \
      ! command -v xfce4-panel >/dev/null 2>&1 || \
      ! command -v xfce4-terminal >/dev/null 2>&1 || \
@@ -91,6 +113,7 @@ hyper_start_desktop() {
   sleep 1
   eval "$(dbus-launch --sh-syntax)"
   export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+  hyper_apply_xfce_panel
   xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
   xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
   xfce4-panel >/tmp/xfce4-panel.log 2>&1 &
