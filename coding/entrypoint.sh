@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+. /usr/local/lib/hypercli/desktop.sh
+
 /usr/local/bin/hypercli-coding-init
 
 if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
@@ -26,6 +28,10 @@ if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
     : "${BUZZ_ACP_RELAY_OBSERVER:=true}"
     export BUZZ_ACP_RELAY_OBSERVER
   fi
+fi
+
+if hyper_desktop_enabled; then
+  hyper_start_desktop
 fi
 
 cd /home/node/.buzz

@@ -328,6 +328,14 @@ payload = {
             "buzz",
             "hyper-acp",
             "buzz-dev-mcp",
+            "Xvfb",
+            "x11vnc",
+            "websockify",
+            "dbus-launch",
+            "xfwm4",
+            "xfce4-panel",
+            "xfce4-terminal",
+            "thunar",
         ]
     },
     "workspaces_is_dir": Path("/home/node/shared").is_dir(),
@@ -398,6 +406,7 @@ def assert_common_contract(
         assert "BUZZ_ACP_BASE_PROMPT_FILE" not in env
 
     assert_entrypoint_exit_passthrough(image)
+    run(image, ["true"], env={"HYPER_DESKTOP_ENABLED": "1"})
     payload = run_python(image, COMMON_PROBE)
     assert payload["uid"] == 1000
     assert payload["cwd"] == str(NEST)
