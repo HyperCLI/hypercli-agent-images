@@ -16,11 +16,10 @@ RUN export HOME=/root && \
     ln -s hypercli-codex-auth /usr/local/bin/hypercli-runtime-auth && \
     codex --version && \
     codex-acp --version && \
-    printf '%s\n' codex > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-codex-entrypoint /usr/local/bin/hypercli-buzz-codex-entrypoint
+    printf '%s\n' codex > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Codex Agent" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="codex" \
       org.hypercli.coding_runtime_version="${CODEX_VERSION}" \
       org.hypercli.acp_adapter_version="${CODEX_ACP_VERSION}"

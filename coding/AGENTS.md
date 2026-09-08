@@ -15,8 +15,8 @@ workspace initialization.
   base prompt unless the caller explicitly supplies a Buzz base-prompt file.
 - `SKILLS.md` is the runtime-facing index for installed HyperCLI skills.
 - `hypercli/hyper-acp` owns hosted ACP startup. Plain ACP launches run
-  `hyper-acp` with `HYPER_ACP_AGENT_COMMAND` and `HYPER_ACP_AGENT_ARGS`.
-  Buzz/Nostr launches run `hyper-acp plugin buzz`, which links the copied
+  `acp` with `HYPER_ACP_AGENT_COMMAND` and `HYPER_ACP_AGENT_ARGS`.
+  Buzz/Nostr launches run `acp plugin buzz`, which links the copied
   `hypercli/hyper-acp/plugins/buzz` implementation for relay behavior, prompt
   transport, mention matching, and the shared reply guard. The Buzz plugin
   manifest pins the unmodified upstream Buzz crates it consumes.
@@ -41,9 +41,9 @@ and the executable tests together when the contract changes.
 - Keep provider-owned identity, relay, authorization, reply, mention, and
   workspace variables non-overridable by user environment.
 - Keep Buzz provider deployments `restart: false`; normal
-  `hyper-acp plugin buzz` exit must remain terminal for the pod.
+  `acp plugin buzz` exit must remain terminal for the pod.
 - Do not convert ACP activity or thinking output into a final Buzz message.
-- Do not replace user-managed files or links under `/home/node/.buzz`.
+- Do not replace user-managed files or links under `/home/node`.
 - Do not put secrets, raw provider requests, auth tags, private keys, or
   terminal transcripts in logs, fixtures, or documentation.
 

@@ -3,37 +3,30 @@ set -eu
 
 umask 077
 
-nest=/home/node/.buzz
+home=/home/node
 template=/opt/hypercli-coding/nest
 
-if [ -L "${nest}" ]; then
-  echo "refusing symlinked Buzz nest: ${nest}" >&2
-  exit 1
-fi
-
 mkdir -p \
-  /home/node/shared \
-  "${nest}/GUIDES" \
-  "${nest}/RESEARCH" \
-  "${nest}/PLANS" \
-  "${nest}/WORK_LOGS" \
-  "${nest}/OUTBOX" \
-  "${nest}/REPOS" \
-  "${nest}/.scratch" \
-  "${nest}/.agents/skills/buzz-cli"
+  "${home}/shared" \
+  "${home}/GUIDES" \
+  "${home}/RESEARCH" \
+  "${home}/PLANS" \
+  "${home}/WORK_LOGS" \
+  "${home}/OUTBOX" \
+  "${home}/REPOS" \
+  "${home}/.scratch" \
+  "${home}/.agents/skills"
 
 chmod 0700 \
-  "${nest}" \
-  "${nest}/GUIDES" \
-  "${nest}/RESEARCH" \
-  "${nest}/PLANS" \
-  "${nest}/WORK_LOGS" \
-  "${nest}/OUTBOX" \
-  "${nest}/REPOS" \
-  "${nest}/.scratch" \
-  "${nest}/.agents" \
-  "${nest}/.agents/skills" \
-  "${nest}/.agents/skills/buzz-cli"
+  "${home}/GUIDES" \
+  "${home}/RESEARCH" \
+  "${home}/PLANS" \
+  "${home}/WORK_LOGS" \
+  "${home}/OUTBOX" \
+  "${home}/REPOS" \
+  "${home}/.scratch" \
+  "${home}/.agents" \
+  "${home}/.agents/skills"
 
 copy_if_missing() {
   source_path=$1
@@ -52,9 +45,21 @@ link_if_missing() {
   fi
 }
 
-copy_if_missing \
-  "${template}/.agents/skills/buzz-cli/SKILL.md" \
-  "${nest}/.agents/skills/buzz-cli/SKILL.md"
+install_buzz_skill=false
+if [ "$(cat /opt/hypercli-coding/runtime 2>/dev/null || true)" = "buzz-agent" ]; then
+  install_buzz_skill=true
+elif { [ "${1:-}" = "/usr/local/bin/acp" ] || [ "${1:-}" = "acp" ]; } \
+  && [ "${2:-}" = "plugin" ] && [ "${3:-}" = "buzz" ]; then
+  install_buzz_skill=true
+fi
+
+if [ "${install_buzz_skill}" = true ]; then
+  mkdir -p "${home}/.agents/skills/buzz-cli"
+  chmod 0700 "${home}/.agents/skills/buzz-cli"
+  copy_if_missing \
+    "${template}/.agents/skills/buzz-cli/SKILL.md" \
+    "${home}/.agents/skills/buzz-cli/SKILL.md"
+fi
 
 link_if_missing "${HOME}/SKILLS.md" "/opt/hypercli-coding/SKILLS.md"
 
@@ -62,17 +67,17 @@ for skill_file in /opt/hypercli/skills/*/SKILL.md; do
   skill_dir=${skill_file%/SKILL.md}
   skill=${skill_dir##*/}
   link_if_missing \
-    "${nest}/.agents/skills/${skill}" \
+    "${home}/.agents/skills/${skill}" \
     "${skill_dir}"
 done
 
 for harness_dir in .claude .codex .goose; do
-  mkdir -p "${nest}/${harness_dir}/skills"
-  chmod 0700 "${nest}/${harness_dir}" "${nest}/${harness_dir}/skills"
-  for skill_dir in "${nest}/.agents/skills"/*; do
+  mkdir -p "${home}/${harness_dir}/skills"
+  chmod 0700 "${home}/${harness_dir}" "${home}/${harness_dir}/skills"
+  for skill_dir in "${home}/.agents/skills"/*; do
     skill=${skill_dir##*/}
     link_if_missing \
-      "${nest}/${harness_dir}/skills/${skill}" \
+      "${home}/${harness_dir}/skills/${skill}" \
       "../../.agents/skills/${skill}"
   done
 done

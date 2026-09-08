@@ -11,11 +11,10 @@ COPY --chmod=0755 opencode/entrypoint.sh /usr/local/bin/hypercli-coding-opencode
 RUN export HOME=/root && \
     npm install --global --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}" && \
     opencode --version && \
-    printf '%s\n' opencode > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-opencode-entrypoint /usr/local/bin/hypercli-buzz-opencode-entrypoint
+    printf '%s\n' opencode > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI OpenCode Agent" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="opencode" \
       org.hypercli.coding_runtime_version="${OPENCODE_VERSION}"
 

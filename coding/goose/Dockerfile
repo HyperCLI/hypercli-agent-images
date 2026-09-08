@@ -43,11 +43,10 @@ COPY --chmod=0755 goose/entrypoint.sh /usr/local/bin/hypercli-coding-goose-entry
 RUN export HOME=/root && \
     goose --version && \
     goose acp --help >/dev/null && \
-    printf '%s\n' goose > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-goose-entrypoint /usr/local/bin/hypercli-buzz-goose-entrypoint
+    printf '%s\n' goose > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Goose Agent" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="goose" \
       org.hypercli.coding_runtime_version="${GOOSE_VERSION}"
 

@@ -42,7 +42,7 @@ print(json.dumps({
         for name in ("Noto Sans", "Noto Color Emoji", "Noto Sans CJK SC", "Fira Code")
     },
     "skills": bool(list(Path("/opt/hypercli/skills").glob("*/SKILL.md"))),
-    "hyper_acp": shutil.which("hyper-acp"),
+    "acp": shutil.which("acp"),
     "buzz": shutil.which("buzz"),
     "openclaw": shutil.which("openclaw"),
 }))
@@ -63,7 +63,7 @@ assert payload["fonts"] == {
     "Fira Code": "FiraCode-Regular.ttf",
 }
 assert payload["skills"] is True
-assert payload["hyper_acp"] is None
+assert payload["acp"] is None
 assert payload["buzz"] is None
 assert payload["openclaw"] is None
 

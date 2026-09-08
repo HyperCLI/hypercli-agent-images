@@ -58,7 +58,7 @@ print(json.dumps({
     'config_text': config_text,
     'agent_command': os.environ.get('HYPER_ACP_AGENT_COMMAND'),
     'model_prefix': os.environ.get('BUZZ_MODEL_PREFIX'),
-    'goose_skill_link': os.readlink('/home/node/.buzz/.goose/skills/hypercli'),
+    'goose_skill_link': os.readlink('/home/node/.goose/skills/hypercli'),
 }))
 """
 provider_contract = run_python(image, provider_probe, env=runtime_env)

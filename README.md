@@ -1,6 +1,6 @@
 # HyperCLI agent images
 
-## Buzz coding agents
+## Coding Agents
 
 `coding/` contains the product-specific images used by hosted coding agents. Each
 provider has its own Dockerfile and test:
@@ -8,6 +8,7 @@ provider has its own Dockerfile and test:
 ```text
 coding/
 ├── acp-base/
+├── buzz-agent/
 ├── opencode/
 ├── codex/
 ├── claude/
@@ -59,25 +60,23 @@ extras in its own `/opt/hypercli-cli/venv`, build tools, `jq`, `rg`
 inherit from or contain OpenClaw.
 `HYPERCLI_REF` defaults to `main`; `HYPERCLI_SHA` is an opt-in exact override.
 
-`hypercli-acp-base` adds HyperACP, the Buzz plugin, the pinned Buzz Sprig
+`hypercli-acp-base` adds `acp`, the Buzz plugin, the pinned Buzz Sprig
 multicall binary, and the shared coding entrypoint. Provider images add only
 their selected runtime CLI and provider-specific configuration.
 
 The persistent sync root remains `/home/node`, and HyperCLI Workspace
-projections remain under `/home/node/shared`. The main process reconciles
-the stock Buzz nest after that home is mounted, then runs from
-`/home/node/.buzz`. It seeds only missing files, so restored user content is
-preserved.
+projections remain under `/home/node/shared`. The main process initializes the
+workspace directly under `/home/node`. It seeds only missing files, so restored
+user content is preserved.
 
-The nest contains the canonical Buzz `AGENTS.md`, standard directories, the
-Buzz CLI skill, and the standard runtime skill links. Claude additionally gets
-`CLAUDE.md -> AGENTS.md`. `base_prompt.md` remains compiled into the
-Buzz-compatible path inside `hyper-acp` and is not copied into the image or
-nest.
+The workspace contains standard directories and runtime skill links. The
+Buzz CLI skill is installed only for native `buzz-agent` images or explicit
+`acp plugin buzz` launches. `base_prompt.md` remains compiled into `acp` and
+the Buzz adapter; it is not copied into the image workspace.
 
 The launch control plane injects the agent identity, relay URL, and owner-signed
 authorization tag. It overrides the default `sleep infinity` command with
-`hyper-acp`; shell launches retain the same image and persistent home.
+`acp`; shell launches retain the same image and persistent home.
 
 CI publishes `hypercli-agent-base`, resolves it to an immutable digest, builds
 `hypercli-acp-base` from that digest, then builds and tests each provider from

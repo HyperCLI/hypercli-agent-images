@@ -3,9 +3,9 @@ set -eu
 
 . /usr/local/lib/hypercli/desktop.sh
 
-/usr/local/bin/hypercli-coding-init
+/usr/local/bin/hypercli-coding-init "$@"
 
-if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
+if [ "${1:-}" = "/usr/local/bin/acp" ] || [ "${1:-}" = "acp" ]; then
   if [ -z "${HYPER_ACP_WS_URL:-}" ]; then
     base=${HYPER_AGENTS_API_BASE:-${HYPER_API_BASE:-https://api.agents.hypercli.com}}
     base=${base%/}
@@ -51,5 +51,5 @@ if hyper_desktop_enabled; then
   hyper_start_desktop
 fi
 
-cd /home/node/.buzz
+cd /home/node
 exec "$@"

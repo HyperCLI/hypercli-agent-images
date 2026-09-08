@@ -63,8 +63,8 @@ env = {
     )
 }
 env.update({
-    "hypercli_skill_exists": Path("/home/node/.buzz/.agents/skills/hypercli/SKILL.md").is_file(),
-    "goose_skill_link": os.readlink("/home/node/.buzz/.goose/skills/hypercli"),
+    "hypercli_skill_exists": Path("/home/node/.agents/skills/hypercli/SKILL.md").is_file(),
+    "goose_skill_link": os.readlink("/home/node/.goose/skills/hypercli"),
 })
 print(json.dumps(env))
 """

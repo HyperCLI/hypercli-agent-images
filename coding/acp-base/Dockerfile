@@ -65,11 +65,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --manifest-path /build/hypercli/Cargo.toml \
       --release \
       --locked \
-      -p hyper-acp \
-      -p buzz-acp; \
-    install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/hyper-acp; \
-    install -D -m 0755 /build/hypercli/target/release/buzz-acp /out/plugins/buzz-acp; \
-    strip /out/hyper-acp /out/plugins/buzz-acp
+      -p hyper-acp; \
+    install -D -m 0755 /build/hypercli/target/release/acp /out/acp; \
+    strip /out/acp
 
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
@@ -89,11 +87,10 @@ RUN rm -rf /home/node/.buzz && \
       /home/node/.coding-agent \
       /home/node/shared
 
-COPY --from=source-builder /out/sprig /usr/local/bin/sprig
+COPY --from=source-builder /out/sprig /usr/local/lib/acp/buzz/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-coding/nest
-COPY --from=source-builder /out/hyper-acp /usr/local/bin/hyper-acp
-COPY --from=source-builder /out/plugins/buzz-acp /usr/local/lib/hyper-acp/plugins/buzz-acp
-COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/hyper-acp/tools/compute_auth_tag
+COPY --from=source-builder /out/acp /usr/local/bin/acp
+COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/acp/tools/compute_auth_tag
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-coding/.buzz-commit
 COPY SKILLS.md /opt/hypercli-coding/SKILLS.md
 COPY --chmod=0755 init.sh /usr/local/bin/hypercli-coding-init
@@ -101,19 +98,14 @@ COPY --chmod=0755 entrypoint.sh /usr/local/bin/hypercli-coding-entrypoint
 
 RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
       -name SKILL.md -type f -print -quit | grep -q . && \
-    ln -s sprig /usr/local/bin/buzz-dev-mcp && \
-    ln -s sprig /usr/local/bin/buzz && \
-    ln -s /opt/hypercli-coding /opt/hypercli-buzz && \
-    ln -s hypercli-coding-init /usr/local/bin/hypercli-buzz-init && \
-    ln -s hypercli-coding-entrypoint /usr/local/bin/hypercli-buzz-entrypoint && \
-    hyper-acp --help >/dev/null && \
-    hyper-acp plugin buzz --help >/dev/null && \
-    test -x /usr/local/lib/hyper-acp/tools/compute_auth_tag && \
-    buzz --help >/dev/null
+    test -x /usr/local/lib/acp/buzz/sprig && \
+    acp --help >/dev/null && \
+    acp plugin buzz --help >/dev/null && \
+    test -x /usr/local/lib/acp/tools/compute_auth_tag
 
 ENV HYPER_ACP_PERMISSION_MODE=default \
     CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
-    CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz
+    CODING_AGENT_WORKSPACE_DIR=/home/node
 
 WORKDIR /home/node
 USER node

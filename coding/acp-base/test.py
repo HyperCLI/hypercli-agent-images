@@ -51,25 +51,25 @@ tools = [
     "ssh",
     "sudo",
     "tini",
-    "buzz",
-    "hyper-acp",
-    "buzz-dev-mcp",
+    "acp",
 ]
 print(json.dumps({
     "uid": os.getuid(),
     "sudo_user": subprocess.check_output(["sudo", "-n", "whoami"], text=True).strip(),
     "tools": {tool: shutil.which(tool) for tool in tools},
     "removed_tools": {
-        "buzz": shutil.which("buzz" + "-acp"),
+        "buzz": shutil.which("buzz"),
+        "buzz_dev_mcp": shutil.which("buzz" + "-dev-mcp"),
+        "buzz_acp": shutil.which("buzz" + "-acp"),
         "host": shutil.which("hypercli" + "-acp"),
     },
     "buzz_commit": Path("/opt/hypercli-coding/.buzz-commit").read_text().strip(),
     "buzz_acp_binary_exists": Path("/usr/local/bin/buzz-acp").exists(),
-    "hyper_acp_help": subprocess.check_output(["hyper-acp", "--help"], text=True, stderr=subprocess.STDOUT),
-    "hyper_acp_plugin_help": subprocess.check_output(["hyper-acp", "plugin", "--help"], text=True, stderr=subprocess.STDOUT),
-    "buzz_plugin_help": subprocess.check_output(["hyper-acp", "plugin", "buzz", "--help"], text=True, stderr=subprocess.STDOUT),
-    "hidden_buzz_plugin": Path("/usr/local/lib/hyper-acp/plugins/buzz-acp").is_file(),
-    "auth_tag_helper": Path("/usr/local/lib/hyper-acp/tools/compute_auth_tag").is_file(),
+    "acp_help": subprocess.check_output(["acp", "--help"], text=True, stderr=subprocess.STDOUT),
+    "acp_plugin_help": subprocess.check_output(["acp", "plugin", "--help"], text=True, stderr=subprocess.STDOUT),
+    "buzz_plugin_help": subprocess.check_output(["acp", "plugin", "buzz", "--help"], text=True, stderr=subprocess.STDOUT),
+    "hidden_sprig": Path("/usr/local/lib/acp/buzz/sprig").is_file(),
+    "auth_tag_helper": Path("/usr/local/lib/acp/tools/compute_auth_tag").is_file(),
     "openclaw_binary": shutil.which("openclaw"),
     "openclaw_app": Path("/app/openclaw.mjs").exists(),
     "state_dir_is_dir": Path("/home/node/.coding-agent").is_dir(),
@@ -82,13 +82,20 @@ payload = json.loads(result.stdout)
 assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert all(payload["tools"].values()), payload["tools"]
-assert payload["removed_tools"] == {"buzz": None, "host": None}
+assert payload["removed_tools"] == {
+    "buzz": None,
+    "buzz_dev_mcp": None,
+    "buzz_acp": None,
+    "host": None,
+}
 assert len(payload["buzz_commit"]) == 40
 assert payload["buzz_acp_binary_exists"] is False
-assert "--ws-url" in payload["hyper_acp_help"]
-assert "Run the full Buzz ACP plugin" in payload["hyper_acp_plugin_help"]
-assert "buzz-acp" in payload["buzz_plugin_help"]
-assert payload["hidden_buzz_plugin"] is True
+assert "--ws-url" in payload["acp_help"]
+assert "Run the full Buzz ACP plugin" in payload["acp_plugin_help"]
+assert "Delegate to Buzz plugin" not in payload["acp_plugin_help"]
+assert "auth-methods" not in payload["acp_plugin_help"]
+assert "ACP harness that bridges Buzz events to AI agents" in payload["buzz_plugin_help"]
+assert payload["hidden_sprig"] is True
 assert payload["auth_tag_helper"] is True
 assert payload["openclaw_binary"] is None
 assert payload["openclaw_app"] is False
@@ -115,4 +122,4 @@ assert ". /usr/local/lib/hypercli/desktop.sh" in entrypoint_text
 assert "if hyper_desktop_enabled; then" in entrypoint_text
 assert "  hyper_start_desktop" in entrypoint_text
 
-print(f"{image}: Hyper ACP base contract passed")
+print(f"{image}: ACP base contract passed")

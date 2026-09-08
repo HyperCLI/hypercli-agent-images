@@ -16,11 +16,10 @@ RUN export HOME=/root && \
     ln -s hypercli-claude-auth /usr/local/bin/hypercli-runtime-auth && \
     claude --version && \
     claude-agent-acp --version && \
-    printf '%s\n' claude-code > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-claude-entrypoint /usr/local/bin/hypercli-buzz-claude-entrypoint
+    printf '%s\n' claude-code > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Claude Code Agent" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="claude-code" \
       org.hypercli.coding_runtime_version="${CLAUDE_CODE_VERSION}" \
       org.hypercli.acp_adapter_version="${CLAUDE_ACP_VERSION}"

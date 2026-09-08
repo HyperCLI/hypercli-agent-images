@@ -15,11 +15,10 @@ RUN export HOME=/root && \
     ln -s hypercli-kimi-auth /usr/local/bin/hypercli-runtime-auth && \
     kimi --version && \
     kimi acp --help >/dev/null && \
-    printf '%s\n' kimi-code > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-kimi-entrypoint /usr/local/bin/hypercli-buzz-kimi-entrypoint
+    printf '%s\n' kimi-code > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Kimi Code Agent" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="kimi-code" \
       org.hypercli.coding_runtime_version="${KIMI_CODE_VERSION}"
 

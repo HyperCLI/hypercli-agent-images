@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 
-NEST = Path("/home/node/.buzz")
+WORKSPACE = Path("/home/node")
 WORKSPACES = Path("/home/node/shared")
 STATE_DIR = Path("/home/node/.coding-agent")
 ENTRYPOINT_EXIT_CODE = 42
@@ -138,8 +138,9 @@ def acp_command(
     agent_args: str,
 ) -> list[str]:
     command = [
-        "hyper-acp",
+        "acp",
         "plugin",
+        "buzz",
         operation,
         "--agent-command",
         agent_command,
@@ -255,19 +256,17 @@ import stat
 import subprocess
 from pathlib import Path
 
-nest = Path("/home/node/.buzz")
+workspace = Path("/home/node")
 directories = [
-    nest,
-    nest / "GUIDES",
-    nest / "RESEARCH",
-    nest / "PLANS",
-    nest / "WORK_LOGS",
-    nest / "OUTBOX",
-    nest / "REPOS",
-    nest / ".scratch",
-    nest / ".agents",
-    nest / ".agents/skills",
-    nest / ".agents/skills/buzz-cli",
+    workspace / "GUIDES",
+    workspace / "RESEARCH",
+    workspace / "PLANS",
+    workspace / "WORK_LOGS",
+    workspace / "OUTBOX",
+    workspace / "REPOS",
+    workspace / ".scratch",
+    workspace / ".agents",
+    workspace / ".agents/skills",
     Path("/home/node/.coding-agent"),
 ]
 
@@ -276,7 +275,9 @@ hypercli_skills = sorted(
     for path in Path("/opt/hypercli/skills").glob("*/SKILL.md")
 )
 skills_index = Path("/home/node/SKILLS.md").read_text(encoding="utf-8")
-agents_path = nest / "AGENTS.md"
+agents_path = workspace / "AGENTS.md"
+buzz_skill = workspace / ".agents/skills/buzz-cli/SKILL.md"
+harness_skills = ["buzz-cli", *hypercli_skills] if buzz_skill.exists() else hypercli_skills
 
 payload = {
     "uid": os.getuid(),
@@ -290,12 +291,11 @@ payload = {
     "agents_heading": agents_path.read_text(encoding="utf-8").splitlines()[0]
     if agents_path.exists()
     else None,
-    "skill_has_name": "name: buzz-cli" in (
-        nest / ".agents/skills/buzz-cli/SKILL.md"
-    ).read_text(encoding="utf-8"),
+    "buzz_skill_has_name": buzz_skill.exists()
+    and "name: buzz-cli" in buzz_skill.read_text(encoding="utf-8"),
     "hypercli_skill_names": {
         skill: f"name: {skill}" in (
-            nest / f".agents/skills/{skill}/SKILL.md"
+            workspace / f".agents/skills/{skill}/SKILL.md"
         ).read_text(encoding="utf-8")
         for skill in hypercli_skills
     },
@@ -305,7 +305,7 @@ payload = {
     },
     "skills_index_target": os.readlink("/home/node/SKILLS.md"),
     "canonical_skill_links": {
-        skill: os.readlink(nest / f".agents/skills/{skill}")
+        skill: os.readlink(workspace / f".agents/skills/{skill}")
         for skill in hypercli_skills
     },
     "directory_modes": {
@@ -314,7 +314,8 @@ payload = {
     },
     "tools": {
         tool: shutil.which(tool)
-        for tool in [
+        for tool in (
+            [
             "node",
             "npm",
             "python3",
@@ -325,9 +326,7 @@ payload = {
             "ssh",
             "sudo",
             "tini",
-            "buzz",
-            "hyper-acp",
-            "buzz-dev-mcp",
+            "acp",
             "Xvfb",
             "x11vnc",
             "websockify",
@@ -336,20 +335,24 @@ payload = {
             "xfce4-panel",
             "xfce4-terminal",
             "thunar",
-        ]
+            ]
+            + (["buzz-agent", "buzz-dev-mcp"] if runtime == "buzz-agent" else [])
+        )
     },
+    "vanilla_buzz_cli": shutil.which("buzz"),
+    "hidden_sprig": Path("/usr/local/lib/acp/buzz/sprig").is_file(),
     "workspaces_is_dir": Path("/home/node/shared").is_dir(),
-    "nested_workspaces_exists": (nest / "workspaces").exists(),
+    "legacy_buzz_nest_exists": (workspace / ".buzz").exists(),
     "base_prompt_in_image": Path(
         "/opt/hypercli-coding/nest/base_prompt.md"
     ).exists(),
-    "base_prompt_in_nest": (nest / "base_prompt.md").exists(),
+    "base_prompt_in_workspace": (workspace / "base_prompt.md").exists(),
     "skill_links": {
         str(path): os.readlink(path)
         for path in [
-            nest / f"{harness}/skills/{skill}"
+            workspace / f"{harness}/skills/{skill}"
             for harness in [".claude", ".codex", ".goose"]
-            for skill in ["buzz-cli", *hypercli_skills]
+            for skill in harness_skills
         ]
     },
 }
@@ -385,9 +388,9 @@ def assert_common_contract(
         assert labels.get("org.hypercli.buzz_runtime") == "true"
     else:
         assert "org.hypercli.buzz_runtime" not in labels
-    assert labels.get("org.hypercli.coding_workspace") == str(NEST)
+    assert labels.get("org.hypercli.coding_workspace") == str(WORKSPACE)
     assert labels.get("org.hypercli.coding_runtime") == runtime
-    assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(NEST)
+    assert env.get("CODING_AGENT_WORKSPACE_DIR") == str(WORKSPACE)
     assert env.get("CODING_AGENT_STATE_DIR") == str(STATE_DIR)
     assert env.get("HYPER_WORKSPACES_DIR") == str(WORKSPACES)
     assert env.get("HOME") == "/home/node"
@@ -409,12 +412,12 @@ def assert_common_contract(
     run(image, ["true"], env={"HYPER_DESKTOP_ENABLED": "1"})
     payload = run_python(image, COMMON_PROBE)
     assert payload["uid"] == 1000
-    assert payload["cwd"] == str(NEST)
+    assert payload["cwd"] == str(WORKSPACE)
     assert payload["sudo_user"] == "root"
     assert payload["runtime"] == runtime
     assert payload["agents_exists"] is False
     assert payload["agents_heading"] is None
-    assert payload["skill_has_name"] is True
+    assert payload["buzz_skill_has_name"] is (runtime == "buzz-agent")
     assert all(payload["hypercli_skill_names"].values())
     assert all(payload["skills_index_mentions"].values())
     assert payload["skills_index_target"] == "/opt/hypercli-coding/SKILLS.md"
@@ -424,39 +427,45 @@ def assert_common_contract(
     }
     assert set(payload["directory_modes"].values()) == {0o700}
     assert all(payload["tools"].values()), payload["tools"]
+    assert payload["vanilla_buzz_cli"] is None
+    assert payload["hidden_sprig"] is True
     assert payload["workspaces_is_dir"] is True
-    assert payload["nested_workspaces_exists"] is False
+    assert payload["legacy_buzz_nest_exists"] is False
     assert payload["base_prompt_in_image"] is False
-    assert payload["base_prompt_in_nest"] is False
-    assert set(payload["skill_links"].values()) == {
-        "../../.agents/skills/buzz-cli",
-        *{
-            f"../../.agents/skills/{skill}"
-            for skill in payload["hypercli_skill_names"]
-        },
+    assert payload["base_prompt_in_workspace"] is False
+    expected_skill_links = {
+        f"../../.agents/skills/{skill}"
+        for skill in payload["hypercli_skill_names"]
     }
-    assert len(payload["skill_links"]) == 3 * (
-        len(payload["hypercli_skill_names"]) + 1
-    )
-    assert_nest_persistence(image)
+    if runtime == "buzz-agent":
+        expected_skill_links.add("../../.agents/skills/buzz-cli")
+    assert set(payload["skill_links"].values()) == expected_skill_links
+    expected_skill_count = len(payload["hypercli_skill_names"])
+    if runtime == "buzz-agent":
+        expected_skill_count += 1
+    assert len(payload["skill_links"]) == 3 * expected_skill_count
+    assert_workspace_persistence(image)
 
 
-def assert_nest_persistence(image: str) -> None:
+def assert_workspace_persistence(image: str) -> None:
     with tempfile.TemporaryDirectory() as persisted_name:
         persisted = Path(persisted_name)
         persisted.chmod(0o777)
         run(image, ["true"], mounts=[(persisted, "/home/node")])
 
-        agents = persisted / ".buzz/AGENTS.md"
-        skill = persisted / ".buzz/.agents/skills/buzz-cli/SKILL.md"
-        hypercli_skill = persisted / ".buzz/.agents/skills/hypercli"
+        agents = persisted / "AGENTS.md"
+        hypercli_skill = persisted / ".agents/skills/hypercli"
         skills_index = persisted / "SKILLS.md"
-        harness_skill_links = [
-            persisted / f".buzz/{harness}/skills/buzz-cli"
-            for harness in [".claude", ".codex", ".goose"]
-        ]
+        buzz_skill = persisted / ".agents/skills/buzz-cli/SKILL.md"
+        harness_skill_links = []
+        if buzz_skill.exists():
+            harness_skill_links = [
+                persisted / f"{harness}/skills/buzz-cli"
+                for harness in [".claude", ".codex", ".goose"]
+            ]
         agents.write_text("user-managed AGENTS\n", encoding="utf-8")
-        skill.write_text("user-managed skill\n", encoding="utf-8")
+        if buzz_skill.exists():
+            buzz_skill.write_text("user-managed skill\n", encoding="utf-8")
         hypercli_skill.unlink()
         hypercli_skill.write_text(
             "user-managed HyperCLI skill\n",
@@ -474,7 +483,7 @@ def assert_nest_persistence(image: str) -> None:
                 encoding="utf-8",
             )
 
-        claude = persisted / ".buzz/CLAUDE.md"
+        claude = persisted / "CLAUDE.md"
         claude.write_text(
             "user-managed Claude instructions\n",
             encoding="utf-8",
@@ -483,7 +492,8 @@ def assert_nest_persistence(image: str) -> None:
         run(image, ["true"], mounts=[(persisted, "/home/node")])
         agents_content = agents.read_text(encoding="utf-8")
         assert agents_content == "user-managed AGENTS\n"
-        assert skill.read_text(encoding="utf-8") == "user-managed skill\n"
+        if buzz_skill.exists():
+            assert buzz_skill.read_text(encoding="utf-8") == "user-managed skill\n"
         assert (
             hypercli_skill.read_text(encoding="utf-8")
             == "user-managed HyperCLI skill\n"
@@ -501,22 +511,6 @@ def assert_nest_persistence(image: str) -> None:
             claude.read_text(encoding="utf-8")
             == "user-managed Claude instructions\n"
         )
-
-    with tempfile.TemporaryDirectory() as bad_name:
-        bad_home = Path(bad_name)
-        bad_home.chmod(0o777)
-        workspaces = bad_home / "workspaces"
-        workspaces.mkdir()
-        (bad_home / ".buzz").symlink_to("workspaces")
-        result = run(
-            image,
-            ["true"],
-            mounts=[(bad_home, "/home/node")],
-            check=False,
-        )
-        assert result.returncode != 0
-        assert not any(workspaces.iterdir())
-
 
 def assert_user_config_preserved(
     image: str,

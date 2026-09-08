@@ -5,14 +5,15 @@ FROM ${HYPER_ACP_BASE_IMAGE}
 
 USER root
 COPY --chmod=0755 buzz-agent/entrypoint.sh /usr/local/bin/hypercli-coding-buzz-agent-entrypoint
-RUN ln -s sprig /usr/local/bin/buzz-agent && \
-    test "$(readlink /usr/local/bin/buzz-agent)" = sprig && \
-    printf '%s\n' buzz-agent > /opt/hypercli-coding/runtime && \
-    ln -s hypercli-coding-buzz-agent-entrypoint /usr/local/bin/hypercli-buzz-agent-entrypoint
+RUN ln -s /usr/local/lib/acp/buzz/sprig /usr/local/bin/buzz-agent && \
+    ln -s /usr/local/lib/acp/buzz/sprig /usr/local/bin/buzz-dev-mcp && \
+    test "$(readlink /usr/local/bin/buzz-agent)" = /usr/local/lib/acp/buzz/sprig && \
+    test "$(readlink /usr/local/bin/buzz-dev-mcp)" = /usr/local/lib/acp/buzz/sprig && \
+    printf '%s\n' buzz-agent > /opt/hypercli-coding/runtime
 
 LABEL org.opencontainers.image.title="HyperCLI Buzz Native Agent" \
       org.hypercli.buzz_runtime="true" \
-      org.hypercli.coding_workspace="/home/node/.buzz" \
+      org.hypercli.coding_workspace="/home/node" \
       org.hypercli.coding_runtime="buzz-agent"
 
 ENV BUZZ_ACP_AGENT_COMMAND=/usr/local/bin/buzz-agent \
