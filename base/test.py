@@ -37,6 +37,10 @@ print(json.dumps({
     "corepack": shutil.which("corepack"),
     "pnpm": shutil.which("pnpm"),
     "yarn": shutil.which("yarn"),
+    "fonts": {
+        name: subprocess.check_output(["fc-match", name], text=True).split(":", 1)[0]
+        for name in ("Noto Sans", "Noto Color Emoji", "Noto Sans CJK SC", "Fira Code")
+    },
     "skills": bool(list(Path("/opt/hypercli/skills").glob("*/SKILL.md"))),
     "hyper_acp": shutil.which("hyper-acp"),
     "buzz": shutil.which("buzz"),
@@ -52,6 +56,12 @@ assert payload["hyper_target"] == "/opt/hypercli-cli/venv/bin/hyper"
 assert payload["corepack"]
 assert payload["pnpm"]
 assert payload["yarn"]
+assert payload["fonts"] == {
+    "Noto Sans": "NotoSans-Regular.ttf",
+    "Noto Color Emoji": "NotoColorEmoji.ttf",
+    "Noto Sans CJK SC": "NotoSansCJK-Regular.ttc",
+    "Fira Code": "FiraCode-Regular.ttf",
+}
 assert payload["skills"] is True
 assert payload["hyper_acp"] is None
 assert payload["buzz"] is None
@@ -107,5 +117,30 @@ desktop_entry = docker(
 ).stdout
 assert "Exec=/usr/local/bin/hypercli-chrome %U" in desktop_entry
 assert "Exec=google-chrome-stable" not in desktop_entry
+
+desktop_shortcut = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "/bin/sh",
+    image,
+    "-c",
+    "test ! -e /home/node/Desktop/google-chrome.desktop",
+)
+assert desktop_shortcut.returncode == 0
+
+desktop_script = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/local/lib/hypercli/desktop.sh",
+).stdout
+assert 'value="launcher-1/google-chrome.desktop"' in desktop_script
+assert 'value="launcher-2/thunar.desktop"' in desktop_script
+assert 'value="launcher-3/xfce4-terminal.desktop"' in desktop_script
+assert "pager" not in desktop_script
+assert "workspace" not in desktop_script.lower()
 
 print(f"{image}: HyperCLI agent base contract passed")

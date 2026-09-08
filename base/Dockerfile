@@ -50,7 +50,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     dbus-x11 \
+    fonts-dejavu \
+    fonts-firacode \
     fonts-liberation \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
+    fonts-noto-core \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -113,8 +118,7 @@ COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
 COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
-RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop \
-    && install -m 0755 -o node -g node /usr/share/applications/google-chrome.desktop /home/node/Desktop/google-chrome.desktop
+RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
 
 ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
