@@ -66,7 +66,11 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       --release \
       --locked \
       -p hyper-acp; \
-    install -D -m 0755 /build/hypercli/target/release/acp /out/acp; \
+    if [ -x /build/hypercli/target/release/acp ]; then \
+      install -D -m 0755 /build/hypercli/target/release/acp /out/acp; \
+    else \
+      install -D -m 0755 /build/hypercli/target/release/hyper-acp /out/acp; \
+    fi; \
     strip /out/acp
 
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}

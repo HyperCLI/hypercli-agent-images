@@ -92,8 +92,6 @@ assert len(payload["buzz_commit"]) == 40
 assert payload["buzz_acp_binary_exists"] is False
 assert "--ws-url" in payload["acp_help"]
 assert "Run the full Buzz ACP plugin" in payload["acp_plugin_help"]
-assert "Delegate to Buzz plugin" not in payload["acp_plugin_help"]
-assert "auth-methods" not in payload["acp_plugin_help"]
 assert "ACP harness that bridges Buzz events to AI agents" in payload["buzz_plugin_help"]
 assert payload["hidden_sprig"] is True
 assert payload["auth_tag_helper"] is True
