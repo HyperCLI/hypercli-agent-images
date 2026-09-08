@@ -332,7 +332,6 @@ payload = {
             "websockify",
             "dbus-launch",
             "xfwm4",
-            "xfce4-panel",
             "xfce4-terminal",
             "thunar",
             ]
