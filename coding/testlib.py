@@ -274,6 +274,7 @@ hypercli_skills = sorted(
     path.parent.name
     for path in Path("/opt/hypercli/skills").glob("*/SKILL.md")
 )
+runtime = Path("/opt/hypercli-coding/runtime").read_text().strip()
 skills_index = Path("/home/node/SKILLS.md").read_text(encoding="utf-8")
 agents_path = workspace / "AGENTS.md"
 buzz_skill = workspace / ".agents/skills/buzz-cli/SKILL.md"
@@ -286,7 +287,7 @@ payload = {
         ["sudo", "-n", "whoami"],
         text=True,
     ).strip(),
-    "runtime": Path("/opt/hypercli-coding/runtime").read_text().strip(),
+    "runtime": runtime,
     "agents_exists": agents_path.exists() or agents_path.is_symlink(),
     "agents_heading": agents_path.read_text(encoding="utf-8").splitlines()[0]
     if agents_path.exists()
