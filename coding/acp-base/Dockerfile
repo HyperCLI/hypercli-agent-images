@@ -111,7 +111,8 @@ RUN find /opt/hypercli/skills -mindepth 2 -maxdepth 2 \
     test -x /usr/local/lib/hyper-acp/tools/compute_auth_tag && \
     buzz --help >/dev/null
 
-ENV CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
+ENV HYPER_ACP_PERMISSION_MODE=default \
+    CODING_AGENT_STATE_DIR=/home/node/.coding-agent \
     CODING_AGENT_WORKSPACE_DIR=/home/node/.buzz
 
 WORKDIR /home/node

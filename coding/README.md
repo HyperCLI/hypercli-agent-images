@@ -136,6 +136,7 @@ Plain hosted ACP launches use:
 | Entrypoint command | `/usr/local/bin/hyper-acp` |
 | ACP child | `HYPER_ACP_AGENT_COMMAND`, `HYPER_ACP_AGENT_ARGS` |
 | Prompt transport | compiled `hyper-acp` base prompt plus optional `HYPER_ACP_*` prompt env/file layers on `session/new` |
+| Permission mode | `HYPER_ACP_PERMISSION_MODE` defaults to `default`; supported values are `default`, `auto`, `bypass-permissions`/`bypassPermissions`, `accept-edits`/`acceptEdits`, `dont-ask`/`dontAsk`, and `plan` |
 | Restart | runtime-specific caller choice |
 | Home and sync root | `/home/node` |
 | Working directory | `/home/node/.buzz` |
@@ -148,6 +149,7 @@ Buzz provider launches use:
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
 | Entrypoint command | `/usr/local/bin/hyper-acp plugin buzz` |
 | ACP child | `BUZZ_ACP_AGENT_COMMAND`, `BUZZ_ACP_AGENT_ARGS`, `BUZZ_ACP_MCP_COMMAND` |
+| Permission mode | `HYPER_ACP_PERMISSION_MODE` is read by `hyper-acp`; the image entrypoint maps it for plain ACP and `hyper-acp plugin buzz` applies it as an ACP session mode when supported |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
@@ -308,7 +310,7 @@ The provider must inject and protect these categories:
 | Prompt and model | `BUZZ_ACP_SYSTEM_PROMPT`, optional explicit `BUZZ_ACP_BASE_PROMPT_FILE`, `BUZZ_ACP_MODEL`, `BUZZ_ACP_SESSION_TITLE` |
 | Pooling | `BUZZ_ACP_AGENTS`, `BUZZ_ACP_LAZY_POOL`, `BUZZ_ACP_RELAY_OBSERVER` |
 | Event handling | `BUZZ_ACP_MULTIPLE_EVENT_HANDLING=steer`, `BUZZ_ACP_DEDUP=queue` |
-| Workspaces | `HYPER_WORKSPACES_BOOT_SYNC=1`, `HYPER_WORKSPACES_DIR=/home/node/shared`, `HYPER_WORKSPACES_SYNC_READY_ONLY=1`, optional selected workspace |
+| Workspaces | `HYPER_WORKSPACES_DIR=/home/node/shared`; image boot-sync envs (`HYPER_WORKSPACES_BOOT_SYNC`, `HYPER_WORKSPACES_SYNC_READY_ONLY`) removed — superseded by the typed `workspaces_sync` agent launch config (Lagoon-managed resident `workspaces-sync` sidecar) |
 | hyper-acp WebSocket | `HYPER_ACP_WS_LISTEN`, `HYPER_ACP_LOG`, `HYPER_ACP_WS_TOKEN`, optional `HYPER_ACP_CORS_ORIGIN` |
 
 The provider also projects validated non-reserved `launch.env` values. It must

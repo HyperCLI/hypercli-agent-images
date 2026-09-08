@@ -13,42 +13,6 @@ if [[ -n "${HYPER_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
 fi
 
-openclaw_enabled() {
-  case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
-    1|true|yes|on|enabled) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-openclaw_disabled() {
-  case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
-    0|false|no|off|disabled) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-openclaw_sync_workspaces() {
-  mkdir -p "${HYPER_WORKSPACES_DIR}"
-  WORKSPACES_SYNC_ARGS=(workspaces sync)
-  if [[ -n "${HYPER_WORKSPACES_SYNC_WORKSPACE:-}" ]]; then
-    WORKSPACES_SYNC_ARGS+=("${HYPER_WORKSPACES_SYNC_WORKSPACE}")
-  else
-    WORKSPACES_SYNC_ARGS+=(--all)
-  fi
-  WORKSPACES_SYNC_ARGS+=(--output-dir "${HYPER_WORKSPACES_DIR}")
-  if ! openclaw_disabled "${HYPER_WORKSPACES_SYNC_READY_ONLY:-1}"; then
-    WORKSPACES_SYNC_ARGS+=(--ready-only)
-  fi
-  echo "[openclaw] syncing Workspaces Markdown into ${HYPER_WORKSPACES_DIR}"
-  hyper "${WORKSPACES_SYNC_ARGS[@]}"
-}
-
-if openclaw_enabled "${OPENCLAW_WORKSPACES_SYNC_ONLY:-0}"; then
-  /opt/hypercli-openclaw/init.sh
-  openclaw_sync_workspaces
-  exit $?
-fi
-
 /opt/hypercli-openclaw/init.sh
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.js
 hyper_configure_openclaw_slack
@@ -103,12 +67,6 @@ fi
 
 if hyper_desktop_enabled; then
   hyper_start_desktop
-fi
-
-if openclaw_enabled "${OPENCLAW_WORKSPACES_SYNC_HANDLED_BY_INIT:-0}"; then
-  echo "[openclaw] Workspaces boot sync handled by Kubernetes init"
-elif openclaw_enabled "${HYPER_WORKSPACES_BOOT_SYNC:-0}"; then
-  openclaw_sync_workspaces || echo "[openclaw] Workspaces boot sync failed" >&2
 fi
 
 echo "[openclaw] starting gateway on ${OPENCLAW_GATEWAY_BIND:-lan}:${OPENCLAW_PORT:-18789}"

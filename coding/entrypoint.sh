@@ -24,6 +24,23 @@ if [ "${1:-}" = "/usr/local/bin/hyper-acp" ] || [ "${1:-}" = "hyper-acp" ]; then
   fi
 
   unset HYPER_ACP_WS_LISTEN HYPER_ACP_LOG
+  permission_mode=$(printf '%s' "${HYPER_ACP_PERMISSION_MODE:-default}" | tr '[:upper:]' '[:lower:]')
+  case "${permission_mode}" in
+    default)
+      HYPER_ACP_AUTO_APPROVE_PERMISSION=0
+      ;;
+    auto|bypass-permissions|bypasspermissions)
+      HYPER_ACP_AUTO_APPROVE_PERMISSION=1
+      ;;
+    accept-edits|acceptedits|dont-ask|dontask|plan)
+      HYPER_ACP_AUTO_APPROVE_PERMISSION=0
+      ;;
+    *)
+      echo "HYPER_ACP_PERMISSION_MODE must be default, auto, bypass-permissions, accept-edits, dont-ask, or plan" >&2
+      exit 1
+      ;;
+  esac
+  export HYPER_ACP_AUTO_APPROVE_PERMISSION
   if [ "${2:-}" = "plugin" ] && [ "${3:-}" = "buzz" ]; then
     : "${BUZZ_ACP_RELAY_OBSERVER:=true}"
     export BUZZ_ACP_RELAY_OBSERVER
