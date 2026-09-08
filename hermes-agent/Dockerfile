@@ -60,6 +60,7 @@ RUN usermod -d /home/hermes hermes \
       /opt/hermes/docker/main-wrapper.sh \
       /opt/hermes/docker/hermes-exec-shim.sh \
       /opt/hermes/docker/s6-rc.d/dashboard/run \
+      /opt/hermes/hermes_cli/service_manager.py \
     && sed -i \
       -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
       /opt/hermes/bin/hermes \
@@ -72,6 +73,8 @@ ENV HYPER_WORKSPACES_DIR=/home/hermes/shared
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
 ENV HYPER_API_BASE=https://api.hypercli.com
 ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
+ENV NO_PROXY=localhost,127.0.0.1,host.docker.internal
+ENV no_proxy=localhost,127.0.0.1,host.docker.internal
 ENV HYPER_DESKTOP_ENABLED=0
 ENV HYPER_DESKTOP_PORT=3000
 ENV HYPER_DESKTOP_GEOMETRY=1280x800x24

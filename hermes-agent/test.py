@@ -218,6 +218,8 @@ def start_container(
         "-e", f"API_SERVER_CORS_ORIGINS={ALLOWED_ORIGIN}",
         "-e", f"HYPER_AGENTS_API_KEY={MODEL_KEY}",
         "-e", f"HYPER_AGENTS_API_BASE=http://host.docker.internal:{model_port}",
+        "-e", "NO_PROXY=localhost,127.0.0.1,host.docker.internal",
+        "-e", "no_proxy=localhost,127.0.0.1,host.docker.internal",
         IMAGE,
     )
     port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
