@@ -137,10 +137,8 @@ desktop_script = docker(
     image,
     "/usr/local/lib/hypercli/desktop.sh",
 ).stdout
-assert 'value="launcher-1/google-chrome.desktop"' in desktop_script
-assert 'value="launcher-2/thunar.desktop"' in desktop_script
-assert 'value="launcher-3/xfce4-terminal.desktop"' in desktop_script
-assert "pager" not in desktop_script
-assert "workspace" not in desktop_script.lower()
+assert "xfce4-panel" not in desktop_script
+assert "hyper_configure_xfce_panel" not in desktop_script
+assert "hyper_apply_xfce_panel" not in desktop_script
 
 print(f"{image}: HyperCLI agent base contract passed")
