@@ -16,6 +16,8 @@ config = image_config(image)
 assert config.get("WorkingDir") == "/home/node"
 env = dict(item.split("=", 1) for item in config.get("Env") or [] if "=" in item)
 assert env.get("HOME") == "/home/node"
+assert env.get("CHROME_EXECUTABLE_PATH") == "/usr/local/bin/hypercli-chrome"
+assert env.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH") == "/usr/local/bin/hypercli-chrome"
 assert "CODING_AGENT_STATE_DIR" not in env
 assert "CODING_AGENT_WORKSPACE_DIR" not in env
 assert not (env.get("PATH") or "").startswith("/opt/hypercli-cli/venv/bin:")
@@ -48,5 +50,56 @@ assert payload["skills"] is True
 assert payload["hyper_acp"] is None
 assert payload["buzz"] is None
 assert payload["openclaw"] is None
+
+launcher_probe = r"""
+set -eu
+cat >/tmp/fake-chrome <<'EOF'
+#!/bin/sh
+printf '%s\n' "$@"
+EOF
+chmod 0755 /tmp/fake-chrome
+export HYPERCLI_CHROME_BIN=/tmp/fake-chrome
+if [ -n "${1:-}" ]; then
+  export HYPER_PROXY_HOST="$1"
+fi
+exec /usr/local/bin/hypercli-chrome https://example.test
+"""
+
+without_proxy = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "/bin/sh",
+    image,
+    "-c",
+    launcher_probe,
+    "sh",
+).stdout
+assert "--proxy-server" not in without_proxy, without_proxy
+assert "--user-data-dir=/home/node/.config/google-chrome" in without_proxy
+
+with_proxy = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "/bin/sh",
+    image,
+    "-c",
+    launcher_probe,
+    "sh",
+    "socks5://127.0.0.1:8080",
+).stdout
+assert "--proxy-server=socks5://127.0.0.1:8080" in with_proxy, with_proxy
+
+desktop_entry = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/share/applications/google-chrome.desktop",
+).stdout
+assert "Exec=/usr/local/bin/hypercli-chrome %U" in desktop_entry
+assert "Exec=google-chrome-stable" not in desktop_entry
 
 print(f"{image}: HyperCLI agent base contract passed")

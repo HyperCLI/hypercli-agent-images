@@ -73,13 +73,13 @@
     "defaultProfile": "openclaw",
     "headless": false,
     "noSandbox": true,
-    "executablePath": "/usr/bin/google-chrome-stable",
+    "executablePath": "/usr/local/bin/hypercli-chrome",
     "profiles": {
       "openclaw": {
         "cdpPort": 18800,
         "color": "#FF4500",
         "headless": false,
-        "executablePath": "/usr/bin/google-chrome-stable"
+        "executablePath": "/usr/local/bin/hypercli-chrome"
       }
     }
   },

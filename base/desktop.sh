@@ -1,9 +1,6 @@
 hyper_desktop_enabled() {
   case "$(printf '%s' "${HYPER_DESKTOP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
     1|true|yes|on|enabled) return 0 ;;
-  esac
-  case "$(printf '%s' "${OPENCLAW_DESKTOP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
-    1|true|yes|on|enabled) return 0 ;;
     *) return 1 ;;
   esac
 }

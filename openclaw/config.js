@@ -64,9 +64,9 @@ if (cronEnabled !== undefined) {
   cron.enabled = cronEnabled
 }
 
-const desktopEnabled = parseBoolean("HYPER_DESKTOP_ENABLED") === true || parseBoolean("OPENCLAW_DESKTOP_ENABLED") === true
+const desktopEnabled = parseBoolean("HYPER_DESKTOP_ENABLED") === true
 if (desktopEnabled === true) {
-  const chromePath = env.CHROME_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable"
+  const chromePath = env.CHROME_EXECUTABLE_PATH || "/usr/local/bin/hypercli-chrome"
   const browser = ((config.browser ||= {}))
   browser.enabled = true
   browser.headless = false
@@ -85,7 +85,7 @@ if (desktopEnabled === true) {
   const tools = ((config.tools ||= {}))
   if (!Array.isArray(tools.alsoAllow)) tools.alsoAllow = []
   if (!tools.alsoAllow.includes("browser")) tools.alsoAllow.push("browser")
-} else if (parseBoolean("HYPER_DESKTOP_ENABLED") === false || parseBoolean("OPENCLAW_DESKTOP_ENABLED") === false) {
+} else if (parseBoolean("HYPER_DESKTOP_ENABLED") === false) {
   if (config.browser && typeof config.browser === "object") config.browser.enabled = false
   const entries = config.plugins && config.plugins.entries
   if (entries && entries.browser && typeof entries.browser === "object") entries.browser.enabled = false

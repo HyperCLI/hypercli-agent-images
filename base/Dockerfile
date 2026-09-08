@@ -100,6 +100,7 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper
 
 COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
+COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
 RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop \
@@ -114,8 +115,8 @@ ENV HOME=/home/node \
     HYPER_DESKTOP_PORT=3000 \
     HYPER_DESKTOP_GEOMETRY=1280x800x24 \
     DISPLAY=:99 \
-    CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
-    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
+    CHROME_EXECUTABLE_PATH=/usr/local/bin/hypercli-chrome \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/local/bin/hypercli-chrome \
     PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR /home/node
