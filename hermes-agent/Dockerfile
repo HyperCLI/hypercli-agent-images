@@ -58,6 +58,8 @@ RUN usermod -d /home/hermes hermes \
       -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
       -e 's#cd /opt/data#cd /home/hermes#g' \
       /opt/hermes/docker/main-wrapper.sh \
+      /opt/hermes/docker/hermes-exec-shim.sh \
+      /opt/hermes/docker/s6-rc.d/dashboard/run \
     && sed -i \
       -e 's#export HOME=/opt/data#export HOME=/home/hermes#g' \
       /opt/hermes/bin/hermes \
