@@ -83,8 +83,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod 0440 /etc/sudoers.d/90-node-nopasswd \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/local/lib/hypercli /home/node/shared /home/node/Desktop \
+RUN mkdir -p /usr/local/lib/hypercli /home/node/shared /home/node/Desktop /tmp/.X11-unix \
+    && chmod 1777 /tmp/.X11-unix \
     && chown -R node:node /home/node
+
+ENV COREPACK_HOME=/usr/local/share/corepack
+RUN mkdir -p "${COREPACK_HOME}" \
+    && npm install --global --force corepack@0.35.0 \
+    && corepack install --global pnpm@11.2.2 yarn@1.22.22 \
+    && chmod -R a+rX "${COREPACK_HOME}" \
+    && corepack --version \
+    && pnpm --version \
+    && yarn --version
 
 RUN : "${HYPERCLI_CACHE_BUST}" && \
     checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \

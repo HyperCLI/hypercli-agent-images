@@ -34,6 +34,9 @@ print(json.dumps({
     "sudo_user": subprocess.check_output(["sudo", "-n", "whoami"], text=True).strip(),
     "hyper": shutil.which("hyper"),
     "hyper_target": os.path.realpath(shutil.which("hyper") or ""),
+    "corepack": shutil.which("corepack"),
+    "pnpm": shutil.which("pnpm"),
+    "yarn": shutil.which("yarn"),
     "skills": bool(list(Path("/opt/hypercli/skills").glob("*/SKILL.md"))),
     "hyper_acp": shutil.which("hyper-acp"),
     "buzz": shutil.which("buzz"),
@@ -46,6 +49,9 @@ assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert payload["hyper"]
 assert payload["hyper_target"] == "/opt/hypercli-cli/venv/bin/hyper"
+assert payload["corepack"]
+assert payload["pnpm"]
+assert payload["yarn"]
 assert payload["skills"] is True
 assert payload["hyper_acp"] is None
 assert payload["buzz"] is None

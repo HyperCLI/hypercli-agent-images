@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+. /usr/local/lib/hypercli/desktop.sh
+
 HOME="${HOME:-/home/hermes}"
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 HYPER_WORKSPACES_DIR="${HYPER_WORKSPACES_DIR:-${HOME}/shared}"
@@ -25,4 +27,7 @@ if [[ -n "${HYPER_AGENTS_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
 fi
 
 /opt/hypercli-hermes/init.sh
+if hyper_desktop_enabled; then
+  hyper_start_desktop
+fi
 exec /opt/hermes/docker/entrypoint-dispatch.sh "$@"

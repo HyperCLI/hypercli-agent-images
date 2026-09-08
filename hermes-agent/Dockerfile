@@ -1,75 +1,47 @@
 ARG HERMES_BASE_IMAGE=nousresearch/hermes-agent:v2026.8.3@sha256:16788311e2fa3035456bdc1bafb8ec2b1777db64ebf020af9bb7eb73c3712c9e
 ARG HYPERCLI_REF=main
 ARG HYPERCLI_SHA
-ARG HYPERCLI_CACHE_BUST=manual
-ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
+ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
 
-FROM ${HERMES_BASE_IMAGE}
+FROM ${HERMES_BASE_IMAGE} AS upstream-hermes
+
+FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
 ARG HERMES_BASE_IMAGE
 ARG HYPERCLI_REF
 ARG HYPERCLI_SHA
-ARG HYPERCLI_CACHE_BUST
-ARG HYPERCLI_REPO
+ARG HYPERCLI_AGENT_BASE_IMAGE
 
-LABEL org.opencontainers.image.base.name="${HERMES_BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${HYPERCLI_AGENT_BASE_IMAGE}"
+LABEL org.opencontainers.image.upstream.name="${HERMES_BASE_IMAGE}"
 LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
 LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
-LABEL org.hypercli.hypercli_cache_bust="${HYPERCLI_CACHE_BUST}"
 
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 ENV HYPERCLI_SHA=${HYPERCLI_SHA}
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    git \
-    jq \
-    ffmpeg \
-    poppler-utils \
-    lsof \
-    python3 \
-    python3-dev \
-    python3-pip \
-    ripgrep \
-    build-essential \
-    sudo \
-    vim \
-    xxd \
-    nano \
-    zip \
-    unzip \
-    && printf '%s\n' 'hermes ALL=(ALL) NOPASSWD:ALL' \
-      > /etc/sudoers.d/90-hermes-nopasswd \
+COPY --from=upstream-hermes /opt/hermes /opt/hermes
+COPY --from=upstream-hermes /init /init
+COPY --from=upstream-hermes /command /command
+COPY --from=upstream-hermes /package /package
+COPY --from=upstream-hermes /etc/s6-overlay /etc/s6-overlay
+COPY --from=upstream-hermes /etc/cont-init.d /etc/cont-init.d
+COPY --from=upstream-hermes /usr/local/bin/uv /usr/local/bin/uv
+COPY --from=upstream-hermes /usr/local/bin/uvx /usr/local/bin/uvx
+
+RUN groupadd -g 10000 hermes \
+    && useradd -u 10000 -g 10000 -d /home/hermes -s /bin/sh hermes \
+    && printf '%s\n' 'hermes ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-hermes-nopasswd \
     && chmod 0440 /etc/sudoers.d/90-hermes-nopasswd \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV COREPACK_HOME=/usr/local/share/corepack
-RUN mkdir -p "${COREPACK_HOME}" \
-    && npm install --global --force corepack@0.35.0 \
-    && corepack install --global pnpm@11.2.2 yarn@1.22.22 \
-    && chmod -R a+rX "${COREPACK_HOME}" \
-    && corepack --version \
-    && pnpm --version \
-    && yarn --version
-
-RUN : "${HYPERCLI_CACHE_BUST}" && \
-    checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
-    test -n "${checkout_ref}" && \
-    git clone --depth 1 "${HYPERCLI_REPO}" /opt/hypercli && \
-    git -C /opt/hypercli fetch --depth 1 origin "${checkout_ref}" && \
-    git -C /opt/hypercli checkout FETCH_HEAD && \
-    { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
-    test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    uv pip install --python /opt/hermes/.venv/bin/python \
-      "mem0ai>=2.0.10,<3" qdrant-client && \
-    uv venv --python python3 /opt/hypercli-cli/venv && \
-    UV_NO_CONFIG=1 uv pip install --python /opt/hypercli-cli/venv/bin/python \
-      /opt/hypercli/sdk "/opt/hypercli/cli[all]" && \
-    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper && \
-    hyper --help >/dev/null
+    && cd /opt/hermes \
+    && rm -rf .venv \
+    && UV_NO_CONFIG=1 uv sync --frozen --no-install-project --extra all --extra messaging --extra otlp --extra anthropic --extra bedrock --extra azure-identity --extra hindsight \
+    && UV_NO_CONFIG=1 uv pip install --no-cache-dir --no-deps -e . \
+    && UV_NO_CONFIG=1 uv pip install --python /opt/hermes/.venv/bin/python "mem0ai>=2.0.10,<3" qdrant-client \
+    && test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" \
+    && hyper --help >/dev/null
 
 COPY --chmod=0644 config.yaml /opt/hypercli-hermes/config.yaml
 COPY --chmod=0644 mem0.json /opt/hypercli-hermes/mem0.json
@@ -96,13 +68,20 @@ ENV HERMES_HOME=/home/hermes/.hermes
 ENV HERMES_WRITE_SAFE_ROOT=/home/hermes
 ENV HYPER_WORKSPACES_DIR=/home/hermes/shared
 ENV HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com
+ENV HYPER_API_BASE=https://api.hypercli.com
+ENV HYPER_AGENTS_WEB_SEARCH_BASE=https://api.agents.hypercli.com/agents/brave
+ENV HYPER_DESKTOP_ENABLED=0
+ENV HYPER_DESKTOP_PORT=3000
+ENV HYPER_DESKTOP_GEOMETRY=1280x800x24
+ENV DISPLAY=:99
 ENV API_SERVER_ENABLED=true
 ENV API_SERVER_HOST=0.0.0.0
 ENV API_SERVER_PORT=8642
 ENV HERMES_CRON_ENABLED=
+ENV PATH=/opt/hermes/bin:/opt/hermes/.venv/bin:/home/hermes/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WORKDIR /home/hermes
 
-EXPOSE 8642
+EXPOSE 8642 3000
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=6 \
   CMD curl -fsS http://127.0.0.1:8642/health >/dev/null || exit 1

@@ -48,6 +48,11 @@ EXPECTED_RUNTIME_TOOLS = (
     "yarn",
     "zip",
     "corepack",
+    "google-chrome",
+    "hypercli-chrome",
+    "websockify",
+    "x11vnc",
+    "Xvfb",
 )
 
 
@@ -231,6 +236,7 @@ def main() -> None:
     assert inspect["Entrypoint"] == ["/opt/hypercli-hermes/entrypoint.sh"]
     assert inspect["Cmd"] == ["gateway", "run"]
     assert "8642/tcp" in inspect["ExposedPorts"]
+    assert "3000/tcp" in inspect["ExposedPorts"]
     assert inspect["Healthcheck"]["Test"][0] == "CMD-SHELL"
     assert not any(value.startswith("HERMES_DEFAULT_MODEL=") for value in inspect["Env"])
     assert not any(value.startswith("HERMES_MODEL_TRANSPORT=") for value in inspect["Env"])
@@ -239,6 +245,10 @@ def main() -> None:
     assert "HERMES_HOME=/home/hermes/.hermes" in inspect["Env"]
     assert "HERMES_WRITE_SAFE_ROOT=/home/hermes" in inspect["Env"]
     assert "HYPER_WORKSPACES_DIR=/home/hermes/shared" in inspect["Env"]
+    assert "HYPER_DESKTOP_ENABLED=0" in inspect["Env"]
+    assert "HYPER_DESKTOP_PORT=3000" in inspect["Env"]
+    assert "HYPER_DESKTOP_GEOMETRY=1280x800x24" in inspect["Env"]
+    assert "DISPLAY=:99" in inspect["Env"]
 
     home_contract = run(
         "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
@@ -267,6 +277,11 @@ def main() -> None:
         *EXPECTED_RUNTIME_TOOLS,
     )
     assert runtime_tools.returncode == 0
+
+    desktop_enabled = run(
+        "docker", "run", "--rm", "-e", "HYPER_DESKTOP_ENABLED=1", IMAGE, "true"
+    )
+    assert desktop_enabled.returncode == 0
 
     package_managers = run(
         "docker", "run", "--rm", "--user", "hermes", "--entrypoint", "/bin/sh", IMAGE,
