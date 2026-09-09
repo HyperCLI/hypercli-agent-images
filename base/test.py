@@ -34,6 +34,8 @@ print(json.dumps({
     "sudo_user": subprocess.check_output(["sudo", "-n", "whoami"], text=True).strip(),
     "hyper": shutil.which("hyper"),
     "hyper_target": os.path.realpath(shutil.which("hyper") or ""),
+    "hyper_version": subprocess.check_output(["hyper", "--version"], text=True).strip(),
+    "hyper_py": shutil.which("hyper-py"),
     "corepack": shutil.which("corepack"),
     "pnpm": shutil.which("pnpm"),
     "yarn": shutil.which("yarn"),
@@ -52,7 +54,9 @@ payload = json.loads(result.stdout)
 assert payload["uid"] == 1000
 assert payload["sudo_user"] == "root"
 assert payload["hyper"]
-assert payload["hyper_target"] == "/opt/hypercli-cli/venv/bin/hyper"
+assert payload["hyper_target"] == "/opt/hypercli/cli/dist/index.js"
+assert payload["hyper_version"].startswith("hyper ")
+assert payload["hyper_py"] == "/usr/local/bin/hyper-py"
 assert payload["corepack"]
 assert payload["pnpm"]
 assert payload["yarn"]

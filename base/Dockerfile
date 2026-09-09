@@ -111,7 +111,18 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     python3 -m venv /opt/hypercli-cli/venv && \
     /opt/hypercli-cli/venv/bin/pip install --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/py-cli[all]" && \
     /opt/hypercli-cli/venv/bin/hyper --help >/dev/null && \
-    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper
+    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper-py && \
+    npm --prefix /opt/hypercli/ts-sdk ci && \
+    npm --prefix /opt/hypercli/ts-sdk run build && \
+    npm --prefix /opt/hypercli/ts-sdk prune --omit=dev && \
+    npm --prefix /opt/hypercli/cli ci && \
+    npm --prefix /opt/hypercli/cli run build && \
+    npm --prefix /opt/hypercli/cli prune --omit=dev && \
+    npm install --global /opt/hypercli/cli && \
+    npm cache clean --force && \
+    test "$(command -v hyper)" = "/usr/local/bin/hyper" && \
+    test "$(readlink -f /usr/local/bin/hyper)" = "/opt/hypercli/cli/dist/index.js" && \
+    hyper --version
 
 COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
 COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome

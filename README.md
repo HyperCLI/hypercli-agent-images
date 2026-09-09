@@ -54,11 +54,23 @@ The six public runtime images are:
 | `goose` | `hypercli-goose` | `goose acp` | Seeded HyperCLI provider with OpenAI and Anthropic aliases plus Goose MCP/skills |
 | `kimi-code` | `hypercli-kimi-code` | `kimi acp` | Upstream Moonshot login |
 
-The canonical `hypercli-agent-base` installs Python, `hyper` with all CLI
-extras in its own `/opt/hypercli-cli/venv`, build tools, `jq`, `rg`
+The canonical `hypercli-agent-base` installs Python, build tools, `jq`, `rg`
 (ripgrep), passwordless sudo for `node`, and HyperCLI skills. It does not
 inherit from or contain OpenClaw.
 `HYPERCLI_REF` defaults to `main`; `HYPERCLI_SHA` is an opt-in exact override.
+
+The base image carries two `hyper` CLIs from the pinned HyperCLI checkout:
+
+| Command | Implementation | Location |
+| --- | --- | --- |
+| `hyper` | TypeScript `@hypercli.com/cli` (bin `hyper`), built from `ts-sdk` + `cli` with production dependencies only and installed globally | `/opt/hypercli/cli/dist/index.js` |
+| `hyper-py` | Python `hypercli-cli` with all extras (`py-cli[all]`) in its own venv | `/opt/hypercli-cli/venv/bin/hyper` |
+
+Both are built from the same `HYPERCLI_REF`/`HYPERCLI_SHA` checkout as the
+bundled skills. The TypeScript CLI owns the `hyper` name on `PATH`; every
+agent image layered on the base (OpenClaw, Hermes, ACP/coding providers)
+inherits it. The base build fails unless `hyper --version` and
+`hyper --help` succeed.
 
 `hypercli-acp-base` adds `acp`, the Buzz plugin, the pinned Buzz Sprig
 multicall binary, and the shared coding entrypoint. Provider images add only
