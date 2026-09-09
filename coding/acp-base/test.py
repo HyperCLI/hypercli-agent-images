@@ -13,6 +13,7 @@ from testlib import (  # noqa: E402
     docker,
     image_config,
     require_image_argument,
+    run,
 )
 
 
@@ -61,6 +62,7 @@ print(json.dumps({
         "buzz": shutil.which("buzz"),
         "buzz_dev_mcp": shutil.which("buzz" + "-dev-mcp"),
         "buzz_acp": shutil.which("buzz" + "-acp"),
+        "hyper_acp": shutil.which("hyper" + "-acp"),
         "host": shutil.which("hypercli" + "-acp"),
     },
     "buzz_commit": Path("/opt/hypercli-coding/.buzz-commit").read_text().strip(),
@@ -86,6 +88,7 @@ assert payload["removed_tools"] == {
     "buzz": None,
     "buzz_dev_mcp": None,
     "buzz_acp": None,
+    "hyper_acp": None,
     "host": None,
 }
 assert len(payload["buzz_commit"]) == 40
@@ -93,6 +96,10 @@ assert payload["buzz_acp_binary_exists"] is False
 assert "--ws-url" in payload["acp_help"]
 assert "Run the full Buzz ACP plugin" in payload["acp_plugin_help"]
 assert "ACP harness that bridges Buzz events to AI agents" in payload["buzz_plugin_help"]
+entrypoint_acp_help = run(image, ["/usr/local/bin/acp", "--help"])
+assert "--ws-url" in entrypoint_acp_help.stdout
+entrypoint_buzz_help = run(image, ["/usr/local/bin/acp", "plugin", "buzz", "--help"])
+assert "ACP harness that bridges Buzz events to AI agents" in entrypoint_buzz_help.stdout
 assert payload["hidden_sprig"] is True
 assert payload["auth_tag_helper"] is True
 assert payload["openclaw_binary"] is None

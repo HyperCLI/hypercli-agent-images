@@ -149,7 +149,7 @@ Buzz provider launches use:
 | Size | largest currently available entitlement slot (`large` > `medium` > `small`) |
 | Entrypoint command | `/usr/local/bin/acp plugin buzz` |
 | ACP child | `BUZZ_ACP_AGENT_COMMAND`, `BUZZ_ACP_AGENT_ARGS`, `BUZZ_ACP_MCP_COMMAND` |
-| Permission mode | `HYPER_ACP_PERMISSION_MODE` is read by `hyper-acp`; the image entrypoint maps it for plain ACP and `hyper-acp plugin buzz` applies it as an ACP session mode when supported |
+| Permission mode | `HYPER_ACP_PERMISSION_MODE` is read by `acp`; the image entrypoint maps it for plain ACP and `acp plugin buzz` applies it as an ACP session mode when supported |
 | Restart | `false` |
 | Routes | none |
 | Home and sync root | `/home/node` |
