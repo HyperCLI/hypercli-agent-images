@@ -143,7 +143,7 @@ def request_json(url: str, *, bearer: str | None = None, payload: dict | None = 
     if bearer:
         headers["Authorization"] = f"Bearer {bearer}"
     data = json.dumps(payload).encode() if payload is not None else None
-    with urllib.request.urlopen(urllib.request.Request(url, headers=headers, data=data), timeout=10) as response:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers, data=data), timeout=30) as response:
         return json.load(response)
 
 
@@ -180,7 +180,7 @@ def request_status(url: str, *, bearer: str) -> int:
         headers={"Authorization": f"Bearer {bearer}"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with urllib.request.urlopen(request, timeout=30) as response:
             return response.status
     except urllib.error.HTTPError as exc:
         return exc.code
@@ -196,7 +196,7 @@ def request_preflight(url: str, *, origin: str) -> tuple[int, str | None]:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with urllib.request.urlopen(request, timeout=30) as response:
             return response.status, response.headers.get("Access-Control-Allow-Origin")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.headers.get("Access-Control-Allow-Origin")
