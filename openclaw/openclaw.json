@@ -12,7 +12,10 @@
             "id": "default-anthropic",
             "name": "default-anthropic",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": [
+              "text",
+              "image"
+            ],
             "contextWindow": 262144,
             "maxTokens": 65536
           },
@@ -20,7 +23,10 @@
             "id": "coding-anthropic",
             "name": "coding-anthropic",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": [
+              "text",
+              "image"
+            ],
             "contextWindow": 262144,
             "maxTokens": 65536
           },
@@ -28,7 +34,10 @@
             "id": "kimi-k3-anthropic",
             "name": "kimi-k3",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": [
+              "text",
+              "image"
+            ],
             "contextWindow": 262144,
             "maxTokens": 65536
           },
@@ -36,7 +45,10 @@
             "id": "kimi-k2.5-anthropic",
             "name": "kimi-k2.5-anthropic",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": [
+              "text",
+              "image"
+            ],
             "contextWindow": 262144,
             "maxTokens": 65536
           },
@@ -44,7 +56,10 @@
             "id": "kimi-k2.6-anthropic",
             "name": "kimi-k2.6",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": [
+              "text",
+              "image"
+            ],
             "contextWindow": 262144,
             "maxTokens": 65536
           }
@@ -59,8 +74,7 @@
     "controlUi": {
       "allowedOrigins": [
         "http://localhost:18789",
-        "http://127.0.0.1:18789",
-        "${OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN}"
+        "http://127.0.0.1:18789"
       ]
     },
     "auth": {

@@ -35,6 +35,17 @@ function parseNonNegativeInteger(name) {
 const defaults = (((config.agents ||= {}).defaults ||= {}))
 const memorySearch = ((defaults.memorySearch ||= {}))
 const sync = ((memorySearch.sync ||= {}))
+
+// OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN is one env var holding a space-joined
+// list; OpenClaw's ${VAR} substitution is pure string splicing, so it would
+// land as a single bogus origin. Rebuild the array every boot instead.
+{
+  const raw = env.OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN
+  const envOrigins = typeof raw === "string" ? raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean) : []
+  const controlUi = ((config.gateway ||= {}).controlUi ||= {})
+  controlUi.allowedOrigins = [...new Set(["http://localhost:18789", "http://127.0.0.1:18789", ...envOrigins])]
+}
+
 const workspaceIndexPath = "~/shared"
 const extraPaths = Array.isArray(memorySearch.extraPaths) ? memorySearch.extraPaths : []
 if (!extraPaths.includes(workspaceIndexPath)) extraPaths.push(workspaceIndexPath)
