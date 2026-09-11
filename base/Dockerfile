@@ -82,7 +82,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-terminal \
     xfwm4 \
     xvfb \
-    && curl -fsSL -o /tmp/google-chrome-stable.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/google-chrome-stable.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y --no-install-recommends /tmp/google-chrome-stable.deb \
     && rm -f /tmp/google-chrome-stable.deb \
     && if [ ! -s /var/lib/dbus/machine-id ]; then dbus-uuidgen >/var/lib/dbus/machine-id; fi \
