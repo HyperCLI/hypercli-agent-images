@@ -41,7 +41,7 @@ const sync = ((memorySearch.sync ||= {}))
 // land as a single bogus origin. Rebuild the array every boot instead.
 {
   const raw = env.OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN
-  const envOrigins = typeof raw === "string" ? raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean) : []
+  const envOrigins = typeof raw === "string" ? raw.trim().split(" ").filter(Boolean) : []
   const controlUi = ((config.gateway ||= {}).controlUi ||= {})
   controlUi.allowedOrigins = [...new Set(["http://localhost:18789", "http://127.0.0.1:18789", ...envOrigins])]
 }
