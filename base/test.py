@@ -167,4 +167,26 @@ assert "feh --no-fehbg --bg-fill" in desktop_script
 assert "/usr/local/share/hypercli/hypercli-bg.png" in desktop_script
 assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script
 
+novnc_webroot = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "/bin/sh",
+    image,
+    "-c",
+    "ls -l /usr/share/novnc/hyper-desktop.html /usr/share/novnc/core/rfb.js",
+)
+assert novnc_webroot.returncode == 0
+
+desktop_viewer = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/share/novnc/hyper-desktop.html",
+).stdout
+assert "./core/rfb.js" in desktop_viewer
+assert "hyper-desktop:ft-refresh" in desktop_viewer
+
 print(f"{image}: HyperCLI agent base contract passed")
