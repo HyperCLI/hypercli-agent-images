@@ -60,7 +60,7 @@ assert payload["hyper"]
 assert payload["hyper_target"] == "/opt/hypercli/cli/dist/index.js"
 assert payload["hyper_version"].startswith("hyper ")
 assert payload["hyper_help"] == 0
-assert payload["hypercli_dirs"] == ["cli", "docs", "hyper-acp", "skills", "ts-sdk"]
+assert payload["hypercli_dirs"] == ["cli", "docs", "skills", "ts-sdk"]
 assert payload["corepack"]
 assert payload["pnpm"]
 assert payload["yarn"]
