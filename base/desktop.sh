@@ -5,6 +5,22 @@ hyper_desktop_enabled() {
   esac
 }
 
+hyper_configure_plank_dock() {
+  local dock_dir="${HOME:-/home/node}/.config/plank/dock1/launchers"
+  mkdir -p "${dock_dir}"
+  local app
+  for app in google-chrome thunar xfce4-terminal; do
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/%s.desktop\n' "${app}" \
+      >"${dock_dir}/${app}.dockitem"
+  done
+  if command -v dconf >/dev/null 2>&1; then
+    dconf write /net/launchpad/plank/docks/dock1/position "'bottom'" >/dev/null 2>&1 || true
+    dconf write /net/launchpad/plank/docks/dock1/icon-size "48" >/dev/null 2>&1 || true
+  else
+    echo "[desktop] dconf is not available; skipping dock settings" >&2
+  fi
+}
+
 hyper_start_desktop() {
   if ! command -v Xvfb >/dev/null 2>&1 || \
      ! command -v x11vnc >/dev/null 2>&1 || \
@@ -37,6 +53,18 @@ hyper_start_desktop() {
     xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
   fi
   xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
+  hyper_configure_plank_dock
+  if command -v plank >/dev/null 2>&1; then
+    plank >>/tmp/plank.log 2>&1 &
+  else
+    echo "[desktop] plank is not available; skipping dock" >&2
+  fi
+  local welcome_chrome="/usr/local/bin/hypercli-chrome"
+  if [ -x "${welcome_chrome}" ]; then
+    "${welcome_chrome}" >/tmp/hypercli-chrome-welcome.log 2>&1 &
+  else
+    echo "[desktop] ${welcome_chrome} is not available; skipping welcome window" >&2
+  fi
   x11vnc -display "${DISPLAY}" -rfbport "${vnc_port}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
   websockify --web /usr/share/novnc/ "${desktop_port}" "localhost:${vnc_port}" >/tmp/novnc.log 2>&1 &
 }

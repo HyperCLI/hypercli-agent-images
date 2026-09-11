@@ -41,6 +41,9 @@ print(json.dumps({
     "pnpm": shutil.which("pnpm"),
     "yarn": shutil.which("yarn"),
     "feh": shutil.which("feh"),
+    "xsetroot": shutil.which("xsetroot"),
+    "plank": shutil.which("plank"),
+    "dconf": shutil.which("dconf"),
     "background": Path("/usr/local/share/hypercli/hypercli-bg.png").is_file(),
     "fonts": {
         name: subprocess.check_output(["fc-match", name], text=True).split(":", 1)[0]
@@ -65,6 +68,9 @@ assert payload["corepack"]
 assert payload["pnpm"]
 assert payload["yarn"]
 assert payload["feh"]
+assert payload["xsetroot"]
+assert payload["plank"]
+assert payload["dconf"]
 assert payload["background"] is True
 assert payload["fonts"] == {
     "Noto Sans": "NotoSans-Regular.ttf",
@@ -150,6 +156,13 @@ desktop_script = docker(
 assert "xfce4-panel" not in desktop_script
 assert "hyper_configure_xfce_panel" not in desktop_script
 assert "hyper_apply_xfce_panel" not in desktop_script
+assert "plank >>/tmp/plank.log 2>&1 &" in desktop_script
+assert "hyper_configure_plank_dock" in desktop_script
+assert ".config/plank/dock1/launchers" in desktop_script
+assert "PlankDockItemPreferences" in desktop_script
+assert "dconf write /net/launchpad/plank/docks/dock1/position" in desktop_script
+assert "dconf write /net/launchpad/plank/docks/dock1/icon-size" in desktop_script
+assert "/usr/local/bin/hypercli-chrome" in desktop_script
 assert "feh --no-fehbg --bg-fill" in desktop_script
 assert "/usr/local/share/hypercli/hypercli-bg.png" in desktop_script
 assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script

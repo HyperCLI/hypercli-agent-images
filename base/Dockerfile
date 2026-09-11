@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     dbus-x11 \
+    dconf-cli \
     feh \
     fonts-dejavu \
     fonts-firacode \
@@ -71,8 +72,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxrandr2 \
     novnc \
+    plank \
     thunar \
     websockify \
+    x11-xserver-utils \
     x11vnc \
     xauth \
     xdg-utils \
