@@ -29,7 +29,13 @@ hyper_start_desktop() {
   sleep 1
   eval "$(dbus-launch --sh-syntax)"
   export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-  xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+  local background_image="${HYPER_DESKTOP_BACKGROUND_IMAGE:-/usr/local/share/hypercli/hypercli-bg.png}"
+  if [ -s "${background_image}" ] && command -v feh >/dev/null 2>&1; then
+    feh --no-fehbg --bg-fill "${background_image}" >/dev/null 2>&1 || \
+      xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+  else
+    xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+  fi
   xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
   x11vnc -display "${DISPLAY}" -rfbport "${vnc_port}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
   websockify --web /usr/share/novnc/ "${desktop_port}" "localhost:${vnc_port}" >/tmp/novnc.log 2>&1 &

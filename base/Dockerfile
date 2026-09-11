@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     dbus-x11 \
+    feh \
     fonts-dejavu \
     fonts-firacode \
     fonts-liberation \
@@ -87,7 +88,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod 0440 /etc/sudoers.d/90-node-nopasswd \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/local/lib/hypercli /home/node/shared /home/node/Desktop /tmp/.X11-unix \
+RUN mkdir -p /usr/local/lib/hypercli /usr/local/share/hypercli /home/node/shared /home/node/Desktop /tmp/.X11-unix \
     && chmod 1777 /tmp/.X11-unix \
     && chown -R node:node /home/node
 
@@ -108,10 +109,6 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     git -C /opt/hypercli checkout FETCH_HEAD && \
     { test -z "${HYPERCLI_SHA}" || test "$(git -C /opt/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; } && \
     test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    python3 -m venv /opt/hypercli-cli/venv && \
-    /opt/hypercli-cli/venv/bin/pip install --no-cache-dir /opt/hypercli/sdk "/opt/hypercli/py-cli[all]" && \
-    /opt/hypercli-cli/venv/bin/hyper --help >/dev/null && \
-    ln -sf /opt/hypercli-cli/venv/bin/hyper /usr/local/bin/hyper-py && \
     npm --prefix /opt/hypercli/ts-sdk ci && \
     npm --prefix /opt/hypercli/ts-sdk run build && \
     npm --prefix /opt/hypercli/ts-sdk prune --omit=dev && \
@@ -122,13 +119,19 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     npm cache clean --force && \
     test "$(command -v hyper)" = "/usr/local/bin/hyper" && \
     test "$(readlink -f /usr/local/bin/hyper)" = "/opt/hypercli/cli/dist/index.js" && \
-    hyper --version
+    hyper --help >/dev/null && \
+    hyper skills export /tmp/hypercli-skills >/dev/null && \
+    rm -rf /opt/hypercli/skills && \
+    mv /tmp/hypercli-skills /opt/hypercli/skills && \
+    find /opt/hypercli -mindepth 1 -maxdepth 1 \
+      ! -name cli ! -name ts-sdk ! -name docs ! -name skills ! -name hyper-acp -exec rm -rf {} +
 
 COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
+COPY hypercli-bg.png /usr/local/share/hypercli/hypercli-bg.png
 COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
-RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
+RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/local/share/hypercli/hypercli-bg.png /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
 
 ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \

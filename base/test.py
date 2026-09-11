@@ -35,10 +35,13 @@ print(json.dumps({
     "hyper": shutil.which("hyper"),
     "hyper_target": os.path.realpath(shutil.which("hyper") or ""),
     "hyper_version": subprocess.check_output(["hyper", "--version"], text=True).strip(),
-    "hyper_py": shutil.which("hyper-py"),
+    "hyper_help": subprocess.run(["hyper", "--help"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode,
+    "hypercli_dirs": sorted(path.name for path in Path("/opt/hypercli").iterdir()),
     "corepack": shutil.which("corepack"),
     "pnpm": shutil.which("pnpm"),
     "yarn": shutil.which("yarn"),
+    "feh": shutil.which("feh"),
+    "background": Path("/usr/local/share/hypercli/hypercli-bg.png").is_file(),
     "fonts": {
         name: subprocess.check_output(["fc-match", name], text=True).split(":", 1)[0]
         for name in ("Noto Sans", "Noto Color Emoji", "Noto Sans CJK SC", "Fira Code")
@@ -56,10 +59,13 @@ assert payload["sudo_user"] == "root"
 assert payload["hyper"]
 assert payload["hyper_target"] == "/opt/hypercli/cli/dist/index.js"
 assert payload["hyper_version"].startswith("hyper ")
-assert payload["hyper_py"] == "/usr/local/bin/hyper-py"
+assert payload["hyper_help"] == 0
+assert payload["hypercli_dirs"] == ["cli", "docs", "hyper-acp", "skills", "ts-sdk"]
 assert payload["corepack"]
 assert payload["pnpm"]
 assert payload["yarn"]
+assert payload["feh"]
+assert payload["background"] is True
 assert payload["fonts"] == {
     "Noto Sans": "NotoSans-Regular.ttf",
     "Noto Color Emoji": "NotoColorEmoji.ttf",
@@ -144,5 +150,8 @@ desktop_script = docker(
 assert "xfce4-panel" not in desktop_script
 assert "hyper_configure_xfce_panel" not in desktop_script
 assert "hyper_apply_xfce_panel" not in desktop_script
+assert "feh --no-fehbg --bg-fill" in desktop_script
+assert "/usr/local/share/hypercli/hypercli-bg.png" in desktop_script
+assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script
 
 print(f"{image}: HyperCLI agent base contract passed")
