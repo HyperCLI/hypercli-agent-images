@@ -124,7 +124,7 @@ RUN : "${HYPERCLI_CACHE_BUST}" && \
     rm -rf /opt/hypercli/skills && \
     mv /tmp/hypercli-skills /opt/hypercli/skills && \
     find /opt/hypercli -mindepth 1 -maxdepth 1 \
-      ! -name cli ! -name ts-sdk ! -name docs ! -name skills ! -name hyper-acp -exec rm -rf {} +
+      ! -name cli ! -name ts-sdk ! -name docs ! -name skills -exec rm -rf {} +
 
 COPY desktop.sh /usr/local/lib/hypercli/desktop.sh
 COPY hypercli-bg.png /usr/local/share/hypercli/hypercli-bg.png

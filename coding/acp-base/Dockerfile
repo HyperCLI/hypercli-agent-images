@@ -4,12 +4,13 @@ ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41c
 ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
 ARG HYPERCLI_CACHE_BUST=local
 
-FROM ${HYPERCLI_AGENT_BASE_IMAGE} AS hypercli-source
-
 FROM ${RUST_IMAGE} AS source-builder
 
 ARG BUZZ_REPO=https://github.com/block/buzz.git
 ARG HYPERCLI_CACHE_BUST=local
+ARG HYPERCLI_REF=main
+ARG HYPERCLI_SHA
+ARG HYPERCLI_REPO=https://github.com/HyperCLI/hypercli.git
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -20,9 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-COPY --from=hypercli-source /opt/hypercli /build/hypercli
+# Clone the hyper-cli sources directly instead of inheriting /opt/hypercli
+# from the agent base image — the base must not carry hyper-acp.
+RUN : "${HYPERCLI_CACHE_BUST}" && \
+    checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
+    test -n "${checkout_ref}" && \
+    git clone --depth 1 "${HYPERCLI_REPO}" /build/hypercli && \
+    git -C /build/hypercli fetch --depth 1 origin "${checkout_ref}" && \
+    git -C /build/hypercli checkout FETCH_HEAD && \
+    { test -z "${HYPERCLI_SHA}" || test "$(git -C /build/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; }
 RUN set -eux; \
-    printf '%s\n' "${HYPERCLI_CACHE_BUST}" >/dev/null; \
     BUZZ_REF="$(sed -n 's/^- \{0,1\}Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
