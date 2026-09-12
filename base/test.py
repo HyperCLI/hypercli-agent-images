@@ -159,6 +159,30 @@ for false_flag in ("false", "0", "FALSE", "no", "off", "disabled"):
     ).stdout
     assert "--proxy-server" not in no_proxy, (false_flag, no_proxy)
 
+# --no-sandbox stays: agent pods are not guaranteed the kernel primitives
+# Chrome's sandbox needs, and Chrome hard-refuses to launch when sandbox
+# setup fails. The warning infobar it triggers is suppressed image-wide by
+# the managed policy below, never by --test-type (which would flip broad
+# automated-test behavior across Chrome).
+assert "--no-sandbox" in without_proxy, without_proxy
+assert "--test-type" not in without_proxy, without_proxy
+
+# Managed Chrome policy disabling the "unsupported command-line flag"
+# security-warning infobar that --no-sandbox would otherwise trigger in the
+# agent desktop; this is the documented CommandLineFlagSecurityWarningsEnabled
+# policy (local-state pref browser.command_line_flag_security_warnings_enabled).
+chrome_policies = json.loads(
+    docker(
+        "run",
+        "--rm",
+        "--entrypoint",
+        "cat",
+        image,
+        "/etc/opt/chrome/policies/managed/hypercli.json",
+    ).stdout
+)
+assert chrome_policies == {"CommandLineFlagSecurityWarningsEnabled": False}, chrome_policies
+
 desktop_entry = docker(
     "run",
     "--rm",
@@ -215,7 +239,8 @@ novnc_webroot = docker(
     "-c",
     "ls -l /usr/share/novnc/hyper-desktop.html /usr/share/novnc/core/rfb.js"
     " /usr/share/novnc/vnc.html /usr/share/novnc/vnc_auto.html"
-    " /usr/local/lib/hypercli/pin-novnc-params.py",
+    " /usr/local/lib/hypercli/pin-novnc-params.py"
+    " /usr/local/lib/hypercli/stretch-novnc-display.py",
 )
 assert novnc_webroot.returncode == 0
 
@@ -239,6 +264,34 @@ assert "val = HYPERCLI_PINNED_PARAMS.includes(name) ? defVal : WebUtil.readSetti
 assert "let val = WebUtil.getConfigVar(name);" not in novnc_ui
 assert "// Check Query string followed by cookie\n" not in novnc_ui
 assert "password = WebUtil.getConfigVar('password');" not in novnc_ui
+
+# noVNC Display stretch patch: autoscale() fills the container per axis
+# instead of fit-letterboxing the fixed-geometry Xvfb desktop, and the
+# pointer mapping every mouse/wheel/gesture path funnels through is per-axis
+# so input stays aligned with the stretched canvas. Anchors below are the
+# exact patched strings; if the apt package changed shape, the image build
+# itself already failed in stretch-novnc-display.py.
+novnc_display = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/share/novnc/core/display.js",
+).stdout
+assert novnc_display.count("hypercli-stretch-display") == 3
+assert "this._scaleX = 1.0;" in novnc_display
+assert "scaleRatioX = containerWidth / vp.w;" in novnc_display
+assert "scaleRatioY = containerHeight / vp.h;" in novnc_display
+assert "this._rescale(scaleRatioX, scaleRatioY);" in novnc_display
+assert "_rescale(factorX, factorY)" in novnc_display
+assert "factorX * vp.w + 'px'" in novnc_display
+assert "factorY * vp.h + 'px'" in novnc_display
+assert "x / this._scaleX + this._viewportLoc.x" in novnc_display
+assert "y / this._scaleY + this._viewportLoc.y" in novnc_display
+# Upstream's aspect-preserving fit (the letterboxing) is gone.
+assert "fbAspectRatio" not in novnc_display
+assert "x / this._scale + this._viewportLoc.x" not in novnc_display
 
 desktop_viewer = docker(
     "run",
@@ -276,6 +329,9 @@ assert "history.replaceState(null, '', window.location.pathname)" in desktop_vie
 # backstops.
 assert desktop_viewer.count("scrubSensitiveUrlParams();") == 4
 assert "rfb.scaleViewport = scaleViewport;" in desktop_viewer
+# Scaling is the viewer default in our embed (the Display stretch patch
+# means it fills instead of letterboxing); `scale=false` restores the fit.
+assert "readQueryVariable('scale', 'true') !== 'false'" in desktop_viewer
 assert "readQueryVariable('scale'" in desktop_viewer.split("scrubSensitiveUrlParams();")[0]
 assert "clip-toast" in desktop_viewer
 assert "navigator.clipboard.writeText(text).then(" in desktop_viewer

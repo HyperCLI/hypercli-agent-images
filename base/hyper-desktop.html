@@ -7,7 +7,10 @@
     clipboard both ways, and turns dropped files into Reef uploads on the
     agent's ~/Desktop. Query string (query or hash, like vnc_lite.html):
         path=websockify   websockify path (may itself carry ?token=...)
-        scale=true        scale the remote viewport to fit
+        scale=false       fit the remote viewport inside the page instead of
+                          the default: fill the page exactly (the vendored
+                          noVNC Display is stretch-patched, so scaling does
+                          not letterbox; see base/stretch-novnc-display.py)
         ft=<token>        Reef files token
         fte=<epoch>       files-token expiry, epoch seconds
         rh=<url>          Reef base URL (default: this host without the
@@ -246,7 +249,11 @@
         if (uploadsBlocked) {
             status('File uploads disabled: rh is not an allowed Reef host');
         }
-        const scaleViewport = readQueryVariable('scale', '') === 'true';
+        // Fill the page by default in our embed: the image's stretch-patched
+        // noVNC Display scales the fixed-geometry desktop into whatever page
+        // size the embedder gives us without letterboxing. `scale=false`
+        // restores upstream's aspect-preserving fit.
+        const scaleViewport = readQueryVariable('scale', 'true') !== 'false';
 
         // Every param is captured at this point: drop the ws token and upload
         // params from the visible URL and history entry right away, not only

@@ -74,6 +74,17 @@ The `hypercli-chrome` wrapper turns `HYPER_PROXY_HOST` into Chrome's
 `off`, `disabled`) disables proxying; any other non-empty value passes
 through unchanged as an explicit proxy URL.
 
+The wrapper always launches Chrome with `--no-sandbox`: agent pods are not
+guaranteed the kernel primitives (setuid helper or unprivileged user
+namespaces) Chrome's sandbox needs, and Chrome hard-refuses to launch when
+sandbox setup fails; the per-agent pod/namespace is the security boundary.
+The "You are using an unsupported command-line flag" infobar that flag
+triggers is suppressed image-wide by the managed Chrome policy at
+`/etc/opt/chrome/policies/managed/hypercli.json`
+(`CommandLineFlagSecurityWarningsEnabled: false`, installed from
+`base/chrome-policies-managed.json`), the documented enterprise policy for
+exactly this warning.
+
 `base/desktop.sh` is sourced by the OpenClaw and Hermes entrypoints and does
 nothing unless `HYPER_DESKTOP_ENABLED` is truthy. When enabled,
 `hyper_start_desktop` exports `HYPER_PROXY_HOST=true` when the variable is
@@ -100,7 +111,13 @@ The base image installs its custom viewer as
 `base/pin-novnc-params.py` patches the stock full UI (`app/ui.js`, used by
 `vnc.html` and `vnc_auto.html`) so the URL query/hash and persisted settings
 can no longer override `host`, `port`, `path`, or `password` — the RFB
-websocket stays pinned to the page origin defaults. `hyper-desktop.html` connects
+websocket stays pinned to the page origin defaults. A second build-time
+patch, `base/stretch-novnc-display.py`, reworks the vendored
+`core/display.js` so noVNC's viewport scaling fills the container on each
+axis instead of aspect-preserving fit: the fixed-geometry Xvfb desktop then
+fills whatever page size the embedder gives the viewer without
+pillar/letterbox bars, and pointer input is mapped per axis so clicks stay
+aligned with the stretched canvas. `hyper-desktop.html` connects
 immediately on load, syncs the clipboard both ways, and turns dropped files
 into Reef uploads on the agent's `~/Desktop`. Its query-string contract (read
 from the query or the hash, like `vnc_lite.html`):
@@ -108,7 +125,7 @@ from the query or the hash, like `vnc_lite.html`):
 | Param | Meaning |
 | --- | --- |
 | `path` | websockify path (default `websockify`); may itself carry `?token=...` |
-| `scale` | `true` scales the remote viewport to fit |
+| `scale` | `false` fits the remote viewport inside the page (aspect preserved); anything else fills the page exactly — the default in our embed |
 | `ft` | Reef files token |
 | `fte` | files-token expiry, epoch seconds |
 | `rh` | Reef base URL; defaults to this host without the leading `desktop-` |

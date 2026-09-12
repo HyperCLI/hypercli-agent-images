@@ -16,6 +16,17 @@ esac
 mkdir -p "${user_data_dir}"
 
 args=(
+  # Chrome's own sandbox needs kernel primitives (a setuid helper or
+  # unprivileged user namespaces) that are not guaranteed on every cluster
+  # these pods land on, and Chrome hard-refuses to launch when the sandbox
+  # cannot initialize. --no-sandbox keeps every desktop/automation launch
+  # working; the pod/namespace boundary (not the Chrome sandbox) is the
+  # security boundary for these agents. The "unsupported command-line flag"
+  # infobar this triggers is suppressed image-wide by the
+  # CommandLineFlagSecurityWarningsEnabled=false managed policy the
+  # Dockerfile installs under /etc/opt/chrome/policies/managed; do not
+  # replace that with --test-type, which flips broad automated-test
+  # behavior across Chrome.
   --no-sandbox
   --disable-dev-shm-usage
   --no-first-run

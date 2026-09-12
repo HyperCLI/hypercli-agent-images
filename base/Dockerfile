@@ -140,11 +140,24 @@ COPY hypercli-bg.png /usr/local/share/hypercli/hypercli-bg.png
 COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
+# Managed Chrome policy: hypercli-chrome launches Chrome with --no-sandbox
+# (agent pods are not guaranteed the kernel primitives Chrome's sandbox
+# needs; the pod/namespace boundary is the security boundary). That flag
+# would trigger the "You are using an unsupported command-line flag"
+# infobar in every desktop session; this is the documented enterprise
+# policy (chrome.*:76+, local-state pref
+# browser.command_line_flag_security_warnings_enabled) that suppresses
+# exactly that warning. --test-type would also suppress it but flips broad
+# automated-test behavior across Chrome, so it stays out of the flag list.
+RUN mkdir -p /etc/opt/chrome/policies/managed
+COPY --chmod=0644 chrome-policies-managed.json /etc/opt/chrome/policies/managed/hypercli.json
 COPY hyper-desktop.html /usr/share/novnc/hyper-desktop.html
 COPY patch_vnc_lite.py /usr/local/lib/hypercli/patch_vnc_lite.py
-RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/local/share/hypercli/hypercli-bg.png /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop /usr/share/novnc/hyper-desktop.html /usr/local/lib/hypercli/patch_vnc_lite.py \
+COPY stretch-novnc-display.py /usr/local/lib/hypercli/stretch-novnc-display.py
+RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/local/share/hypercli/hypercli-bg.png /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop /usr/share/novnc/hyper-desktop.html /usr/local/lib/hypercli/patch_vnc_lite.py /usr/local/lib/hypercli/stretch-novnc-display.py \
     && test -f /usr/share/novnc/core/rfb.js \
-    && python3 /usr/local/lib/hypercli/patch_vnc_lite.py
+    && python3 /usr/local/lib/hypercli/patch_vnc_lite.py \
+    && python3 /usr/local/lib/hypercli/stretch-novnc-display.py /usr/share/novnc
 
 ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
