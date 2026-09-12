@@ -16,6 +16,10 @@ coding/
 └── kimi-code/
 ```
 
+`base/` builds the shared `hypercli-agent-base` image (runtime floor plus the
+X11 agent desktop stack); `openclaw/` and `hermes-agent/` build the OpenClaw
+and Hermes runtime images on top of it.
+
 Build the canonical agent base, the coding ACP base, then one provider image:
 
 ```bash
@@ -58,6 +62,50 @@ The canonical `hypercli-agent-base` installs Python, build tools, `jq`, `rg`
 (ripgrep), passwordless sudo for `node`, and HyperCLI skills. It does not
 inherit from or contain OpenClaw.
 `HYPERCLI_REF` defaults to `main`; `HYPERCLI_SHA` is an opt-in exact override.
+
+The base image also carries the shared X11 agent-desktop stack: Xvfb, xfwm4,
+x11vnc, the Debian `novnc` package with websockify, plank, Thunar,
+xfce4-terminal, feh, and Google Chrome (via the `hypercli-chrome` wrapper).
+
+`base/desktop.sh` is sourced by the OpenClaw and Hermes entrypoints and does
+nothing unless `HYPER_DESKTOP_ENABLED` is truthy. When enabled,
+`hyper_start_desktop`:
+
+1. starts Xvfb on `${DISPLAY:-:99}` with `${HYPER_DESKTOP_GEOMETRY:-1280x800x24}`;
+2. paints the background: feh `--bg-fill` with
+   `${HYPER_DESKTOP_BACKGROUND_IMAGE:-/usr/local/share/hypercli/hypercli-bg.png}`,
+   falling back to an `xsetroot` solid color;
+3. starts xfwm4, then plank with a bottom dock pinned to Chrome, Thunar, and
+   xfce4-terminal;
+4. opens a welcome Chrome window via `hypercli-chrome`;
+5. starts x11vnc on localhost `${HYPER_VNC_PORT:-5900}` and websockify serving
+   `/usr/share/novnc/` on `${HYPER_DESKTOP_PORT:-${OPENCLAW_DESKTOP_PORT:-3000}}`.
+
+Missing desktop runtime packages fail fast with an error; a missing plank or
+welcome-Chrome binary only skips that piece.
+
+The base image installs its custom viewer as
+`/usr/share/novnc/hyper-desktop.html`, next to the stock `vnc.html` and
+`vnc_lite.html` pages, which remain available. `hyper-desktop.html` connects
+immediately on load, syncs the clipboard both ways, and turns dropped files
+into Reef uploads on the agent's `~/Desktop`. Its query-string contract (read
+from the query or the hash, like `vnc_lite.html`):
+
+| Param | Meaning |
+| --- | --- |
+| `path` | websockify path (default `websockify`); may itself carry `?token=...` |
+| `scale` | `true` scales the remote viewport to fit |
+| `ft` | Reef files token |
+| `fte` | files-token expiry, epoch seconds |
+| `rh` | Reef base URL; defaults to this host without the leading `desktop-` |
+
+Uploads go cross-origin to Reef as `PUT {rh}/files/Desktop/{name}` with the
+`ft` bearer token. When embedded, the viewer treats only the allowlisted parent
+origins (`tauri://localhost`, `http://tauri.localhost`, `http://localhost:1420`,
+`https://agents.hypercli.com`, `https://agents.dev.hypercli.com`) as a trusted
+source of fresh tokens: it posts `{type: "hyper-desktop:ft-refresh"}` to the
+parent ahead of expiry and accepts `{type: "hyper-desktop:ft", token,
+expiresAt}` replies.
 
 The base image carries two `hyper` CLIs from the pinned HyperCLI checkout:
 
