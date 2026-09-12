@@ -24,6 +24,11 @@ BODY_TAG = "<body>"
 
 REFERRER_META = '    <meta name="referrer" content="no-referrer">'
 
+# Build is not guaranteed to run on a pristine webroot; refuse to patch a page
+# that already carries the hardening markers (same guard as
+# pin-novnc-params.py).
+PATCHED_MARKER = 'name="referrer" content="no-referrer"'
+
 # script-src keeps 'unsafe-inline': the upstream page ships an inline module
 # script, which is also what the token scrub below hooks into.
 CSP_META = (
@@ -63,6 +68,8 @@ NOSCRIPT = (
 
 def main() -> int:
     text = VNC_LITE.read_text(encoding="utf-8")
+    if PATCHED_MARKER in text:
+        raise SystemExit(f"{VNC_LITE} is already patched")
     anchors = (CHARSET_META, CONNECT_HANDLER, PARAM_TAIL, BODY_TAG)
     for anchor in anchors:
         if text.count(anchor) != 1:
