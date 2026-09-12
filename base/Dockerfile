@@ -141,8 +141,10 @@ COPY --chmod=0755 chrome-wrapper.sh /usr/local/bin/hypercli-chrome
 COPY google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
 COPY hyper-desktop.html /usr/share/novnc/hyper-desktop.html
-RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/local/share/hypercli/hypercli-bg.png /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop /usr/share/novnc/hyper-desktop.html \
-    && test -f /usr/share/novnc/core/rfb.js
+COPY patch_vnc_lite.py /usr/local/lib/hypercli/patch_vnc_lite.py
+RUN chmod 0644 /usr/local/lib/hypercli/desktop.sh /usr/local/share/hypercli/hypercli-bg.png /usr/share/applications/google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop /usr/share/novnc/hyper-desktop.html /usr/local/lib/hypercli/patch_vnc_lite.py \
+    && test -f /usr/share/novnc/core/rfb.js \
+    && python3 /usr/local/lib/hypercli/patch_vnc_lite.py
 
 ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \

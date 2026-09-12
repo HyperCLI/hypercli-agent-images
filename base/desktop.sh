@@ -66,5 +66,5 @@ hyper_start_desktop() {
     echo "[desktop] ${welcome_chrome} is not available; skipping welcome window" >&2
   fi
   x11vnc -display "${DISPLAY}" -rfbport "${vnc_port}" -localhost -forever -shared -nopw >/tmp/x11vnc.log 2>&1 &
-  websockify --web /usr/share/novnc/ "${desktop_port}" "localhost:${vnc_port}" >/tmp/novnc.log 2>&1 &
+  websockify --heartbeat 30 --web /usr/share/novnc/ "${desktop_port}" "localhost:${vnc_port}" >/tmp/novnc.log 2>&1 &
 }

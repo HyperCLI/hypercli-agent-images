@@ -23,6 +23,10 @@
 
     <meta charset="utf-8">
 
+    <meta name="referrer" content="no-referrer">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss: https:">
+
     <style>
 
         html, body {
@@ -88,6 +92,52 @@
 
         #toast.visible {
             opacity: 1;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        #clip-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 48px;
+            transform: translateX(-50%);
+            max-width: 70vw;
+            min-width: 240px;
+            padding: 8px 12px;
+            border: 1px solid #3f6b96;
+            border-radius: 4px;
+            background-color: #10334f;
+            z-index: 30;
+        }
+
+        #clip-text {
+            display: block;
+            max-height: 30vh;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #clip-manual {
+            display: block;
+            width: 100%;
+            height: 16vh;
+            resize: none;
+            background-color: #071a2f;
+            color: inherit;
+            border: 1px solid #1e3a55;
+        }
+
+        #clip-copy {
+            margin-top: 8px;
+            padding: 4px 12px;
+            border: 1px solid #3f6b96;
+            border-radius: 4px;
+            background: none;
+            color: inherit;
+            cursor: pointer;
         }
 
         #status {
@@ -180,6 +230,15 @@
         if (uploadsBlocked) {
             status('File uploads disabled: rh is not an allowed Reef host');
         }
+        const scaleViewport = readQueryVariable('scale', '') === 'true';
+
+        // Every param is captured at this point: drop the ws token and upload
+        // params from the visible URL and history entry right away, not only
+        // once the RFB handshake settles.
+        function scrubSensitiveUrlParams() {
+            history.replaceState(null, '', window.location.pathname);
+        }
+        scrubSensitiveUrlParams();
 
         // The embedding parent is the only trusted source of fresh files
         // tokens (uploads go cross-origin to Reef; the viewer page itself is
@@ -321,20 +380,56 @@
             if (e.dataTransfer?.files?.length) void handleDroppedFiles(e.dataTransfer.files);
         });
 
+        // Remote -> local clipboard: the Clipboard API only writes from a user
+        // gesture and this runs from an RFB event, so show the received text
+        // in a transient toast with a Copy button instead.
+        let clipHideTimer = null;
+
+        function hideClipboardToast() {
+            document.getElementById('clip-toast').hidden = true;
+            if (clipHideTimer) {
+                clearTimeout(clipHideTimer);
+                clipHideTimer = null;
+            }
+        }
+
         function remoteClipboardToLocal(text) {
-            navigator.clipboard.writeText(text).catch(() => {
-                // Fallback for non-secure contexts / denied permission.
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
-                try { document.execCommand('copy'); } catch { /* best effort */ }
-                ta.remove();
-                toast(`Copied: ${text.length > 120 ? text.slice(0, 120) + '…' : text}`);
-            });
+            const box = document.getElementById('clip-toast');
+            const preview = document.getElementById('clip-text');
+            const manual = document.getElementById('clip-manual');
+            const copyButton = document.getElementById('clip-copy');
+            if (navigator.clipboard && window.isSecureContext) {
+                preview.hidden = false;
+                preview.textContent = text;
+                manual.hidden = true;
+                copyButton.textContent = 'Copy';
+                copyButton.onclick = () => {
+                    navigator.clipboard.writeText(text).then(
+                        () => {
+                            toast('Copied to clipboard');
+                            hideClipboardToast();
+                        },
+                        () => { /* leave the toast open for manual copy */ },
+                    );
+                };
+            } else {
+                // No Clipboard API (insecure context / denied permission):
+                // a select-all textarea for manual copy is the fallback.
+                preview.hidden = true;
+                manual.hidden = false;
+                manual.value = text;
+                copyButton.textContent = 'Done';
+                copyButton.onclick = () => {
+                    manual.focus();
+                    manual.select();
+                    hideClipboardToast();
+                };
+                manual.focus();
+                manual.select();
+            }
+            box.hidden = false;
+            if (clipHideTimer) clearTimeout(clipHideTimer);
+            clipHideTimer = setTimeout(hideClipboardToast, 8000);
         }
 
         // Local -> remote. Never navigator.clipboard.readText(): it prompts in
@@ -354,14 +449,20 @@
         const url = 'wss://' + window.location.host + '/' + path;
 
         rfb = new RFB(document.getElementById('screen'), url, { shared: true });
-        rfb.scaleViewport = readQueryVariable('scale', '') === 'true';
-        rfb.addEventListener('connect', () => status('Connected'));
+        rfb.scaleViewport = scaleViewport;
+        rfb.addEventListener('connect', () => {
+            status('Connected');
+            scrubSensitiveUrlParams();
+        });
         rfb.addEventListener('disconnect', (e) => {
+            scrubSensitiveUrlParams();
             if (e.detail.clean) status('Disconnected');
             else showDeadOverlay('Desktop connection lost.');
         });
-        rfb.addEventListener('credentialsrequired',
-            () => showDeadOverlay('Desktop requires credentials.'));
+        rfb.addEventListener('credentialsrequired', () => {
+            scrubSensitiveUrlParams();
+            showDeadOverlay('Desktop requires credentials.');
+        });
         rfb.addEventListener('desktopname', (e) => { document.title = e.detail.name; });
         rfb.addEventListener('clipboard', (e) => remoteClipboardToLocal(e.detail.text));
     </script>
@@ -379,6 +480,16 @@
         </div>
     </div>
     <div id="toast"></div>
+    <div id="clip-toast" hidden>
+        <span id="clip-text"></span>
+        <textarea id="clip-manual" hidden readonly></textarea>
+        <button type="button" id="clip-copy">Copy</button>
+    </div>
     <div id="status">Connecting</div>
+    <noscript>
+        <div class="overlay visible">
+            <div class="overlay-box">JavaScript is required to reach this desktop.</div>
+        </div>
+    </noscript>
 </body>
 </html>

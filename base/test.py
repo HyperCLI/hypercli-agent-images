@@ -227,4 +227,37 @@ assert "is not an allowed Reef host" in desktop_viewer
 # Default Reef base still derives from the page host with "desktop-" stripped.
 assert "window.location.hostname.replace(/^desktop-/, '')" in desktop_viewer
 
+# noVNC security hardening on the custom viewer.
+assert '<meta name="referrer" content="no-referrer">' in desktop_viewer
+assert '<meta http-equiv="Content-Security-Policy"' in desktop_viewer
+assert "script-src 'self' 'unsafe-inline'" in desktop_viewer
+assert "connect-src 'self' wss: https:" in desktop_viewer
+assert "history.replaceState(null, '', window.location.pathname)" in desktop_viewer
+# Script-start scrub plus the post-connect/credentialsrequired/disconnect
+# backstops.
+assert desktop_viewer.count("scrubSensitiveUrlParams();") == 4
+assert "rfb.scaleViewport = scaleViewport;" in desktop_viewer
+assert "readQueryVariable('scale'" in desktop_viewer.split("scrubSensitiveUrlParams();")[0]
+assert "clip-toast" in desktop_viewer
+assert "navigator.clipboard.writeText(text).then(" in desktop_viewer
+assert "execCommand" not in desktop_viewer
+assert "<noscript>" in desktop_viewer
+
+vnc_lite = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/share/novnc/vnc_lite.html",
+).stdout
+assert '<meta name="referrer" content="no-referrer">' in vnc_lite
+assert '<meta http-equiv="Content-Security-Policy"' in vnc_lite
+assert "connect-src 'self' wss: https:" in vnc_lite
+# Scrub at script start (after param capture) plus the post-connect backstop.
+assert vnc_lite.count("history.replaceState(null, '', window.location.pathname);") == 2
+assert "<noscript>" in vnc_lite
+
+assert "--heartbeat 30" in desktop_script
+
 print(f"{image}: HyperCLI agent base contract passed")
