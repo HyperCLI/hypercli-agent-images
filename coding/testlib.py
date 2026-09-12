@@ -15,6 +15,15 @@ WORKSPACES = Path("/home/node/shared")
 STATE_DIR = Path("/home/node/.coding-agent")
 ENTRYPOINT_EXIT_CODE = 42
 ENTRYPOINT_EXIT_TIMEOUT_SECONDS = 30
+HARNESS_DIRS = (".claude", ".codex", ".goose")
+# A coding image links installed skills only into the harness state directory
+# its runtime owns; foreign harness dot-directories must never appear in the
+# synced workspace home.
+RUNTIME_HARNESS_DIRS = {
+    "claude-code": ".claude",
+    "codex": ".codex",
+    "goose": ".goose",
+}
 
 
 def require_image_argument() -> str:
@@ -278,7 +287,12 @@ runtime = Path("/opt/hypercli-coding/runtime").read_text().strip()
 skills_index = Path("/home/node/SKILLS.md").read_text(encoding="utf-8")
 agents_path = workspace / "AGENTS.md"
 buzz_skill = workspace / ".agents/skills/buzz-cli/SKILL.md"
-harness_skills = ["buzz-cli", *hypercli_skills] if buzz_skill.exists() else hypercli_skills
+harness_dirs = [".claude", ".codex", ".goose"]
+owning_harness = {
+    "claude-code": ".claude",
+    "codex": ".codex",
+    "goose": ".goose",
+}.get(runtime)
 
 payload = {
     "uid": os.getuid(),
@@ -347,14 +361,20 @@ payload = {
         "/opt/hypercli-coding/nest/base_prompt.md"
     ).exists(),
     "base_prompt_in_workspace": (workspace / "base_prompt.md").exists(),
+    "owning_harness": owning_harness,
+    "harness_dirs": {
+        harness: (workspace / harness).exists()
+        for harness in harness_dirs
+    },
     "skill_links": {
         str(path): os.readlink(path)
         for path in [
-            workspace / f"{harness}/skills/{skill}"
-            for harness in [".claude", ".codex", ".goose"]
-            for skill in harness_skills
+            workspace / f"{owning_harness}/skills/{skill}"
+            for skill in hypercli_skills
         ]
-    },
+    }
+    if owning_harness
+    else {},
 }
 print(json.dumps(payload))
 """
@@ -433,21 +453,25 @@ def assert_common_contract(
     assert payload["legacy_buzz_nest_exists"] is False
     assert payload["base_prompt_in_image"] is False
     assert payload["base_prompt_in_workspace"] is False
+    owning_harness = RUNTIME_HARNESS_DIRS.get(runtime)
+    assert payload["owning_harness"] == owning_harness
+    assert payload["harness_dirs"] == {
+        harness: harness == owning_harness
+        for harness in HARNESS_DIRS
+    }
     expected_skill_links = {
         f"../../.agents/skills/{skill}"
         for skill in payload["hypercli_skill_names"]
     }
-    if runtime == "buzz-agent":
-        expected_skill_links.add("../../.agents/skills/buzz-cli")
+    if owning_harness is None:
+        expected_skill_links = set()
     assert set(payload["skill_links"].values()) == expected_skill_links
-    expected_skill_count = len(payload["hypercli_skill_names"])
-    if runtime == "buzz-agent":
-        expected_skill_count += 1
-    assert len(payload["skill_links"]) == 3 * expected_skill_count
-    assert_workspace_persistence(image)
+    assert len(payload["skill_links"]) == len(expected_skill_links)
+    assert_workspace_persistence(image, runtime=runtime)
 
 
-def assert_workspace_persistence(image: str) -> None:
+def assert_workspace_persistence(image: str, *, runtime: str) -> None:
+    owning_harness = RUNTIME_HARNESS_DIRS.get(runtime)
     with tempfile.TemporaryDirectory() as persisted_name:
         persisted = Path(persisted_name)
         persisted.chmod(0o777)
@@ -458,11 +482,12 @@ def assert_workspace_persistence(image: str) -> None:
         skills_index = persisted / "SKILLS.md"
         buzz_skill = persisted / ".agents/skills/buzz-cli/SKILL.md"
         harness_skill_links = []
-        if buzz_skill.exists():
-            harness_skill_links = [
-                persisted / f"{harness}/skills/buzz-cli"
-                for harness in [".claude", ".codex", ".goose"]
-            ]
+        if owning_harness is not None:
+            harness_skill_links = sorted(
+                path
+                for path in (persisted / f"{owning_harness}/skills").iterdir()
+                if path.is_symlink()
+            )
         agents.write_text("user-managed AGENTS\n", encoding="utf-8")
         if buzz_skill.exists():
             buzz_skill.write_text("user-managed skill\n", encoding="utf-8")
@@ -511,6 +536,10 @@ def assert_workspace_persistence(image: str) -> None:
             claude.read_text(encoding="utf-8")
             == "user-managed Claude instructions\n"
         )
+        for harness in HARNESS_DIRS:
+            if harness != owning_harness:
+                assert not (persisted / harness).exists()
+
 
 def assert_user_config_preserved(
     image: str,

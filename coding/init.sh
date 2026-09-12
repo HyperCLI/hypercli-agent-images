@@ -71,7 +71,18 @@ for skill_file in /opt/hypercli/skills/*/SKILL.md; do
     "${skill_dir}"
 done
 
-for harness_dir in .claude .codex .goose; do
+# Skill links belong to the runtime that owns the harness state directory: a
+# coding image exposes installed skills only through its own harness directory
+# so foreign harness dot-directories never appear in the synced workspace home.
+runtime=$(cat /opt/hypercli-coding/runtime 2>/dev/null || true)
+case "${runtime}" in
+  claude-code) harness_dir=.claude ;;
+  codex) harness_dir=.codex ;;
+  goose) harness_dir=.goose ;;
+  *) harness_dir= ;;
+esac
+
+if [ -n "${harness_dir}" ]; then
   mkdir -p "${home}/${harness_dir}/skills"
   chmod 0700 "${home}/${harness_dir}" "${home}/${harness_dir}/skills"
   for skill_dir in "${home}/.agents/skills"/*; do
@@ -80,4 +91,4 @@ for harness_dir in .claude .codex .goose; do
       "${home}/${harness_dir}/skills/${skill}" \
       "../../.agents/skills/${skill}"
   done
-done
+fi

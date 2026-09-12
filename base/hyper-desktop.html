@@ -148,6 +148,22 @@
             z-index: 5;
         }
 
+        /* Connection-state dot: muted while connecting/disconnected, green
+           once the RFB 'connect' event adds the .connected state class. */
+        #status::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 6px;
+            border-radius: 50%;
+            background-color: #4a617a;
+        }
+
+        #status.connected::before {
+            background-color: #35c163;
+        }
+
     </style>
 
     <script type="module">
@@ -457,9 +473,11 @@
         rfb.scaleViewport = scaleViewport;
         rfb.addEventListener('connect', () => {
             status('Connected');
+            document.getElementById('status').classList.add('connected');
             scrubSensitiveUrlParams();
         });
         rfb.addEventListener('disconnect', (e) => {
+            document.getElementById('status').classList.remove('connected');
             scrubSensitiveUrlParams();
             if (e.detail.clean) status('Disconnected');
             else showDeadOverlay('Desktop connection lost.');

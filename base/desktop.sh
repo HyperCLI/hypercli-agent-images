@@ -34,6 +34,9 @@ hyper_start_desktop() {
   fi
 
   export DISPLAY="${DISPLAY:-:99}"
+  # Desktop Chrome egresses through the cluster proxy by default; an explicit
+  # HYPER_PROXY_HOST (proxy URL or boolean-ish off) still overrides.
+  export HYPER_PROXY_HOST="${HYPER_PROXY_HOST:-true}"
   local desktop_port="${HYPER_DESKTOP_PORT:-${OPENCLAW_DESKTOP_PORT:-3000}}"
   local geometry="${HYPER_DESKTOP_GEOMETRY:-1280x800x24}"
   local vnc_port="${HYPER_VNC_PORT:-5900}"

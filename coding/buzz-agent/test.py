@@ -64,7 +64,11 @@ env = {
 }
 env.update({
     "hypercli_skill_exists": Path("/home/node/.agents/skills/hypercli/SKILL.md").is_file(),
-    "goose_skill_link": os.readlink("/home/node/.goose/skills/hypercli"),
+    "hypercli_skill_link": os.readlink("/home/node/.agents/skills/hypercli"),
+    "foreign_harness_dirs_exist": any(
+        Path(f"/home/node/{harness}").exists()
+        for harness in (".claude", ".codex", ".goose")
+    ),
 })
 print(json.dumps(env))
 """
@@ -78,7 +82,8 @@ assert defaults == {
     "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
     "BUZZ_MODEL_PREFIX": None,
     "hypercli_skill_exists": True,
-    "goose_skill_link": "../../.agents/skills/hypercli",
+    "hypercli_skill_link": "/opt/hypercli/skills/hypercli",
+    "foreign_harness_dirs_exist": False,
 }
 
 overrides = {
@@ -99,7 +104,8 @@ assert preserved == {
     "BUZZ_ACP_MCP_COMMAND": "/usr/local/bin/buzz-dev-mcp",
     "BUZZ_MODEL_PREFIX": None,
     "hypercli_skill_exists": True,
-    "goose_skill_link": "../../.agents/skills/hypercli",
+    "hypercli_skill_link": "/opt/hypercli/skills/hypercli",
+    "foreign_harness_dirs_exist": False,
 }
 
 print(f"{image}: native Buzz Agent contract passed")

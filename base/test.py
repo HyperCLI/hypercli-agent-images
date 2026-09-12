@@ -123,6 +123,42 @@ with_proxy = docker(
 ).stdout
 assert "--proxy-server=socks5://127.0.0.1:8080" in with_proxy, with_proxy
 
+# Boolean-ish HYPER_PROXY_HOST selects the canonical in-cluster hyper-proxy
+# endpoint (the provisioned alias of the cluster egress proxy).
+for boolean_flag in ("true", "1", "TRUE", "yes", "on", "enabled"):
+    alias_proxy = docker(
+        "run",
+        "--rm",
+        "--entrypoint",
+        "/bin/sh",
+        image,
+        "-c",
+        launcher_probe,
+        "sh",
+        boolean_flag,
+    ).stdout
+    assert "--proxy-server=socks5://hyper-proxy:8080" in alias_proxy, (
+        boolean_flag,
+        alias_proxy,
+    )
+    assert "--proxy-server=true" not in alias_proxy, (boolean_flag, alias_proxy)
+
+# Boolean-ish false HYPER_PROXY_HOST disables proxying instead of passing a
+# nonsense URL through.
+for false_flag in ("false", "0", "FALSE", "no", "off", "disabled"):
+    no_proxy = docker(
+        "run",
+        "--rm",
+        "--entrypoint",
+        "/bin/sh",
+        image,
+        "-c",
+        launcher_probe,
+        "sh",
+        false_flag,
+    ).stdout
+    assert "--proxy-server" not in no_proxy, (false_flag, no_proxy)
+
 desktop_entry = docker(
     "run",
     "--rm",
@@ -163,6 +199,9 @@ assert "PlankDockItemPreferences" in desktop_script
 assert "dconf write /net/launchpad/plank/docks/dock1/position" in desktop_script
 assert "dconf write /net/launchpad/plank/docks/dock1/icon-size" in desktop_script
 assert "/usr/local/bin/hypercli-chrome" in desktop_script
+# Desktop bring-up defaults Chrome egress to the canonical in-cluster proxy,
+# so the desktop path needs no client-side HYPER_PROXY_HOST toggle.
+assert 'export HYPER_PROXY_HOST="${HYPER_PROXY_HOST:-true}"' in desktop_script
 assert "feh --no-fehbg --bg-fill" in desktop_script
 assert "/usr/local/share/hypercli/hypercli-bg.png" in desktop_script
 assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script
@@ -242,6 +281,14 @@ assert "clip-toast" in desktop_viewer
 assert "navigator.clipboard.writeText(text).then(" in desktop_viewer
 assert "execCommand" not in desktop_viewer
 assert "<noscript>" in desktop_viewer
+
+# Connected green dot: a CSS pseudo-element on #status, recolored by the
+# .connected state class the RFB connect/disconnect listeners toggle (no dot
+# glyph or color markup is baked into the status text itself).
+assert "#status::before" in desktop_viewer
+assert "#status.connected::before" in desktop_viewer
+assert "classList.add('connected')" in desktop_viewer
+assert "classList.remove('connected')" in desktop_viewer
 
 vnc_lite = docker(
     "run",

@@ -235,11 +235,17 @@ unless the caller explicitly supplies `BUZZ_ACP_BASE_PROMPT_FILE`.
 
 HyperCLI skills are linked into `/home/node/.agents/skills`. The Buzz CLI skill
 is linked only for native `buzz-agent` and explicit `acp plugin buzz` launches.
-Compatibility links also expose installed skills through:
+A runtime exposes installed skills only through the harness state directory it
+owns, creating that directory lazily at its own initialization; no image
+creates another harness's state directory:
 
-- `/home/node/.claude/skills`;
-- `/home/node/.codex/skills`;
-- `/home/node/.goose/skills`.
+- Claude Code links them from `/home/node/.claude/skills`;
+- Codex links them from `/home/node/.codex/skills`;
+- Goose links them from `/home/node/.goose/skills`.
+
+OpenCode reads skills directly from `/opt/hypercli/skills` through its
+generated config; Buzz Agent and Kimi Code consume the canonical
+`/home/node/.agents/skills` store.
 
 Images do not create prompt aliases such as `AGENTS.md` or
 `CLAUDE.md`; prompt delivery is an ACP launcher concern. Existing

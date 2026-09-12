@@ -67,9 +67,19 @@ The base image also carries the shared X11 agent-desktop stack: Xvfb, xfwm4,
 x11vnc, the Debian `novnc` package with websockify, plank, Thunar,
 xfce4-terminal, feh, and Google Chrome (via the `hypercli-chrome` wrapper).
 
+The `hypercli-chrome` wrapper turns `HYPER_PROXY_HOST` into Chrome's
+`--proxy-server`: a boolean-ish true value (`1`, `true`, `yes`, `on`,
+`enabled`, case-insensitive) selects the canonical in-cluster endpoint
+`socks5://hyper-proxy:8080`; a boolean-ish false value (`0`, `false`, `no`,
+`off`, `disabled`) disables proxying; any other non-empty value passes
+through unchanged as an explicit proxy URL.
+
 `base/desktop.sh` is sourced by the OpenClaw and Hermes entrypoints and does
 nothing unless `HYPER_DESKTOP_ENABLED` is truthy. When enabled,
-`hyper_start_desktop`:
+`hyper_start_desktop` exports `HYPER_PROXY_HOST=true` when the variable is
+unset, so every Chrome in the desktop session egresses through the cluster
+proxy by default (an explicit URL or boolean-ish false value overrides), and
+then:
 
 1. starts Xvfb on `${DISPLAY:-:99}` with `${HYPER_DESKTOP_GEOMETRY:-1280x800x24}`;
 2. paints the background: feh `--bg-fill` with
