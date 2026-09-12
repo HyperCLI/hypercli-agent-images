@@ -84,7 +84,8 @@ RUN mkdir -p /home/node/shared /home/node/Desktop /tmp/.X11-unix \
     && chown -R node:node /home/node
 
 # Agent convenience package managers (npm builds use plain npm ci below).
-RUN npm install --global pnpm@11.2.2 yarn@1.22.22 \
+RUN npm install --global pnpm@11.2.2 \
+    && if [ "$(yarn --version 2>/dev/null || true)" != "1.22.22" ]; then npm install --global --force yarn@1.22.22; fi \
     && pnpm --version \
     && yarn --version
 
