@@ -42,16 +42,28 @@ const sync = ((memorySearch.sync ||= {}))
 // allow every browser origin. A var that is unset or parses to nothing keeps
 // the baked defaults. (OpenClaw has no reader for this var; the gateway only
 // ever sees the unrolled file below.)
-// Separator-tolerant (comma or whitespace): deployed env values written by the
-// SDK are space-joined; a comma-only parse would glue them into one broken
-// entry, and no valid origin contains either character anyway.
+// Comma-separated: deployed env values are written as one comma-joined list.
 {
   const raw = env.OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN
   if (typeof raw === "string") {
-    const envOrigins = raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
+    const envOrigins = raw.split(",").map((s) => s.trim()).filter(Boolean)
     if (envOrigins.length > 0) {
       const controlUi = ((config.gateway ||= {}).controlUi ||= {})
       controlUi.allowedOrigins = [...new Set(envOrigins)]
+    }
+  }
+}
+
+// OPENCLAW_TRUSTED_PROXIES unrolls into gateway.trustedProxies. This mirrors
+// controlUi.allowedOrigins: the env is only an image/bootstrap contract, and
+// OpenClaw itself reads the rendered config file.
+{
+  const raw = env.OPENCLAW_TRUSTED_PROXIES
+  if (typeof raw === "string") {
+    const trustedProxies = raw.split(",").map((s) => s.trim()).filter(Boolean)
+    if (trustedProxies.length > 0) {
+      const gateway = (config.gateway ||= {})
+      gateway.trustedProxies = [...new Set(trustedProxies)]
     }
   }
 }
