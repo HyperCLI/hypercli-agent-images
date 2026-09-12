@@ -123,7 +123,7 @@ assert "\n  BUZZ_ACP_RELAY_OBSERVER=false\n" not in entrypoint_text
 assert "HYPER_ACP_PERMISSION_MODE:-default" in entrypoint_text
 assert "HYPER_ACP_PERMISSION_MODE=default" in dockerfile_text
 assert "HYPER_ACP_AUTO_APPROVE_PERMISSION=1" in entrypoint_text
-assert ". /usr/local/lib/hypercli/desktop.sh" in entrypoint_text
+assert ". /opt/hypercli/lib/desktop.sh" in entrypoint_text
 assert "if hyper_desktop_enabled; then" in entrypoint_text
 assert "  hyper_start_desktop" in entrypoint_text
 

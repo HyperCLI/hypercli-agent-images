@@ -50,8 +50,7 @@ COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
 COPY init.sh /opt/hypercli-openclaw/init.sh
 COPY config.js /opt/hypercli-openclaw/config.js
-COPY slack.sh /opt/hypercli-openclaw/slack.sh
-COPY enable_slack_relay.ts /opt/hypercli-openclaw/slack.js
+COPY slack.js /opt/hypercli-openclaw/slack.js
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/init.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version

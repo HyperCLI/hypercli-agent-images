@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. /usr/local/lib/hypercli/desktop.sh
+. /opt/hypercli/lib/desktop.sh
 
 HOME="${HOME:-/home/hermes}"
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"

@@ -94,7 +94,7 @@ then:
 
 1. starts Xvfb on `${DISPLAY:-:99}` with `${HYPER_DESKTOP_GEOMETRY:-1280x800x24}`;
 2. paints the background: feh `--bg-fill` with
-   `${HYPER_DESKTOP_BACKGROUND_IMAGE:-/usr/local/share/hypercli/hypercli-bg.png}`,
+   `${HYPER_DESKTOP_BACKGROUND_IMAGE:-/opt/hypercli/share/hypercli-bg.png}`,
    falling back to an `xsetroot` solid color;
 3. starts xfwm4, then plank with a bottom dock pinned to Chrome, Thunar, and
    xfce4-terminal;

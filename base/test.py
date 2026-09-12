@@ -16,8 +16,8 @@ config = image_config(image)
 assert config.get("WorkingDir") == "/home/node"
 env = dict(item.split("=", 1) for item in config.get("Env") or [] if "=" in item)
 assert env.get("HOME") == "/home/node"
-assert env.get("CHROME_EXECUTABLE_PATH") == "/usr/local/bin/hypercli-chrome"
-assert env.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH") == "/usr/local/bin/hypercli-chrome"
+assert env.get("CHROME_EXECUTABLE_PATH") == "/opt/hypercli/bin/hypercli-chrome"
+assert env.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH") == "/opt/hypercli/bin/hypercli-chrome"
 assert "CODING_AGENT_STATE_DIR" not in env
 assert "CODING_AGENT_WORKSPACE_DIR" not in env
 assert not (env.get("PATH") or "").startswith("/opt/hypercli-cli/venv/bin:")
@@ -37,14 +37,13 @@ print(json.dumps({
     "hyper_version": subprocess.check_output(["hyper", "--version"], text=True).strip(),
     "hyper_help": subprocess.run(["hyper", "--help"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode,
     "hypercli_dirs": sorted(path.name for path in Path("/opt/hypercli").iterdir()),
-    "corepack": shutil.which("corepack"),
     "pnpm": shutil.which("pnpm"),
     "yarn": shutil.which("yarn"),
     "feh": shutil.which("feh"),
     "xsetroot": shutil.which("xsetroot"),
     "plank": shutil.which("plank"),
     "dconf": shutil.which("dconf"),
-    "background": Path("/usr/local/share/hypercli/hypercli-bg.png").is_file(),
+    "background": Path("/opt/hypercli/share/hypercli-bg.png").is_file(),
     "fonts": {
         name: subprocess.check_output(["fc-match", name], text=True).split(":", 1)[0]
         for name in ("Noto Sans", "Noto Color Emoji", "Noto Sans CJK SC", "Fira Code")
@@ -63,8 +62,7 @@ assert payload["hyper"]
 assert payload["hyper_target"] == "/opt/hypercli/cli/dist/index.js"
 assert payload["hyper_version"].startswith("hyper ")
 assert payload["hyper_help"] == 0
-assert payload["hypercli_dirs"] == ["cli", "docs", "skills", "ts-sdk"]
-assert payload["corepack"]
+assert payload["hypercli_dirs"] == ["bin", "cli", "docs", "lib", "share", "skills", "ts-sdk"]
 assert payload["pnpm"]
 assert payload["yarn"]
 assert payload["feh"]
@@ -94,7 +92,7 @@ export HYPERCLI_CHROME_BIN=/tmp/fake-chrome
 if [ -n "${1:-}" ]; then
   export HYPER_PROXY_HOST="$1"
 fi
-exec /usr/local/bin/hypercli-chrome https://example.test
+exec /opt/hypercli/bin/hypercli-chrome https://example.test
 """
 
 without_proxy = docker(
@@ -191,7 +189,7 @@ desktop_entry = docker(
     image,
     "/usr/share/applications/google-chrome.desktop",
 ).stdout
-assert "Exec=/usr/local/bin/hypercli-chrome %U" in desktop_entry
+assert "Exec=/opt/hypercli/bin/hypercli-chrome %U" in desktop_entry
 assert "Exec=google-chrome-stable" not in desktop_entry
 
 desktop_shortcut = docker(
@@ -211,7 +209,7 @@ desktop_script = docker(
     "--entrypoint",
     "cat",
     image,
-    "/usr/local/lib/hypercli/desktop.sh",
+    "/opt/hypercli/lib/desktop.sh",
 ).stdout
 assert "xfce4-panel" not in desktop_script
 assert "hyper_configure_xfce_panel" not in desktop_script
@@ -222,12 +220,12 @@ assert ".config/plank/dock1/launchers" in desktop_script
 assert "PlankDockItemPreferences" in desktop_script
 assert "dconf write /net/launchpad/plank/docks/dock1/position" in desktop_script
 assert "dconf write /net/launchpad/plank/docks/dock1/icon-size" in desktop_script
-assert "/usr/local/bin/hypercli-chrome" in desktop_script
+assert "/opt/hypercli/bin/hypercli-chrome" in desktop_script
 # Desktop bring-up defaults Chrome egress to the canonical in-cluster proxy,
 # so the desktop path needs no client-side HYPER_PROXY_HOST toggle.
 assert 'export HYPER_PROXY_HOST="${HYPER_PROXY_HOST:-true}"' in desktop_script
 assert "feh --no-fehbg --bg-fill" in desktop_script
-assert "/usr/local/share/hypercli/hypercli-bg.png" in desktop_script
+assert "/opt/hypercli/share/hypercli-bg.png" in desktop_script
 assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script
 
 novnc_webroot = docker(
@@ -239,8 +237,8 @@ novnc_webroot = docker(
     "-c",
     "ls -l /usr/share/novnc/hyper-desktop.html /usr/share/novnc/core/rfb.js"
     " /usr/share/novnc/vnc.html /usr/share/novnc/vnc_auto.html"
-    " /usr/local/lib/hypercli/pin-novnc-params.py"
-    " /usr/local/lib/hypercli/stretch-novnc-display.py",
+    " /opt/hypercli/lib/pin-novnc-params.py"
+    " /opt/hypercli/lib/stretch-novnc-display.py",
 )
 assert novnc_webroot.returncode == 0
 

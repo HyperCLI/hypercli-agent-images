@@ -48,7 +48,7 @@ hyper_start_desktop() {
   sleep 1
   eval "$(dbus-launch --sh-syntax)"
   export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-  local background_image="${HYPER_DESKTOP_BACKGROUND_IMAGE:-/usr/local/share/hypercli/hypercli-bg.png}"
+  local background_image="${HYPER_DESKTOP_BACKGROUND_IMAGE:-/opt/hypercli/share/hypercli-bg.png}"
   if [ -s "${background_image}" ] && command -v feh >/dev/null 2>&1; then
     feh --no-fehbg --bg-fill "${background_image}" >/dev/null 2>&1 || \
       xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
@@ -62,7 +62,7 @@ hyper_start_desktop() {
   else
     echo "[desktop] plank is not available; skipping dock" >&2
   fi
-  local welcome_chrome="/usr/local/bin/hypercli-chrome"
+  local welcome_chrome="/opt/hypercli/bin/hypercli-chrome"
   if [ -x "${welcome_chrome}" ]; then
     "${welcome_chrome}" >/tmp/hypercli-chrome-welcome.log 2>&1 &
   else

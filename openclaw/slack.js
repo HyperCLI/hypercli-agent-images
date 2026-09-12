@@ -228,7 +228,17 @@ function removeHostedSlackRelay() {
 
 const hostedSlackEnabled = parseBoolean("HYPER_SLACK_APP_ENABLED");
 if (hostedSlackEnabled === true) {
+  // Write the reconciled relay config first, then fail loudly on missing
+  // credentials: a half-configured boot is diagnosable, a silent one is not.
   enableHostedSlackRelay();
+  if (!env.HYPER_AGENTS_API_KEY) {
+    console.error("[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_AGENTS_API_KEY");
+    process.exit(1);
+  }
+  if (!env.HYPER_SLACK_API_URL) {
+    console.error("[openclaw] HYPER_SLACK_APP_ENABLED requires HYPER_SLACK_API_URL");
+    process.exit(1);
+  }
 }
 if (hostedSlackEnabled === false) {
   removeHostedSlackRelay();

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-. /usr/local/lib/hypercli/desktop.sh
+. /opt/hypercli/lib/desktop.sh
 
 /usr/local/bin/hypercli-coding-init "$@"
 

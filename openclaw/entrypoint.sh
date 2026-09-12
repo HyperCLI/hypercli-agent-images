@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. /usr/local/lib/hypercli/desktop.sh
-. /opt/hypercli-openclaw/slack.sh
+. /opt/hypercli/lib/desktop.sh
 
 USER_HOME="${HOME:-/home/node}"
 export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${USER_HOME}/.openclaw}"
@@ -13,9 +12,20 @@ if [[ -n "${HYPER_API_KEY:-}" ]]; then
   export HYPER_AGENTS_API_KEY="${HYPER_API_KEY}"
 fi
 
+# The Slack plugin resolves botToken from the gateway process env, so the
+# derivation must be exported here (slack.js validates the same preconditions
+# while reconciling the config, but child-process env cannot reach the exec'd
+# gateway).
+case "$(printf '%s' "${HYPER_SLACK_APP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
+  1|true|yes|on|enabled)
+    export SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-${HYPER_AGENTS_API_KEY:-}}"
+    export SLACK_API_URL="${SLACK_API_URL:-${HYPER_SLACK_API_URL:-}}"
+    ;;
+esac
+
 /opt/hypercli-openclaw/init.sh
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.js
-hyper_configure_openclaw_slack
+CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/slack.js
 
 export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
 export npm_config_cache="${npm_config_cache:-${NPM_CONFIG_CACHE}}"
