@@ -243,6 +243,11 @@
         // The embedding parent is the only trusted source of fresh files
         // tokens (uploads go cross-origin to Reef; the viewer page itself is
         // same-origin only with the desktop route host).
+        // Keep 'tauri://localhost': the packaged Tauri app's top-level
+        // origin is that custom scheme on macOS/Linux (WKWebView/WebKitGTK),
+        // and CSP frame-ancestors cannot express non-http(s) schemes, so
+        // this postMessage origin check is the only Tauri framing guard on
+        // those platforms; Windows WebView2 is 'http://tauri.localhost'.
         const EMBEDDING_ORIGINS = new Set([
             'tauri://localhost',
             'http://tauri.localhost',
