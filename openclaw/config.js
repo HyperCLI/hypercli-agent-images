@@ -36,12 +36,15 @@ const defaults = (((config.agents ||= {}).defaults ||= {}))
 const memorySearch = ((defaults.memorySearch ||= {}))
 const sync = ((memorySearch.sync ||= {}))
 
-// OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN is one env var holding a space-joined
-// list; OpenClaw's ${VAR} substitution is pure string splicing, so it would
-// land as a single bogus origin. Rebuild the array every boot instead.
+// OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN is one env var holding a comma-joined
+// list ("x,y,z"); OpenClaw's ${VAR} substitution is pure string splicing, so
+// it would land as a single bogus origin. Rebuild the array every boot instead.
+// Commas only: a space-joined value is deliberately NOT accepted, so a writer
+// using the wrong separator produces one obviously broken entry instead of
+// silently half-working.
 {
   const raw = env.OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN
-  const envOrigins = typeof raw === "string" ? raw.trim().split(" ").filter(Boolean) : []
+  const envOrigins = typeof raw === "string" ? raw.split(",").map((s) => s.trim()).filter(Boolean) : []
   const controlUi = ((config.gateway ||= {}).controlUi ||= {})
   controlUi.allowedOrigins = [...new Set(["http://localhost:18789", "http://127.0.0.1:18789", ...envOrigins])]
 }
@@ -81,6 +84,10 @@ if (desktopEnabled === true) {
   const browser = ((config.browser ||= {}))
   browser.enabled = true
   browser.headless = false
+  // Container runtimes are not guaranteed the kernel primitives Chrome's
+  // sandbox needs; the infobar --no-sandbox triggers is suppressed by the
+  // base image's managed Chrome policy instead (see
+  // base/chrome-policies-managed.json).
   browser.noSandbox = true
   browser.executablePath = chromePath
   if (typeof browser.defaultProfile !== "string" || !browser.defaultProfile) browser.defaultProfile = "openclaw"
