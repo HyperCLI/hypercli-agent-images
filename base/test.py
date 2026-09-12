@@ -174,9 +174,32 @@ novnc_webroot = docker(
     "/bin/sh",
     image,
     "-c",
-    "ls -l /usr/share/novnc/hyper-desktop.html /usr/share/novnc/core/rfb.js",
+    "ls -l /usr/share/novnc/hyper-desktop.html /usr/share/novnc/core/rfb.js"
+    " /usr/share/novnc/vnc.html /usr/share/novnc/vnc_auto.html"
+    " /usr/local/lib/hypercli/pin-novnc-params.py",
 )
 assert novnc_webroot.returncode == 0
+
+# The stock full UI (vnc.html / vnc_auto.html) keeps serving, but its query
+# string / hash / persisted settings can no longer redirect the RFB websocket
+# or supply a password: the build-time patch pins host/port/path/password to
+# the page-origin defaults. Anchors below are the exact patched strings; if
+# the apt package changed shape, the image build itself already failed.
+novnc_ui = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "cat",
+    image,
+    "/usr/share/novnc/app/ui.js",
+).stdout
+assert novnc_ui.count("hypercli-pinned-params") == 3
+assert 'const HYPERCLI_PINNED_PARAMS = ["host", "port", "path", "password"];' in novnc_ui
+assert "let val = HYPERCLI_PINNED_PARAMS.includes(name) ? null : WebUtil.getConfigVar(name);" in novnc_ui
+assert "val = HYPERCLI_PINNED_PARAMS.includes(name) ? defVal : WebUtil.readSetting(name, defVal);" in novnc_ui
+assert "let val = WebUtil.getConfigVar(name);" not in novnc_ui
+assert "// Check Query string followed by cookie\n" not in novnc_ui
+assert "password = WebUtil.getConfigVar('password');" not in novnc_ui
 
 desktop_viewer = docker(
     "run",

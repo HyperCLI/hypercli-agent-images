@@ -86,7 +86,11 @@ welcome-Chrome binary only skips that piece.
 
 The base image installs its custom viewer as
 `/usr/share/novnc/hyper-desktop.html`, next to the stock `vnc.html` and
-`vnc_lite.html` pages, which remain available. `hyper-desktop.html` connects
+`vnc_lite.html` pages, which remain available. At build time
+`base/pin-novnc-params.py` patches the stock full UI (`app/ui.js`, used by
+`vnc.html` and `vnc_auto.html`) so the URL query/hash and persisted settings
+can no longer override `host`, `port`, `path`, or `password` — the RFB
+websocket stays pinned to the page origin defaults. `hyper-desktop.html` connects
 immediately on load, syncs the clipboard both ways, and turns dropped files
 into Reef uploads on the agent's `~/Desktop`. Its query-string contract (read
 from the query or the hash, like `vnc_lite.html`):

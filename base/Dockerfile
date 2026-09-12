@@ -91,6 +91,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod 0440 /etc/sudoers.d/90-node-nopasswd \
     && rm -rf /var/lib/apt/lists/*
 
+COPY pin-novnc-params.py /usr/local/lib/hypercli/pin-novnc-params.py
+# Pin the stock noVNC full UI (vnc.html/vnc_auto.html) to its origin defaults;
+# fails the build if the vendored app/ui.js no longer matches the anchors.
+RUN python3 /usr/local/lib/hypercli/pin-novnc-params.py /usr/share/novnc \
+    && chmod 0644 /usr/local/lib/hypercli/pin-novnc-params.py
+
 RUN mkdir -p /usr/local/lib/hypercli /usr/local/share/hypercli /home/node/shared /home/node/Desktop /tmp/.X11-unix \
     && chmod 1777 /tmp/.X11-unix \
     && chown -R node:node /home/node
