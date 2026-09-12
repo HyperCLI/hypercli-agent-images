@@ -36,17 +36,24 @@ const defaults = (((config.agents ||= {}).defaults ||= {}))
 const memorySearch = ((defaults.memorySearch ||= {}))
 const sync = ((memorySearch.sync ||= {}))
 
-// OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN is one env var holding a comma-joined
-// list ("x,y,z"); OpenClaw's ${VAR} substitution is pure string splicing, so
-// it would land as a single bogus origin. Rebuild the array every boot instead.
-// Commas only: a space-joined value is deliberately NOT accepted, so a writer
-// using the wrong separator produces one obviously broken entry instead of
-// silently half-working.
+// OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN, when set in the container env, holds a
+// list of origins that REPLACES gateway.controlUi.allowedOrigins, unrolled in
+// full — no merging with the baked loopback defaults. Write "*" upstream to
+// allow every browser origin. A var that is unset or parses to nothing keeps
+// the baked defaults. (OpenClaw has no reader for this var; the gateway only
+// ever sees the unrolled file below.)
+// Separator-tolerant (comma or whitespace): deployed env values written by the
+// SDK are space-joined; a comma-only parse would glue them into one broken
+// entry, and no valid origin contains either character anyway.
 {
   const raw = env.OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN
-  const envOrigins = typeof raw === "string" ? raw.split(",").map((s) => s.trim()).filter(Boolean) : []
-  const controlUi = ((config.gateway ||= {}).controlUi ||= {})
-  controlUi.allowedOrigins = [...new Set(["http://localhost:18789", "http://127.0.0.1:18789", ...envOrigins])]
+  if (typeof raw === "string") {
+    const envOrigins = raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
+    if (envOrigins.length > 0) {
+      const controlUi = ((config.gateway ||= {}).controlUi ||= {})
+      controlUi.allowedOrigins = [...new Set(envOrigins)]
+    }
+  }
 }
 
 const workspaceIndexPath = "~/shared"
