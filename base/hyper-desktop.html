@@ -11,7 +11,12 @@
         ft=<token>        Reef files token
         fte=<epoch>       files-token expiry, epoch seconds
         rh=<url>          Reef base URL (default: this host without the
-                          leading "desktop-")
+                          leading "desktop-"). Must pass
+                          isAllowedReefBase(): https on this hostname,
+                          a *.hypercli.app / *.hypercli.com host, or
+                          localhost / 127.0.0.1 (http is loopback-only).
+                          Anything else disables uploads instead of
+                          trusting an attacker-supplied host.
     -->
 
     <title>Hyper Desktop</title>
@@ -131,14 +136,50 @@
             document.getElementById('dead-overlay').classList.add('visible');
         }
 
+        // Upload-destination allowlist. `rh` picks the host that dropped
+        // files (and the bearer token behind them) are PUT to; without this
+        // gate a crafted URL could exfiltrate both to any host. Pure
+        // string-in/bool-out so the rule set can be pinned from
+        // base/test.py without a JS runtime. The suffixes start with a dot
+        // on purpose: `evilhypercli.app` must not match.
+        function isAllowedReefBase(raw, pageHostname) {
+            let url;
+            try {
+                url = new URL(raw);
+            } catch {
+                return false;
+            }
+            if (url.username || url.password) return false;
+            const host = url.hostname.toLowerCase();
+            const loopback = host === 'localhost' || host.endsWith('.localhost')
+                || host === '127.0.0.1' || host === '[::1]';
+            if (loopback) return url.protocol === 'https:' || url.protocol === 'http:';
+            if (url.protocol !== 'https:') return false;
+            return host === String(pageHostname || '').toLowerCase()
+                || host.endsWith('.hypercli.app')
+                || host.endsWith('.hypercli.com');
+        }
+
         // Read parameters from the URL query string (or hash).
         const path = readQueryVariable('path', 'websockify');
-        const reefBase = readQueryVariable(
-            'rh',
-            'https://' + window.location.hostname.replace(/^desktop-/, ''),
-        ).replace(/\/+$/, '');
-        let fileToken = readQueryVariable('ft', '');
-        let fileTokenExpiresAt = Number(readQueryVariable('fte', '')) || 0;
+        const rhParam = readQueryVariable('rh', '');
+        const defaultReefBase = 'https://' + window.location.hostname.replace(/^desktop-/, '');
+        let reefBase = defaultReefBase;
+        let uploadsBlocked = false;
+        if (rhParam) {
+            if (isAllowedReefBase(rhParam, window.location.hostname)) {
+                reefBase = rhParam.replace(/\/+$/, '');
+            } else {
+                uploadsBlocked = true;
+            }
+        }
+        // A rejected `rh` also rejects `ft`: the token is only ever handed to
+        // an allow-listed host.
+        let fileToken = uploadsBlocked ? '' : readQueryVariable('ft', '');
+        let fileTokenExpiresAt = uploadsBlocked ? 0 : Number(readQueryVariable('fte', '')) || 0;
+        if (uploadsBlocked) {
+            status('File uploads disabled: rh is not an allowed Reef host');
+        }
 
         // The embedding parent is the only trusted source of fresh files
         // tokens (uploads go cross-origin to Reef; the viewer page itself is
@@ -175,6 +216,7 @@
         }
 
         function requestFileTokenRefresh() {
+            if (uploadsBlocked) return Promise.resolve(false);
             if (window.parent === window) return Promise.resolve(false);
             if (refreshWaiter) return refreshWaiter.promise;
             let settled = false;
@@ -241,6 +283,11 @@
         async function handleDroppedFiles(files) {
             const list = Array.from(files);
             if (!list.length) return;
+            if (uploadsBlocked) {
+                status('File uploads disabled: rh is not an allowed Reef host');
+                toast('Uploads disabled: untrusted Reef host in URL');
+                return;
+            }
             let done = 0;
             for (const file of list) {
                 try {

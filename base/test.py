@@ -189,4 +189,19 @@ desktop_viewer = docker(
 assert "./core/rfb.js" in desktop_viewer
 assert "hyper-desktop:ft-refresh" in desktop_viewer
 
+# Reef-base allowlist (exfil guard for the `rh`/`ft` upload params). The rules
+# live in `isAllowedReefBase`, a pure string-in/bool-out function kept free of
+# DOM and network access so the exact rule set can be pinned here; these
+# asserts are the in-repo unit coverage for it.
+assert "function isAllowedReefBase(" in desktop_viewer
+assert "host === String(pageHostname" in desktop_viewer
+assert ".endsWith('.hypercli.app')" in desktop_viewer
+assert ".endsWith('.hypercli.com')" in desktop_viewer
+assert "'localhost'" in desktop_viewer
+assert "'127.0.0.1'" in desktop_viewer
+assert "uploadsBlocked" in desktop_viewer
+assert "is not an allowed Reef host" in desktop_viewer
+# Default Reef base still derives from the page host with "desktop-" stripped.
+assert "window.location.hostname.replace(/^desktop-/, '')" in desktop_viewer
+
 print(f"{image}: HyperCLI agent base contract passed")
