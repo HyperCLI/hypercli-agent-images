@@ -139,7 +139,8 @@ COPY --chmod=0644 chrome-policies-managed.json /etc/opt/chrome/policies/managed/
 COPY --chmod=0644 hyper-desktop.html /usr/share/novnc/hyper-desktop.html
 RUN test -f /usr/share/novnc/core/rfb.js \
     && python3 /opt/hypercli/lib/patch_vnc_lite.py \
-    && python3 /opt/hypercli/lib/stretch-novnc-display.py /usr/share/novnc
+    && python3 /opt/hypercli/lib/stretch-novnc-display.py /usr/share/novnc \
+    && chmod -R a+rX /opt/hypercli
 
 ENV HOME=/home/node \
     HYPER_AGENTS_API_BASE=https://api.agents.hypercli.com \
