@@ -38,10 +38,12 @@ const memorySearch = ((defaults.memorySearch ||= {}))
 const sync = ((memorySearch.sync ||= {}))
 
 {
+  const token = (env.OPENCLAW_GATEWAY_TOKEN || "").trim()
+  if (!token) throw new Error("OPENCLAW_GATEWAY_TOKEN is required")
   const gateway = (config.gateway ||= {})
   const auth = (gateway.auth ||= {})
   auth.mode = "token"
-  auth.token = "${OPENCLAW_GATEWAY_TOKEN}"
+  auth.token = token
 }
 
 // OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN, when set in the container env, holds a
