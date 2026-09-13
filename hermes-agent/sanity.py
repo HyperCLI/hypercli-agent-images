@@ -224,7 +224,7 @@ def start_container(
     )
     port = run("docker", "port", container, "8642/tcp").stdout.strip().rsplit(":", 1)[1]
     base = f"http://127.0.0.1:{port}"
-    for _ in range(60):
+    for _ in range(30):
         try:
             if request_json(f"{base}/health").get("status") == "ok":
                 return base

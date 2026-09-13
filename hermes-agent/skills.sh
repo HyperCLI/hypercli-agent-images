@@ -21,6 +21,9 @@ while IFS= read -r -d '' source_entry; do
     cp -a "${source_entry}" "${target_entry}"
     echo "[hermes-agent] seeded HyperCLI skill (${entry_name})"
   fi
+  if path_ancestors_are_safe "${target_entry}" && [[ -e "${target_entry}" || -L "${target_entry}" ]]; then
+    chown -h -- "${HERMES_OWNER_UID}:${HERMES_OWNER_GID}" "${target_entry}"
+  fi
   while IFS= read -r -d '' source_path; do
     relative_path="${source_path#"${source_entry}"}"
     target_path="${target_entry}${relative_path}"

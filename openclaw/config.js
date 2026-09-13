@@ -1,4 +1,5 @@
 const fs = require("fs")
+const { applyModelEnv } = require("./models")
 
 const configPath = process.env.CONFIG_PATH
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"))
@@ -97,6 +98,8 @@ if (watchDebounceMs !== undefined) sync.watchDebounceMs = watchDebounceMs
 
 const intervalMinutes = parseNonNegativeInteger("OPENCLAW_MEMORY_SEARCH_SYNC_INTERVAL_MINUTES")
 if (intervalMinutes !== undefined) sync.intervalMinutes = intervalMinutes
+
+applyModelEnv(config, env)
 
 const cronEnabled = parseBoolean("OPENCLAW_CRON_ENABLED")
 if (cronEnabled !== undefined) {

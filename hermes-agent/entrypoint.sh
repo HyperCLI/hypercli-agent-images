@@ -24,9 +24,8 @@ if [[ -n "${HYPER_AGENTS_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
 fi
 
 mkdir -p "${HERMES_MANAGED_DIR}"
-python3 /opt/hypercli-hermes/env.py "${HERMES_MANAGED_DIR}/.env"
 /opt/hypercli-hermes/init.sh
-python3 /opt/hypercli-hermes/models.py
+python3 /opt/hypercli-hermes/config.py "${HERMES_MANAGED_DIR}"
 if hyper_desktop_enabled; then
   hyper_start_desktop
 fi
