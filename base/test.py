@@ -189,8 +189,19 @@ desktop_entry = docker(
     image,
     "/usr/share/applications/google-chrome.desktop",
 ).stdout
-assert "Exec=/opt/hypercli/bin/hypercli-chrome %U" in desktop_entry
+assert "Exec=/usr/local/bin/hypercli-chrome %U" in desktop_entry
 assert "Exec=google-chrome-stable" not in desktop_entry
+
+chrome_link = docker(
+    "run",
+    "--rm",
+    "--entrypoint",
+    "readlink",
+    image,
+    "-f",
+    "/usr/local/bin/hypercli-chrome",
+).stdout.strip()
+assert chrome_link == "/opt/hypercli/bin/hypercli-chrome", chrome_link
 
 desktop_shortcut = docker(
     "run",
