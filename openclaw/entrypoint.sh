@@ -25,6 +25,7 @@ esac
 
 /opt/hypercli-openclaw/init.sh
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.js
+CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/models.js
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/slack.js
 
 export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
@@ -44,7 +45,7 @@ BUILD_INFO_PATH="${OPENCLAW_BUILD_INFO_PATH:-/app/dist/build-info.json}"
 RUNTIME_CHECKPOINT="${OPENCLAW_STATE_DIR}/.hypercli-runtime-checkpoint.json"
 if [[ ! -r "${BUILD_INFO_PATH}" ]] || ! cmp -s "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}"; then
   echo "[openclaw] repairing OpenClaw state for this runtime build"
-  openclaw doctor --fix --non-interactive --yes
+  openclaw doctor --fix --non-interactive --yes --no-workspace-suggestions
   if [[ -r "${BUILD_INFO_PATH}" ]]; then
     cp "${BUILD_INFO_PATH}" "${RUNTIME_CHECKPOINT}" 2>/dev/null || true
   fi

@@ -36,6 +36,13 @@ const defaults = (((config.agents ||= {}).defaults ||= {}))
 const memorySearch = ((defaults.memorySearch ||= {}))
 const sync = ((memorySearch.sync ||= {}))
 
+{
+  const gateway = (config.gateway ||= {})
+  const auth = (gateway.auth ||= {})
+  auth.mode = "token"
+  auth.token = "${OPENCLAW_GATEWAY_TOKEN}"
+}
+
 // OPENCLAW_CONTROL_UI_ALLOWED_ORIGIN, when set in the container env, holds a
 // list of origins that REPLACES gateway.controlUi.allowedOrigins, unrolled in
 // full — no merging with the baked loopback defaults. Write "*" upstream to
