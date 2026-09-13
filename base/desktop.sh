@@ -44,18 +44,24 @@ hyper_start_desktop() {
   mkdir -p "${HOME:-/home/node}/.config/google-chrome"
   echo "[desktop] starting ${DISPLAY}, noVNC port ${desktop_port}"
 
-  Xvfb "${DISPLAY}" -screen 0 "${geometry}" -ac +extension RANDR &
+  # -noreset: without it the last X client disconnecting triggers a server
+  # regeneration that resets the root window to black. feh/xsetroot are
+  # transient clients, so the background paint below could be wiped the
+  # moment feh exits — timing-dependent, exit code 0 either way.
+  Xvfb "${DISPLAY}" -screen 0 "${geometry}" -ac +extension RANDR -noreset &
   sleep 1
   eval "$(dbus-launch --sh-syntax)"
   export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+  xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
+  # Paint after the WM holds a persistent connection (belt and braces for the
+  # reset race above), and keep a log: feh can fail silently otherwise.
   local background_image="${HYPER_DESKTOP_BACKGROUND_IMAGE:-/opt/hypercli/share/hypercli-bg.png}"
   if [ -s "${background_image}" ] && command -v feh >/dev/null 2>&1; then
-    feh --no-fehbg --bg-fill "${background_image}" >/dev/null 2>&1 || \
-      xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+    feh --no-fehbg --bg-fill "${background_image}" >/tmp/desktop-bg.log 2>&1 || \
+      xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >>/tmp/desktop-bg.log 2>&1 || true
   else
-    xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/dev/null 2>&1 || true
+    xsetroot -solid "${HYPER_DESKTOP_BACKGROUND_COLOR:-#071A2F}" >/tmp/desktop-bg.log 2>&1 || true
   fi
-  xfwm4 --replace >/tmp/xfwm4.log 2>&1 &
   hyper_configure_plank_dock
   if command -v plank >/dev/null 2>&1; then
     plank >>/tmp/plank.log 2>&1 &

@@ -238,6 +238,11 @@ assert 'export HYPER_PROXY_HOST="${HYPER_PROXY_HOST:-true}"' in desktop_script
 assert "feh --no-fehbg --bg-fill" in desktop_script
 assert "/opt/hypercli/share/hypercli-bg.png" in desktop_script
 assert "HYPER_DESKTOP_BACKGROUND_COLOR" in desktop_script
+# The background paint is done by transient clients; without -noreset their
+# disconnect regenerates the server and resets the root window to black.
+assert "-noreset" in desktop_script
+# The paint must land after xfwm4 holds a persistent connection.
+assert desktop_script.index("xfwm4 --replace") < desktop_script.index("feh --no-fehbg --bg-fill")
 
 novnc_webroot = docker(
     "run",
