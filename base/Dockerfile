@@ -8,8 +8,7 @@ FROM ${NODE_IMAGE}
 ARG NODE_IMAGE
 ARG HYPERCLI_REF
 
-LABEL org.opencontainers.image.title="HyperCLI Agent Base" \
-      org.opencontainers.image.base.name="${NODE_IMAGE}"
+LABEL org.opencontainers.image.title="HyperCLI Agent Base"
 
 ENV DEBIAN_FRONTEND=noninteractive
 

@@ -14,11 +14,6 @@ ARG HYPERCLI_REPO
 ARG HYPERCLI_AGENT_BASE_IMAGE
 ARG OPENCLAW_BASE_IMAGE
 
-LABEL org.hypercli.hypercli_ref="${HYPERCLI_REF}"
-LABEL org.hypercli.hypercli_sha="${HYPERCLI_SHA}"
-LABEL org.opencontainers.image.base.name="${HYPERCLI_AGENT_BASE_IMAGE}"
-LABEL org.opencontainers.image.upstream.name="${OPENCLAW_BASE_IMAGE}"
-
 ENV HYPERCLI_REF=${HYPERCLI_REF}
 ENV HYPERCLI_SHA=${HYPERCLI_SHA}
 
