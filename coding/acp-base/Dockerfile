@@ -41,7 +41,17 @@ RUN --mount=type=secret,id=hypercli_repo_token,required=false \
     git -C /build/hypercli fetch --depth 1 origin "${checkout_ref}" && \
     git -C /build/hypercli checkout FETCH_HEAD && \
     { test -z "${HYPERCLI_SHA}" || test "$(git -C /build/hypercli rev-parse HEAD)" = "${HYPERCLI_SHA}"; }
-RUN set -eux; \
+# Buzz is public, but anonymous github.com fetches from the self-hosted CI
+# IP are throttle-prone and fail with bare 401s, so route this fetch through
+# the same optional token as the HyperCLI clone above when it is provided.
+RUN --mount=type=secret,id=hypercli_repo_token,required=false \
+    set -eux; \
+    token="$(cat /run/secrets/hypercli_repo_token 2>/dev/null || true)"; \
+    if [ -n "${token}" ]; then \
+      export GIT_CONFIG_COUNT=1 \
+        GIT_CONFIG_KEY_0="url.https://x-access-token:${token}@github.com/.insteadOf" \
+        GIT_CONFIG_VALUE_0="https://github.com/"; \
+    fi; \
     BUZZ_REF="$(sed -n 's/^- \{0,1\}Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
