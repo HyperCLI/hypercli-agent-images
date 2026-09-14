@@ -52,8 +52,8 @@ RUN set -eux; \
 COPY openclaw.json /opt/hypercli-openclaw/openclaw.json
 COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
 COPY init.sh /opt/hypercli-openclaw/init.sh
-COPY config.js /opt/hypercli-openclaw/config.js
-COPY models.js /opt/hypercli-openclaw/models.js
+COPY config.ts /opt/hypercli-openclaw/config.ts
+COPY models.ts /opt/hypercli-openclaw/models.ts
 COPY slack.js /opt/hypercli-openclaw/slack.js
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/init.sh && \
     chown -R node:node /opt/hypercli-openclaw && \

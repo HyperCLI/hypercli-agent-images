@@ -24,7 +24,7 @@ case "$(printf '%s' "${HYPER_SLACK_APP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]'
 esac
 
 /opt/hypercli-openclaw/init.sh
-CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.js
+CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.ts
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/slack.js
 
 export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
