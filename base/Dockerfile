@@ -92,6 +92,9 @@ RUN npm install --global pnpm@11.2.2 \
 # HyperCLI SDK/CLI/skills, fetched from git by content: a branch/tag fragment
 # is re-resolved against the remote on every build (a moved "main" can never
 # be served from cache); a 40-hex fragment is immutable and cached by content.
+# CI passes BuildKit's predefined GIT_AUTH_TOKEN secret so the fetch stays
+# authenticated when the repo requires it; without the secret the fetch is
+# anonymous and still works while the repo is public.
 ADD --keep-git-dir=false "https://github.com/HyperCLI/hypercli.git#${HYPERCLI_REF}" /opt/hypercli
 
 RUN --mount=type=cache,target=/root/.npm \

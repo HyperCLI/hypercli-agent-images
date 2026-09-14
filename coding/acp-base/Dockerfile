@@ -23,9 +23,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /build
 # Clone the hyper-cli sources directly instead of inheriting /opt/hypercli
 # from the agent base image — the base must not carry hyper-acp.
-RUN : "${HYPERCLI_CACHE_BUST}" && \
+# The HyperCLI repo may require auth: when the build provides the
+# hypercli_repo_token secret, rewrite https://github.com/ URLs through it via
+# ephemeral git config (nothing is persisted in the image). Without the secret
+# the clone stays anonymous, which still works while the repo is public.
+RUN --mount=type=secret,id=hypercli_repo_token,required=false \
+    : "${HYPERCLI_CACHE_BUST}" && \
     checkout_ref="${HYPERCLI_SHA:-${HYPERCLI_REF}}" && \
     test -n "${checkout_ref}" && \
+    token="$(cat /run/secrets/hypercli_repo_token 2>/dev/null || true)" && \
+    if [ -n "${token}" ]; then \
+      export GIT_CONFIG_COUNT=1 \
+        GIT_CONFIG_KEY_0="url.https://x-access-token:${token}@github.com/.insteadOf" \
+        GIT_CONFIG_VALUE_0="https://github.com/"; \
+    fi && \
     git clone --depth 1 "${HYPERCLI_REPO}" /build/hypercli && \
     git -C /build/hypercli fetch --depth 1 origin "${checkout_ref}" && \
     git -C /build/hypercli checkout FETCH_HEAD && \
