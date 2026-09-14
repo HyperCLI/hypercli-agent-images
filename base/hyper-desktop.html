@@ -460,9 +460,25 @@
             clipHideTimer = setTimeout(hideClipboardToast, 8000);
         }
 
-        // Local -> remote. Never navigator.clipboard.readText(): it prompts in
-        // some browsers. The paste event's own clipboardData is enough.
+        // Local -> remote. The paste event's own clipboardData is the
+        // primary path. WKWebView (bug 75891) fires no paste event when the
+        // focused element is non-editable (our canvas), so on Cmd/Ctrl+V
+        // keydown we arm a one-tick fallback: if no paste event arrives,
+        // read the clipboard directly (the keydown is the user gesture).
+        let pendingPaste = false;
+        document.addEventListener('keydown', (e) => {
+            if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'v') return;
+            pendingPaste = true;
+            setTimeout(() => {
+                if (!pendingPaste || !rfb) return;
+                pendingPaste = false;
+                navigator.clipboard?.readText().then((text) => {
+                    if (text) rfb.clipboardPasteFrom(text);
+                }).catch(() => {});
+            }, 0);
+        });
         document.addEventListener('paste', (e) => {
+            pendingPaste = false;
             const text = e.clipboardData?.getData('text');
             if (text && rfb) rfb.clipboardPasteFrom(text);
         });
