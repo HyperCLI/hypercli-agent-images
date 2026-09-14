@@ -28,7 +28,7 @@ RUN mkdir -p /opt/hypercli-openclaw /home/node/.openclaw && \
     ln -sf /app/openclaw.mjs /usr/local/bin/openclaw && \
     chown -R node:node /home/node /opt/hypercli-openclaw /app
 
-COPY patch_slack_ws_wrapper.js /opt/hypercli-openclaw/patch_slack_ws_wrapper.js
+COPY patch_slack_ws_wrapper.ts /opt/hypercli-openclaw/patch_slack_ws_wrapper.ts
 
 RUN set -eux; \
     openclaw_version="$(node -e 'console.log(require("/app/package.json").version)')"; \
@@ -44,7 +44,8 @@ RUN set -eux; \
     cp -a node_modules/@openclaw/brave-plugin /app/dist/extensions/brave; \
     cp -a node_modules/@openclaw/slack /app/dist/extensions/slack; \
     cp -a node_modules/@openclaw/whatsapp /app/dist/extensions/whatsapp; \
-    node /opt/hypercli-openclaw/patch_slack_ws_wrapper.js; \
+    node /opt/hypercli-openclaw/patch_slack_ws_wrapper.ts; \
+    node -e 'import("/app/dist/extensions/slack/node_modules/ws/wrapper.mjs").then(m => { if (typeof m.WebSocket !== "function" || typeof m.default !== "function") { console.error("ws wrapper patch invalid"); process.exit(1) } })'; \
     node -e 'const fs = require("fs"); const p = "/app/dist/extensions/whatsapp/package.json"; const j = JSON.parse(fs.readFileSync(p, "utf8")); if (j.openclaw?.channel?.persistedAuthState) delete j.openclaw.channel.persistedAuthState; fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");'; \
     chown -R node:node /app/dist/extensions/brave /app/dist/extensions/slack /app/dist/extensions/whatsapp; \
     rm -rf "${tmp_dir}"
@@ -54,7 +55,7 @@ COPY entrypoint.sh /opt/hypercli-openclaw/entrypoint.sh
 COPY init.sh /opt/hypercli-openclaw/init.sh
 COPY config.ts /opt/hypercli-openclaw/config.ts
 COPY models.ts /opt/hypercli-openclaw/models.ts
-COPY slack.js /opt/hypercli-openclaw/slack.js
+COPY slack.ts /opt/hypercli-openclaw/slack.ts
 RUN chmod +x /opt/hypercli-openclaw/entrypoint.sh /opt/hypercli-openclaw/init.sh && \
     chown -R node:node /opt/hypercli-openclaw && \
     openclaw --version

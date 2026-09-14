@@ -13,7 +13,7 @@ if [[ -n "${HYPER_API_KEY:-}" ]]; then
 fi
 
 # The Slack plugin resolves botToken from the gateway process env, so the
-# derivation must be exported here (slack.js validates the same preconditions
+# derivation must be exported here (slack.ts validates the same preconditions
 # while reconciling the config, but child-process env cannot reach the exec'd
 # gateway).
 case "$(printf '%s' "${HYPER_SLACK_APP_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')" in
@@ -25,7 +25,7 @@ esac
 
 /opt/hypercli-openclaw/init.sh
 CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/config.ts
-CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/slack.js
+CONFIG_PATH="${OPENCLAW_CONFIG_PATH}" node /opt/hypercli-openclaw/slack.ts
 
 export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE:-/tmp/openclaw-npm-cache}"
 export npm_config_cache="${npm_config_cache:-${NPM_CONFIG_CACHE}}"
