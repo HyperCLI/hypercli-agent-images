@@ -2,7 +2,11 @@
 
 ARG RUST_IMAGE=docker.io/library/rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1
 ARG HYPERCLI_AGENT_BASE_IMAGE=hypercli-agent-base:local
+ARG ACP_IMAGE=hypercli-acp:local
 ARG HYPERCLI_CACHE_BUST=local
+
+# hyper-acp binary built by the standalone hypercli-acp image (hypercli/acp/Dockerfile)
+FROM ${ACP_IMAGE} AS acp
 
 FROM ${RUST_IMAGE} AS source-builder
 
@@ -52,7 +56,7 @@ RUN --mount=type=secret,id=hypercli_repo_token,required=false \
         GIT_CONFIG_KEY_0="url.https://x-access-token:${token}@github.com/.insteadOf" \
         GIT_CONFIG_VALUE_0="https://github.com/"; \
     fi; \
-    BUZZ_REF="$(sed -n 's/^- \{0,1\}Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
+    BUZZ_REF="$(sed -n 's/^- \{0,1\}Source commit: `\([0-9a-f]\{40\}\)`$/\1/p' /build/hypercli/acp/hyper-acp/plugins/buzz/PROVENANCE.md)"; \
     printf '%s' "${BUZZ_REF}" | grep -Eq '^[0-9a-f]{40}$'; \
     mkdir -p /out; \
     printf '%s\n' "${BUZZ_REF}" > /out/buzz-ref; \
@@ -86,18 +90,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
       /out/nest/.agents/skills/buzz-cli/SKILL.md; \
     strip /out/sprig /out/tools/compute_auth_tag
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
-    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
-    --mount=type=cache,target=/build/hypercli/target,sharing=locked \
-    set -eux; \
-    cargo build \
-      --manifest-path /build/hypercli/Cargo.toml \
-      --release \
-      --locked \
-      -p hyper-acp; \
-    install -D -m 0755 /build/hypercli/target/release/acp /out/acp; \
-    strip /out/acp
-
 FROM ${HYPERCLI_AGENT_BASE_IMAGE}
 
 ARG HYPERCLI_AGENT_BASE_IMAGE
@@ -118,7 +110,8 @@ RUN rm -rf /home/node/.buzz && \
 
 COPY --from=source-builder /out/sprig /usr/local/lib/acp/buzz/sprig
 COPY --from=source-builder /out/nest /opt/hypercli-coding/nest
-COPY --from=source-builder /out/acp /usr/local/bin/acp
+COPY --from=acp /acp /opt/hypercli/bin/acp
+RUN ln -sf /opt/hypercli/bin/acp /usr/local/bin/acp
 COPY --from=source-builder /out/tools/compute_auth_tag /usr/local/lib/acp/tools/compute_auth_tag
 COPY --from=source-builder /out/buzz-ref /opt/hypercli-coding/.buzz-commit
 COPY SKILLS.md /opt/hypercli-coding/SKILLS.md

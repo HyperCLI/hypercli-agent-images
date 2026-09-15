@@ -2,6 +2,11 @@
 
 ARG NODE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 ARG HYPERCLI_REF=main
+ARG TOOLCHAIN_IMAGE=hypercli-agent-tools:local
+
+# ts-cli/ts-sdk/skills toolchain built by the hypercli-agent-tools image
+# (hypercli/agent-tools/Dockerfile); copied in, never rebuilt here.
+FROM ${TOOLCHAIN_IMAGE} AS tools
 
 FROM ${NODE_IMAGE}
 
@@ -23,10 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lsof \
     openssh-client \
     procps \
-    python3 \
-    python3-dev \
-    python3-pip \
-    python3-venv \
     ripgrep \
     build-essential \
     sudo \
@@ -91,41 +92,27 @@ RUN npm install --global pnpm@11.2.2 \
 # HyperCLI SDK/CLI/skills, fetched from git by content: a branch/tag fragment
 # is re-resolved against the remote on every build (a moved "main" can never
 # be served from cache); a 40-hex fragment is immutable and cached by content.
-# CI passes BuildKit's predefined GIT_AUTH_TOKEN secret so the fetch stays
-# authenticated when the repo requires it; without the secret the fetch is
-# anonymous and still works while the repo is public.
-ADD --keep-git-dir=false "https://github.com/HyperCLI/hypercli.git#${HYPERCLI_REF}" /opt/hypercli
+# Toolchain artifacts from the hypercli-agent-tools image (ts-cli + ts-sdk
+# compiled, skills exported); nothing npm-related is rebuilt in this image.
+# The dir copy preserves the tree-internal bin/hyper -> ../ts-cli/dist/index.js
+# link; /usr/local/bin/hyper just points into it for PATH callers.
+COPY --from=tools /opt/hypercli /opt/hypercli
 
-RUN --mount=type=cache,target=/root/.npm \
-    test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)" && \
-    npm --prefix /opt/hypercli/ts-sdk ci && \
-    npm --prefix /opt/hypercli/ts-sdk run build && \
-    npm --prefix /opt/hypercli/ts-sdk prune --omit=dev
-
-RUN --mount=type=cache,target=/root/.npm \
-    npm --prefix /opt/hypercli/cli ci && \
-    npm --prefix /opt/hypercli/cli run build && \
-    npm --prefix /opt/hypercli/cli prune --omit=dev && \
-    npm install --global /opt/hypercli/cli && \
+RUN ln -sf /opt/hypercli/bin/hyper /usr/local/bin/hyper && \
     test "$(command -v hyper)" = "/usr/local/bin/hyper" && \
-    test "$(readlink -f /usr/local/bin/hyper)" = "/opt/hypercli/cli/dist/index.js" && \
     hyper --help >/dev/null && \
-    hyper skills export /tmp/hypercli-skills >/dev/null && \
-    rm -rf /opt/hypercli/skills && \
-    mv /tmp/hypercli-skills /opt/hypercli/skills && \
-    find /opt/hypercli -mindepth 1 -maxdepth 1 \
-      ! -name cli ! -name ts-sdk ! -name docs ! -name skills -exec rm -rf {} +
+    test -n "$(find /opt/hypercli/skills -type f -name SKILL.md -print -quit)"
 
 # Everything HyperCLI-owned lives under /opt/hypercli (kept after the prune
 # above by copying it in only now). Frozen external paths stay put: the noVNC
 # webroot (websockify --web), the XDG applications dir, Chrome's managed-policy
 # dir, and /usr/local/bin (npm-global + ENV contracts).
-COPY --chmod=0644 desktop.sh pin-novnc-params.py patch_vnc_lite.py stretch-novnc-display.py /opt/hypercli/lib/
+COPY --chmod=0644 desktop.sh patch-novnc.mjs /opt/hypercli/lib/
 COPY --chmod=0644 hypercli-bg.png /opt/hypercli/share/hypercli-bg.png
 COPY --chmod=0755 chrome-wrapper.sh /opt/hypercli/bin/hypercli-chrome
 RUN mkdir -p /etc/opt/chrome/policies/managed \
     && ln -sf /opt/hypercli/bin/hypercli-chrome /usr/local/bin/hypercli-chrome \
-    && python3 /opt/hypercli/lib/pin-novnc-params.py /usr/share/novnc
+    && node /opt/hypercli/lib/patch-novnc.mjs /usr/share/novnc
 COPY --chmod=0644 google-chrome.desktop /usr/share/applications/google-chrome.desktop
 COPY --chmod=0644 google-chrome.desktop /usr/share/applications/com.google.Chrome.desktop
 # Managed Chrome policy: hypercli-chrome launches Chrome with --no-sandbox
@@ -140,8 +127,6 @@ COPY --chmod=0644 google-chrome.desktop /usr/share/applications/com.google.Chrom
 COPY --chmod=0644 chrome-policies-managed.json /etc/opt/chrome/policies/managed/hypercli.json
 COPY --chmod=0644 hyper-desktop.html /usr/share/novnc/hyper-desktop.html
 RUN test -f /usr/share/novnc/core/rfb.js \
-    && python3 /opt/hypercli/lib/patch_vnc_lite.py \
-    && python3 /opt/hypercli/lib/stretch-novnc-display.py /usr/share/novnc \
     && chmod -R a+rX /opt/hypercli
 
 ENV HOME=/home/node \
